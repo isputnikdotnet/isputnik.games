@@ -1,0 +1,83 @@
+{
+  "app": {
+    "title": "iSputnik Игры",
+    "backHome": "Назад в iSputnik",
+    "loading": "Загрузка…",
+    "signedOutTitle": "Вы не вошли",
+    "signedOutBody": "Откройте игры из iSputnik Home, чтобы он вас узнал.",
+    "unavailableTitle": "Игры недоступны",
+    "unavailableBody": "Сервер игр не ответил. Попробуйте ещё раз через минуту.",
+    "notFound": "Такой страницы нет.",
+    "allGames": "Все игры"
+  },
+  "lobby": {
+    "title": "Игры",
+    "lead": "Выберите игру. Вдвоём за одним экраном или против компьютера.",
+    "play": "Играть",
+    "continue": "Продолжить"
+  },
+  "games": {
+    "dots": {
+      "name": "Точки",
+      "summary": "Окружите точки соперника, чтобы захватить их. Классическая игра на бумаге для двоих."
+    }
+  },
+  "dots": {
+    "setup": {
+      "title": "Новая игра",
+      "size": "Поле",
+      "sizeValue": "{{size}} × {{size}}",
+      "mode": "Игроки",
+      "modeComputer": "Против компьютера",
+      "modeLocal": "Двое за одним экраном",
+      "computerPlays": "Компьютер играет",
+      "level": "Уровень",
+      "levelEasy": "Лёгкий",
+      "levelNormal": "Обычный",
+      "target": "Играть до",
+      "targetFull": "Полного поля",
+      "targetN_one": "{{count}} захвата",
+      "targetN_few": "{{count}} захватов",
+      "targetN_many": "{{count}} захватов",
+      "targetN_other": "{{count}} захватов",
+      "start": "Начать игру"
+    },
+    "players": {
+      "blue": "Синие",
+      "red": "Красные",
+      "computer": "Компьютер"
+    },
+    "turn": "Ход: {{player}}",
+    "thinking": "Компьютер думает…",
+    "captures": "Захваты",
+    "undo": "Отменить ход",
+    "endGame": "Закончить игру",
+    "newGame": "Новая игра",
+    "end": {
+      "title": "Игра окончена",
+      "winner": "Победили {{player}}",
+      "draw": "Ничья",
+      "score": "{{blue}} : {{red}}",
+      "reasonTarget": "Первыми набрали {{count}} захватов.",
+      "reasonBoardFull": "Свободных точек не осталось.",
+      "reasonAgreed": "Закончена по согласию.",
+      "reasonResigned": "{{player}} сдались.",
+      "again": "Сыграть ещё",
+      "change": "Изменить настройки"
+    },
+    "confirmEnd": {
+      "title": "Закончить игру?",
+      "body": "Игра остановится, и победителя определят захваты на этот момент.",
+      "confirm": "Закончить игру",
+      "cancel": "Продолжить играть"
+    },
+    "confirmNew": {
+      "title": "Начать новую игру?",
+      "body": "Текущая игра будет брошена.",
+      "confirm": "Новая игра",
+      "cancel": "Продолжить играть"
+    },
+    "boardAria": "Поле для точек, {{size}} на {{size}}",
+    "pointAria": "Точка {{x}}, {{y}}"
+  }
+}

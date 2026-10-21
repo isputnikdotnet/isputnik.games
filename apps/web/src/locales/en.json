@@ -1,0 +1,81 @@
+{
+  "app": {
+    "title": "iSputnik Games",
+    "backHome": "Back to iSputnik",
+    "loading": "Loading…",
+    "signedOutTitle": "Not signed in",
+    "signedOutBody": "Open the games from iSputnik Home so it can sign you in.",
+    "unavailableTitle": "The games are not available",
+    "unavailableBody": "The games server did not answer. Try again in a moment.",
+    "notFound": "There is no such page.",
+    "allGames": "All games"
+  },
+  "lobby": {
+    "title": "Games",
+    "lead": "Pick a game. Two on one screen, or you against the computer.",
+    "play": "Play",
+    "continue": "Continue"
+  },
+  "games": {
+    "dots": {
+      "name": "Dots",
+      "summary": "Ring the other side's dots to capture them. The classic paper game for two."
+    }
+  },
+  "dots": {
+    "setup": {
+      "title": "New game",
+      "size": "Board",
+      "sizeValue": "{{size}} × {{size}}",
+      "mode": "Players",
+      "modeComputer": "Against the computer",
+      "modeLocal": "Two players, one screen",
+      "computerPlays": "The computer plays",
+      "level": "Level",
+      "levelEasy": "Easy",
+      "levelNormal": "Normal",
+      "target": "Play to",
+      "targetFull": "Full board",
+      "targetN_one": "{{count}} capture",
+      "targetN_other": "{{count}} captures",
+      "start": "Start game"
+    },
+    "players": {
+      "blue": "Blue",
+      "red": "Red",
+      "computer": "Computer"
+    },
+    "turn": "{{player}} to move",
+    "thinking": "The computer is thinking…",
+    "captures": "Captures",
+    "undo": "Undo",
+    "endGame": "End game",
+    "newGame": "New game",
+    "end": {
+      "title": "Game over",
+      "winner": "{{player}} wins",
+      "draw": "A draw",
+      "score": "{{blue}} : {{red}}",
+      "reasonTarget": "First to {{count}} captures.",
+      "reasonBoardFull": "No free points left.",
+      "reasonAgreed": "Ended by agreement.",
+      "reasonResigned": "{{player}} resigned.",
+      "again": "Play again",
+      "change": "Change settings"
+    },
+    "confirmEnd": {
+      "title": "End this game?",
+      "body": "The game stops here and the captures so far decide it.",
+      "confirm": "End game",
+      "cancel": "Keep playing"
+    },
+    "confirmNew": {
+      "title": "Start a new game?",
+      "body": "The game in progress is abandoned.",
+      "confirm": "New game",
+      "cancel": "Keep playing"
+    },
+    "boardAria": "Dots board, {{size}} by {{size}}",
+    "pointAria": "Point {{x}}, {{y}}"
+  }
+}

@@ -1,0 +1,35 @@
+# The games beside the home app. The games container publishes no port: only
+# isputnik.home talks to it, over the compose network, and forwards who is signed
+# in (docs/plan.md → The contract). Generate one secret and give it to both:
+#   openssl rand -hex 32
+services:
+  isputnik:
+    image: ghcr.io/isputnikdotnet/isputnik.home:latest
+    container_name: isputnik
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ports:
+      - "4000:4000"
+    environment:
+      PUID: 1000
+      PGID: 1000
+      APP_URL: http://localhost:4000
+      COOKIE_SECURE: auto
+      # The games, reached inside the app at /games
+      GAMES_URL: http://isputnik-games:4200
+      GAMES_GATEWAY_SECRET: change-me-to-a-long-random-secret
+    volumes:
+      - /mnt/user/appdata/isputnik:/config
+      - /path/to/library:/media:ro
+
+  isputnik-games:
+    image: ghcr.io/isputnikdotnet/isputnik.games:latest
+    container_name: isputnik-games
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      GATEWAY_SECRET: change-me-to-a-long-random-secret

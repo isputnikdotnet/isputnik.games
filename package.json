@@ -1,0 +1,36 @@
+{
+  "name": "isputnik-games",
+  "private": true,
+  "version": "0.1.0",
+  "stage": "alpha",
+  "description": "Family games for isputnik.home — Dots first.",
+  "license": "AGPL-3.0-only",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "packages/engine",
+    "apps/server",
+    "apps/web"
+  ],
+  "scripts": {
+    "predev": "npm run build --workspace packages/engine",
+    "dev": "concurrently -n engine,server,web \"npm run dev --workspace packages/engine\" \"cross-env PORT=4200 npm run dev --workspace apps/server\" \"npm run dev --workspace apps/web\"",
+    "build": "npm run build --workspace packages/engine && npm run build --workspace apps/server && npm run build --workspace apps/web",
+    "typecheck": "npm run build --workspace packages/engine && npm run typecheck --workspace apps/server && npm run typecheck --workspace apps/web",
+    "lint": "eslint .",
+    "test": "npm run test --workspace packages/engine && npm run test --workspace apps/server && npm run test --workspace apps/web",
+    "test:engine": "npm run test --workspace packages/engine",
+    "test:server": "npm run test --workspace apps/server",
+    "test:web": "npm run test --workspace apps/web"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^10.0.6",
+    "cross-env": "^10.1.0",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "typescript-eslint": "^8.71.2"
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.env.local
+.claude
+
+# Runtime data (phase 2: the SQLite database) — never sync to remote
+data/
