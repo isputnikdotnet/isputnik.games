@@ -33,3 +33,9 @@ services:
         max-file: "3"
     environment:
       GATEWAY_SECRET: change-me-to-a-long-random-secret
+      # The owner of the /config folder (Unraid: usually 99 / 100).
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      # The online matches (a small SQLite file)
+      - /mnt/user/appdata/isputnik-games:/config

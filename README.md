@@ -5,8 +5,9 @@ in a project and container of their own. The first game is **Dots** (Точки)
 players take turns placing dots on a grid, and a closed chain of your dots around
 the other side's dots captures them.
 
-> **Alpha.** Local play (two on one screen, or against the computer) works. Online
-> duels between family members are the next phase.
+> **Alpha.** Two on one screen, against the computer, and online between family
+> members (invite, accept, play from any device; the page polls for the other
+> side's moves).
 
 ## How it fits together
 
@@ -33,6 +34,8 @@ on the home container and `GATEWAY_SECRET` on this one; point the home container
 | `PORT` | `4200` | The port to listen on. |
 | `HOST` | `0.0.0.0` in the image, `127.0.0.1` from source | The address to listen on. |
 | `STATIC_PATH` | `/app/web` in the image | The built web app, served under `/games/`. |
+| `DB_PATH` | `/config/games.sqlite` in the image, `data/games.sqlite` from source | The SQLite file with the online matches. Mount `/config` as a volume. |
+| `PUID` / `PGID` | `1000` / `1000` | The user the server runs as; the entrypoint takes ownership of `/config` for it (Unraid: usually `99` / `100`). |
 | `DEV_USER` | `dev:Developer:admin:en:minimalist` | Source checkouts only, with no secret set: who the server pretends is signed in (`id:name:role:lang:theme`). |
 | `LOG_LEVEL` | `info` | `trace` … `silent`. |
 
@@ -44,7 +47,10 @@ npm run dev        # engine (tsc --watch) + server on :4200 + Vite on :5174
 ```
 
 Open <http://127.0.0.1:5174/games/>. With no `GATEWAY_SECRET` the server treats
-every request as the developer identity, so the app runs on its own. To run it
+every request as the developer identity, so the app runs on its own, and the
+invite dialog offers a made-up family (Mum, Dad, Kid). To play an online match
+against yourself, set `DEV_USER=dad:Dad:member` on a second server (another
+port) or simply accept the invitation through the API. To run it
 behind a real home app instead, start the home app with `GAMES_URL` pointing at
 `http://127.0.0.1:4200` and a shared secret, and open `/games/` on the home app's
 address.

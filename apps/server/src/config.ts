@@ -29,6 +29,8 @@ export const config = {
   port: Number(process.env.PORT ?? 4200),
   /** The built web app to serve under /games; empty means API only (Vite serves the pages). */
   staticPath: process.env.STATIC_PATH ?? "",
+  /** The SQLite file with the online matches (the image sets /config/games.sqlite). */
+  dbPath: process.env.DB_PATH ?? path.join(rootDir, "data", "games.sqlite"),
   gatewaySecret,
   /** Development only: who the server pretends is signed in when no secret is set,
    *  as "id:name:role[:lang[:theme]]". */

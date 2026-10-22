@@ -58,7 +58,7 @@ describe("api", () => {
   });
 
   const boot = (gatewaySecret: string | null, devUser: string | null = null) =>
-    buildApp({ gatewaySecret, devUser, staticPath: "", version: "0.0.0-test", stage: null });
+    buildApp({ gatewaySecret, devUser, staticPath: "", dbPath: ":memory:", version: "0.0.0-test", stage: null });
 
   it("answers health without identity, and /me only with it", async () => {
     app = await boot(SECRET);

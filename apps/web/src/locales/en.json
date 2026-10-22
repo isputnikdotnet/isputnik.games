@@ -12,9 +12,54 @@
   },
   "lobby": {
     "title": "Games",
-    "lead": "Pick a game. Two on one screen, or you against the computer.",
+    "lead": "Pick a game. Two on one screen, against the computer, or online with someone in the family.",
     "play": "Play",
-    "continue": "Continue"
+    "continue": "Continue",
+    "online": {
+      "title": "Online matches",
+      "invite": "Invite a member",
+      "invitations": "Invitations",
+      "yourTurn": "Your move",
+      "waiting": "Waiting for the other player",
+      "finished": "Finished",
+      "empty": "No online matches yet. Invite a member to play.",
+      "from": "{{name}} invites you",
+      "to": "Waiting for {{name}} to accept",
+      "accept": "Accept",
+      "decline": "Decline",
+      "withdraw": "Withdraw",
+      "vs": "vs {{name}}",
+      "loadFailed": "Unable to load your matches"
+    }
+  },
+  "invite": {
+    "title": "Invite to Dots",
+    "member": "Who",
+    "noMembers": "Nobody else to invite yet.",
+    "pickSomeone": "Pick someone to invite.",
+    "yourColour": "You play",
+    "send": "Send invitation",
+    "cancel": "Cancel",
+    "failed": "Unable to send the invitation"
+  },
+  "match": {
+    "you": "You",
+    "yourMove": "Your move",
+    "theirMove": "{{name}} to move",
+    "invited": "Waiting for {{name}} to accept",
+    "declined": "{{name}} declined",
+    "cancelled": "Invitation withdrawn",
+    "won": "You win",
+    "lost": "{{name}} wins",
+    "resign": "Resign",
+    "confirmResign": {
+      "title": "Resign this match?",
+      "body": "{{name}} wins and the match is over.",
+      "confirm": "Resign",
+      "cancel": "Keep playing"
+    },
+    "loadFailed": "Unable to load the match",
+    "moveFailed": "Unable to make that move"
   },
   "games": {
     "dots": {

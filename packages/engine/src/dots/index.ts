@@ -9,6 +9,7 @@ export const dots: GameDefinition<DotsOptions, DotsState, DotsMove> = {
   legalMoves,
   applyMove,
   finish,
+  scoreOf: (state) => state.captures,
   ai: dotsAi
 };
 

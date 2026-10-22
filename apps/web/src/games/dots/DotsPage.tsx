@@ -6,6 +6,7 @@ import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
 import { follow, href } from "../../router";
 import { DotsBoard } from "./DotsBoard";
+import { GameOverDialog } from "./GameOverDialog";
 import { NewGameForm } from "./NewGameForm";
 import { isComputerSeat, useDotsGame } from "./useDotsGame";
 import type { DotsSetup } from "./storage";
@@ -96,22 +97,16 @@ export function DotsPage() {
       </div>
 
       {showResult && (
-        <Dialog
-          title={t("dots.end.title")}
-          confirmLabel={t("dots.end.again")}
-          cancelLabel={t("dots.end.change")}
-          onConfirm={() => controller.start(setup)}
-          onCancel={controller.abandon}
+        <GameOverDialog
+          headline={statusLine}
+          scoreLine={t("dots.end.scoreLine", {
+            blueName: seatName(setup, 0), blue: state.captures[0], red: state.captures[1], redName: seatName(setup, 1)
+          })}
+          reason={reason}
+          primary={{ label: t("dots.end.again"), onClick: () => controller.start(setup) }}
+          secondary={{ label: t("dots.end.change"), onClick: controller.abandon }}
           onClose={() => setResultDismissed(endingKey)}
-        >
-          <p className="dots-result-line">{statusLine}</p>
-          <p className="dots-result-score">
-            {t("dots.end.scoreLine", {
-              blueName: seatName(setup, 0), blue: state.captures[0], red: state.captures[1], redName: seatName(setup, 1)
-            })}
-          </p>
-          {reason && <p className="muted">{reason}</p>}
-        </Dialog>
+        />
       )}
       {pending === "end" && (
         <Dialog

@@ -50,5 +50,8 @@ export interface GameDefinition<O, S extends { status: GameStatus }, M> {
   applyMove(state: S, move: M): S;
   /** Ends a game early: by agreement (count the score) or a resignation. */
   finish(state: S, reason: "agreed" | "resigned", resigning?: PlayerIndex): S;
+  /** The running score per seat, for match lists that know nothing of the game
+   *  (captures in Dots). Omitted when the game keeps no score. */
+  scoreOf?(state: S): [number, number];
   ai?: GameAi<S, M>;
 }

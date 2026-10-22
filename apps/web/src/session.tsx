@@ -11,7 +11,8 @@ export type SessionState =
   | { status: "unavailable" }
   | { status: "ready"; user: Me; version: string };
 
-const SessionContext = createContext<SessionState>({ status: "loading" });
+/** Exported for tests, which provide a ready session without a server. */
+export const SessionContext = createContext<SessionState>({ status: "loading" });
 
 function applyTheme(theme: string): () => void {
   const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");

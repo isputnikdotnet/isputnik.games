@@ -5,6 +5,7 @@ const app = await buildApp({
   gatewaySecret: config.gatewaySecret,
   devUser: config.production ? null : config.devUser,
   staticPath: config.staticPath,
+  dbPath: config.dbPath,
   version: config.version,
   stage: config.stage,
   fastify: {

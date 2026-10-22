@@ -303,6 +303,83 @@
   font-weight: var(--weight-semibold);
 }
 
+/* ── Online matches ────────────────────────────────────────────────────── */
+
+.lobby-online {
+  margin-top: var(--space-8);
+}
+
+.lobby-online-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.match-group {
+  margin-top: var(--space-4);
+}
+
+.match-group h3 {
+  margin: 0 0 var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.match-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.match-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.match-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-decoration: none;
+}
+
+.match-row-main .muted {
+  font-size: var(--text-sm);
+}
+
+.match-row-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+}
+
+.invite-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  color: var(--ink);
+}
+
+.invite-hint {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
 /* ── Setup form ────────────────────────────────────────────────────────── */
 
 .setup-card {
@@ -361,5 +438,18 @@
 
   .setup-actions .primary-button {
     width: 100%;
+  }
+
+  .match-row {
+    flex-wrap: wrap;
+  }
+
+  .match-row-actions {
+    width: 100%;
+  }
+
+  .match-row-actions .primary-button,
+  .match-row-actions .secondary-button {
+    flex: 1 1 auto;
   }
 }

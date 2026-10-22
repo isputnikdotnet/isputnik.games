@@ -6,6 +6,7 @@ import { Shell } from "./shared/Shell";
 import { MessageBox } from "./shared/MessageBox";
 import { LobbyPage } from "./pages/LobbyPage";
 import { DotsPage } from "./games/dots/DotsPage";
+import { DotsMatchPage } from "./games/dots/DotsMatchPage";
 
 function Routes() {
   const route = useRoute();
@@ -23,10 +24,14 @@ function Routes() {
   }
 
   if (route.name === "lobby") return <LobbyPage />;
+  // One page per game, and one per game's online match; the registry says which
+  // games exist, this says how each one is played on screen. A new game adds
+  // its branches here.
   if (route.name === "game" && getGame(route.gameId)) {
-    // One page per game; the registry says which games exist, this says how each
-    // one is played on screen. A new game adds a branch here.
     if (route.gameId === "dots") return <DotsPage />;
+  }
+  if (route.name === "match" && getGame(route.gameId)) {
+    if (route.gameId === "dots") return <DotsMatchPage matchId={route.matchId} />;
   }
   return <MessageBox tone="info" title={t("app.notFound")} />;
 }

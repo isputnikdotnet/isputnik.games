@@ -5,20 +5,31 @@ export const BASE = "/games";
 export type Route =
   | { name: "lobby" }
   | { name: "game"; gameId: string }
+  | { name: "match"; gameId: string; matchId: string }
   | { name: "notFound" };
+
+const ID = /^[A-Za-z0-9_-]+$/;
 
 export function parseRoute(pathname: string): Route {
   let rest = pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
   rest = rest.replace(/^\/+|\/+$/g, "");
   if (rest === "") return { name: "lobby" };
-  const [gameId, ...more] = rest.split("/");
-  if (more.length === 0 && /^[a-z][a-z0-9-]*$/.test(gameId)) return { name: "game", gameId };
+  const parts = rest.split("/");
+  const [gameId] = parts;
+  if (!/^[a-z][a-z0-9-]*$/.test(gameId)) return { name: "notFound" };
+  if (parts.length === 1) return { name: "game", gameId };
+  // /games/<game>/m/<match id> — an online match.
+  if (parts.length === 3 && parts[1] === "m" && ID.test(parts[2])) return { name: "match", gameId, matchId: parts[2] };
   return { name: "notFound" };
 }
 
 /** An in-app address: href("dots") → "/games/dots". */
 export function href(path = ""): string {
   return path ? `${BASE}/${path}` : `${BASE}/`;
+}
+
+export function matchHref(gameId: string, matchId: string): string {
+  return href(`${gameId}/m/${matchId}`);
 }
 
 const listeners = new Set<() => void>();
