@@ -60,20 +60,6 @@
   stroke: var(--dots-red);
 }
 
-/* The lines between neighbouring dots of one colour, as drawn on paper. */
-.dots-chains line {
-  stroke-width: 0.07;
-  stroke-linecap: round;
-}
-
-.dots-chains .is-p1 {
-  stroke: var(--dots-blue);
-}
-
-.dots-chains .is-p2 {
-  stroke: var(--dots-red);
-}
-
 .dots-dots .is-p1 {
   fill: var(--dots-blue);
 }
@@ -192,6 +178,24 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+/* The result dialog: who won, large, then the score. */
+.dots-result-line {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--ink);
+}
+
+.dots-result-score {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-lg);
+  color: var(--ink);
+}
+
+.dialog-body .muted {
+  margin: var(--space-2) 0 0;
 }
 
 .dots-actions .primary-button,

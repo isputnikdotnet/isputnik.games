@@ -42,7 +42,7 @@ function isSetup(value: unknown): value is DotsSetup {
     && (s.targetCaptures === null || typeof s.targetCaptures === "number")
     && (s.mode === "computer" || s.mode === "local")
     && (s.computerPlays === 0 || s.computerPlays === 1)
-    && (s.level === "easy" || s.level === "normal");
+    && (s.level === "easy" || s.level === "normal" || s.level === "hard");
 }
 
 export function loadDotsGame(): LoadedDotsGame | null {

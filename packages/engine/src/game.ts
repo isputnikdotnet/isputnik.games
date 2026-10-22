@@ -24,8 +24,8 @@ export type GameStatus =
   | { kind: "playing"; turn: PlayerIndex }
   | { kind: "finished"; winner: PlayerIndex | null; reason: FinishReason };
 
-export type AiLevel = "easy" | "normal";
-export const AI_LEVELS: readonly AiLevel[] = ["easy", "normal"];
+export type AiLevel = "easy" | "normal" | "hard";
+export const AI_LEVELS: readonly AiLevel[] = ["easy", "normal", "hard"];
 
 /** A computer opponent. `random` is injected so a test can be deterministic. */
 export interface GameAi<S, M> {

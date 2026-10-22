@@ -40,9 +40,32 @@ describe("dots ai", () => {
       "........r."
     ]);
     expect(state.status).toEqual({ kind: "playing", turn: 0 });
-    for (const level of ["easy", "normal"] as const) {
+    for (const level of ["easy", "normal", "hard"] as const) {
       expect(chooseMove(state, level, seededRandom(3))).toEqual({ x: 2, y: 3 });
     }
+  });
+
+  it("at hard, prefers the move that sets up a capture over a plain one", () => {
+    // Blue to move; (3,2) leaves red's (2,2) one move from captured; nothing else does.
+    const state = fromDiagram([
+      "..........",
+      "..b.......",
+      ".br.......",
+      "..........",
+      "..........",
+      "..........",
+      "..........",
+      "..........",
+      "........r.",
+      ".........."
+    ]);
+    expect(state.status).toEqual({ kind: "playing", turn: 0 });
+    let threatening = 0;
+    for (let seed = 1; seed <= 6; seed++) {
+      const move = chooseMove(state, "hard", seededRandom(seed))!;
+      if ((move.x === 3 && move.y === 2) || (move.x === 2 && move.y === 3)) threatening++;
+    }
+    expect(threatening).toBe(6);
   });
 
   it("does not walk into a finished house", () => {
@@ -96,5 +119,11 @@ describe("dots ai", () => {
     const took = performance.now() - started;
     expect(isPlayable(state, move.x, move.y)).toBe(true);
     expect(took).toBeLessThan(1500);
+
+    const startedHard = performance.now();
+    const hard = chooseMove(state, "hard", random)!;
+    const tookHard = performance.now() - startedHard;
+    expect(isPlayable(state, hard.x, hard.y)).toBe(true);
+    expect(tookHard).toBeLessThan(4000);
   });
 });

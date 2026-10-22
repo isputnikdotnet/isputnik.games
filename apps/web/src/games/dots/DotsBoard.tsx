@@ -1,14 +1,15 @@
 import { useState, type PointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Dots, type DotsMove, type DotsState, type PlayerIndex } from "@isputnik/games-engine";
-import { chainLinks, territoryOutlines } from "./geometry";
+import { territoryOutlines } from "./geometry";
 
-// The board as one SVG, drawn the way the paper game is: grid lines, a line
-// between neighbouring dots of one colour so a chain reads as a chain, each
-// captured area as a filled loop through the dots that ring it, the dots
-// themselves (captured ones dimmed), a ring on the last move, and a ghost dot
-// under the pointer where a move is possible. Coordinates are board units — one
-// point per unit, centred at (x+0.5, y+0.5) — so it scales to any width.
+// The board as one SVG, drawn the way the paper game is: grid lines, each
+// captured area as a filled loop through the dots that ring it (a line is drawn
+// only when a ring closes — joining every neighbouring pair was tried and read
+// as noise), the dots themselves (captured ones dimmed), a ring on the last
+// move, and a ghost dot under the pointer where a move is possible. Coordinates
+// are board units — one point per unit, centred at (x+0.5, y+0.5) — so it
+// scales to any width.
 export function DotsBoard({
   state,
   onPlace,
@@ -40,7 +41,6 @@ export function DotsBoard({
     const y = (i - x) / size;
     if (state.dots[i]) dots.push({ x, y, owner: state.dots[i], captured: Dots.isCaptured(state, i) });
   }
-  const links = chainLinks(state);
   const outlines = territoryOutlines(state);
 
   const lines: number[] = [];
@@ -81,18 +81,6 @@ export function DotsBoard({
       <g className="dots-territory">
         {outlines.map((outline, index) => (
           <polygon key={index} className={`is-p${outline.owner + 1}`} points={outline.points} />
-        ))}
-      </g>
-      <g className="dots-chains">
-        {links.map((link) => (
-          <line
-            key={`${link.x1},${link.y1}-${link.x2},${link.y2}`}
-            className={`is-p${link.owner + 1}`}
-            x1={link.x1}
-            y1={link.y1}
-            x2={link.x2}
-            y2={link.y2}
-          />
         ))}
       </g>
       <g className="dots-dots">

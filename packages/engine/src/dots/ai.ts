@@ -5,17 +5,21 @@
 //          a finished house.
 //  normal  the same, then looks one reply ahead for its best few candidates and
 //          discounts a move by the best capture the opponent could answer with.
+//  hard    looks at twice as many candidates, weighs the opponent's best reply in
+//          full, and also rewards a move by the capture it sets up for its own
+//          next turn — so it builds rings rather than only closing ones that
+//          happen to be a move away. Less randomness, too.
 //
 // Candidates are the playable points within two steps of an existing dot (the
 // whole board on an empty one is pointless), which keeps a 30×30 board well under
-// a tenth of a second per move.
+// a tenth of a second per move at normal and well under a second at hard.
 import type { AiLevel, GameAi, PlayerIndex } from "../game.js";
 import { otherPlayer } from "../game.js";
 import { applyMove, indexOf, isLiveDot, EMPTY, type DotsMove, type DotsState } from "./rules.js";
 
 const NEAR = 2;
-/** How many first-pass favourites the normal level looks a reply ahead for. */
-const LOOKAHEAD_WIDTH = 12;
+/** How many first-pass favourites each level looks a reply ahead for. */
+const LOOKAHEAD_WIDTH: Record<AiLevel, number> = { easy: 0, normal: 12, hard: 24 };
 
 function candidates(state: DotsState): DotsMove[] {
   const size = state.size;
@@ -84,17 +88,25 @@ function immediateScore(before: DotsState, after: DotsState, move: DotsMove, me:
   return score;
 }
 
-/** The most the opponent can gain with one reply, in the same units. */
-function bestReply(state: DotsState, them: PlayerIndex): number {
+/** The most `player` could gain with one move from here, in the same units. */
+function bestNext(state: DotsState, player: PlayerIndex): number {
   if (state.status.kind !== "playing") return 0;
   let best = 0;
-  for (const reply of candidates(state)) {
-    const after = applyMove(state, reply);
-    let gain = (after.captures[them] - state.captures[them]) * 10;
-    if (after.status.kind === "finished" && after.status.winner === them) gain += 1000;
+  for (const move of candidates(state)) {
+    const after = applyMove(state, move);
+    let gain = (after.captures[player] - state.captures[player]) * 10;
+    if (after.status.kind === "finished" && after.status.winner === player) gain += 1000;
     if (gain > best) best = gain;
   }
   return best;
+}
+
+/** What `player` could capture if it were their move now — the threat a position
+ *  holds for them. Measured by handing them the turn without a move in between. */
+function threatFor(state: DotsState, player: PlayerIndex): number {
+  if (state.status.kind !== "playing") return 0;
+  const asTheirs: DotsState = state.status.turn === player ? state : { ...state, status: { kind: "playing", turn: player } };
+  return bestNext(asTheirs, player);
 }
 
 export function chooseMove(state: DotsState, level: AiLevel, random: () => number): DotsMove | null {
@@ -105,22 +117,26 @@ export function chooseMove(state: DotsState, level: AiLevel, random: () => numbe
   if (options.length === 0) return null;
   if (!state.dots.some((dot) => dot !== EMPTY)) return opening(state, random);
 
+  const noise = level === "hard" ? 0.5 : 1.5;
   const scored = options.map((move) => {
     const after = applyMove(state, move);
-    return { move, after, score: immediateScore(state, after, move, me) + random() * 1.5 };
+    return { move, after, score: immediateScore(state, after, move, me) + random() * noise };
   });
   scored.sort((a, b) => b.score - a.score);
 
-  if (level === "normal") {
-    const top = scored.slice(0, LOOKAHEAD_WIDTH);
-    for (const entry of top) {
-      if (entry.after.status.kind === "finished") continue;
-      entry.score -= bestReply(entry.after, them) * 0.9;
-    }
-    top.sort((a, b) => b.score - a.score);
-    return top[0].move;
+  const width = LOOKAHEAD_WIDTH[level];
+  if (width === 0) return scored[0].move;
+
+  const top = scored.slice(0, width);
+  for (const entry of top) {
+    if (entry.after.status.kind === "finished") continue;
+    // What the opponent takes back with their best reply…
+    entry.score -= bestNext(entry.after, them) * (level === "hard" ? 1 : 0.9);
+    // …and, at hard, what this move sets up for our own next turn.
+    if (level === "hard") entry.score += threatFor(entry.after, me) * 0.5;
   }
-  return scored[0].move;
+  top.sort((a, b) => b.score - a.score);
+  return top[0].move;
 }
 
 export const dotsAi: GameAi<DotsState, DotsMove> = { chooseMove };

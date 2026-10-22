@@ -75,7 +75,36 @@ describe("DotsPage", () => {
     const dialog = screen.getByRole("dialog", { name: "End this game?" });
     await user.click(within(dialog).getByRole("button", { name: "End game" }));
 
+    // The result is announced in a dialog over the final board.
+    const result = screen.getByRole("dialog", { name: "Game over" });
+    expect(result).toHaveTextContent("A draw");
+    expect(result).toHaveTextContent("Blue 0 : 0 Red");
+    expect(result).toHaveTextContent("Ended by agreement.");
     expect(screen.getByRole("status")).toHaveTextContent("A draw");
+
+    // Put aside, the board stays for review and the panel keeps the result.
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "Game over" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Play again" })).toBeInTheDocument();
+
+    // Play again starts a fresh game with the same settings.
+    await user.click(screen.getByRole("button", { name: "Play again" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Blue to move");
+    expect(loadDotsGame()?.state.moves).toEqual([]);
+  });
+
+  it("the result dialog's Change settings goes back to the form", async () => {
+    const user = userEvent.setup();
+    render(<DotsPage />);
+    await user.click(screen.getByRole("button", { name: "Two players, one screen" }));
+    await user.click(screen.getByRole("button", { name: "10 × 10" }));
+    await user.click(screen.getByRole("button", { name: "Start game" }));
+    placeAt(screen.getByRole("img", { name: "Dots board, 10 by 10" }), 10, 4, 4);
+    await user.click(screen.getByRole("button", { name: "End game" }));
+    await user.click(within(screen.getByRole("dialog", { name: "End this game?" })).getByRole("button", { name: "End game" }));
+
+    await user.click(within(screen.getByRole("dialog", { name: "Game over" })).getByRole("button", { name: "Change settings" }));
+    expect(screen.getByRole("heading", { name: "New game" })).toBeInTheDocument();
+    expect(loadDotsGame()).toBeNull();
   });
 });

@@ -16,6 +16,9 @@ export function DotsPage() {
   const { t } = useTranslation();
   const controller = useDotsGame();
   const [pending, setPending] = useState<Pending>(null);
+  // The result dialog can be put aside to look at the final board; it stays
+  // aside for that ending only (a new game's end shows it again).
+  const [resultDismissed, setResultDismissed] = useState<string | null>(null);
   const { game } = controller;
 
   const seatName = (setup: DotsSetup, player: PlayerIndex) =>
@@ -33,6 +36,8 @@ export function DotsPage() {
   const { state, setup } = game;
   const status = state.status;
   const finished = status.kind === "finished";
+  const endingKey = finished ? `${state.moves.length}:${status.reason}` : null;
+  const showResult = endingKey !== null && resultDismissed !== endingKey;
 
   let statusLine: string;
   if (status.kind === "playing") {
@@ -90,6 +95,24 @@ export function DotsPage() {
         </aside>
       </div>
 
+      {showResult && (
+        <Dialog
+          title={t("dots.end.title")}
+          confirmLabel={t("dots.end.again")}
+          cancelLabel={t("dots.end.change")}
+          onConfirm={() => controller.start(setup)}
+          onCancel={controller.abandon}
+          onClose={() => setResultDismissed(endingKey)}
+        >
+          <p className="dots-result-line">{statusLine}</p>
+          <p className="dots-result-score">
+            {t("dots.end.scoreLine", {
+              blueName: seatName(setup, 0), blue: state.captures[0], red: state.captures[1], redName: seatName(setup, 1)
+            })}
+          </p>
+          {reason && <p className="muted">{reason}</p>}
+        </Dialog>
+      )}
       {pending === "end" && (
         <Dialog
           title={t("dots.confirmEnd.title")}

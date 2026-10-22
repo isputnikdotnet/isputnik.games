@@ -1,18 +1,9 @@
 import { Dots, type DotsState, type PlayerIndex } from "@isputnik/games-engine";
 
-// What the board draws on top of the dots, the way the paper game is drawn: a
-// line between every two neighbouring live dots of one colour (so a chain reads
-// as a chain and a gap in it is visible), and each captured area as a filled
-// loop through the dots that ring it. Pure geometry over the engine's state, in
-// board units (a point at x,y sits at x+0.5, y+0.5).
-
-export interface ChainLink {
-  owner: PlayerIndex;
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-}
+// What the board draws on top of the dots, the way the paper game is drawn:
+// each captured area as a filled loop through the dots that ring it. Pure
+// geometry over the engine's state, in board units (a point at x,y sits at
+// x+0.5, y+0.5).
 
 export interface TerritoryOutline {
   owner: PlayerIndex;
@@ -21,32 +12,6 @@ export interface TerritoryOutline {
 }
 
 const centre = (v: number) => v + 0.5;
-
-/** Every link between two 8-neighbouring live dots of the same colour, each once. */
-export function chainLinks(state: DotsState): ChainLink[] {
-  const size = state.size;
-  const links: ChainLink[] = [];
-  // Right, down, down-right, down-left: each pair is seen from exactly one end.
-  const steps: [number, number][] = [[1, 0], [0, 1], [1, 1], [-1, 1]];
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const i = y * size + x;
-      const dot = state.dots[i];
-      if (!dot) continue;
-      const owner = (dot - 1) as PlayerIndex;
-      if (!Dots.isLiveDot(state, i, owner)) continue;
-      for (const [dx, dy] of steps) {
-        const nx = x + dx;
-        const ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
-        const n = ny * size + nx;
-        if (state.dots[n] !== dot || !Dots.isLiveDot(state, n, owner)) continue;
-        links.push({ owner, x1: centre(x), y1: centre(y), x2: centre(nx), y2: centre(ny) });
-      }
-    }
-  }
-  return links;
-}
 
 // Clockwise from north, for the contour walk below.
 const AROUND: [number, number][] = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];

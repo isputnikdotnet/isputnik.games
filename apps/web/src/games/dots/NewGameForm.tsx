@@ -75,7 +75,8 @@ export function NewGameForm({ onStart }: { onStart: (setup: DotsSetup) => void }
             value={setup.level}
             options={[
               { value: "easy", label: t("dots.setup.levelEasy") },
-              { value: "normal", label: t("dots.setup.levelNormal") }
+              { value: "normal", label: t("dots.setup.levelNormal") },
+              { value: "hard", label: t("dots.setup.levelHard") }
             ]}
             onChange={(level) => patch({ level })}
           />
