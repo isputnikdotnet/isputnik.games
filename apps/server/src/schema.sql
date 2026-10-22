@@ -34,3 +34,22 @@ CREATE TABLE IF NOT EXISTS matches (
 
 CREATE INDEX IF NOT EXISTS matches_blue ON matches (blue_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS matches_red ON matches (red_id, updated_at DESC);
+
+-- What happened, for the admin: who was refused at the gateway, who invited whom,
+-- how a match ended, which move was thrown out, what broke. Read by the home app
+-- through the gateway (GET /games/api/admin/events) and pruned after a season.
+CREATE TABLE IF NOT EXISTS events (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  at         TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  level      TEXT NOT NULL CHECK (level IN ('info', 'warn', 'error')),
+  event      TEXT NOT NULL,
+  actor_id   TEXT,
+  actor_name TEXT,
+  match_id   TEXT,
+  ip         TEXT,
+  request_id TEXT,
+  detail     TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS events_at ON events (at DESC);
+CREATE INDEX IF NOT EXISTS events_event ON events (event, at DESC);

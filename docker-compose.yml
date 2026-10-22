@@ -2,6 +2,8 @@
 # isputnik.home talks to it, over the compose network, and forwards who is signed
 # in (docs/plan.md → The contract). Generate one secret and give it to both:
 #   openssl rand -hex 32
+# The placeholder below is refused: the games container will not start until it
+# is replaced by a real one of at least 32 characters.
 services:
   isputnik:
     image: ghcr.io/isputnikdotnet/isputnik.home:latest

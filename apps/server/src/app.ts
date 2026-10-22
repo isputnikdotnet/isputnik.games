@@ -4,7 +4,16 @@ import { z } from "zod";
 import { GAME_IDS } from "@isputnik/games-engine";
 import { BASE_PATH } from "./config.js";
 import { openDatabase } from "./db.js";
-import { devIdentity, identityFrom, type Identity } from "./identity.js";
+import {
+  clientIpFrom,
+  devIdentity,
+  forwardedRequestId,
+  identityFrom,
+  rejectionReason,
+  type Identity
+} from "./identity.js";
+import { EVENT_LEVELS, EVENT_RETENTION_DAYS, countEventsSince, listEvents, pruneEvents, recordEvent, type EventLevel } from "./events.js";
+import type { LogBuffer } from "./log-buffer.js";
 import {
   MatchError,
   answerInvitation,
@@ -15,12 +24,15 @@ import {
   playMove,
   rememberMember,
   resign,
-  summaryFor
+  summaryFor,
+  type Member
 } from "./matches.js";
 
 declare module "fastify" {
   interface FastifyRequest {
     identity: Identity | null;
+    /** The browser's address as the gateway saw it; the socket's otherwise. */
+    clientIp: string;
   }
 }
 
@@ -33,10 +45,21 @@ export interface AppOptions {
   dbPath: string;
   version: string;
   stage: string | null;
+  /** The last lines of the log, for GET /games/api/admin/log (index.ts wires
+   *  the same object in as pino's stream). Without one the route answers empty. */
+  logBuffer?: LogBuffer;
   fastify?: FastifyServerOptions;
 }
 
 const API = `${BASE_PATH}/api`;
+
+/** A request body is a move or a match's options: a few hundred bytes. The limit
+ *  keeps a client from parking a megabyte in a match that both players would
+ *  then download with every poll. */
+export const BODY_LIMIT = 16 * 1024;
+
+/** Lines the log route hands out at most; the buffer holds no more anyway. */
+const LOG_LINES_MAX = 500;
 
 const memberSchema = z.object({
   id: z.string().trim().min(1).max(64),
@@ -55,6 +78,17 @@ const moveSchema = z.object({
   moveCount: z.number().int().min(0)
 });
 
+const eventsQuerySchema = z.object({
+  level: z.enum(EVENT_LEVELS as [EventLevel, ...EventLevel[]]).optional(),
+  event: z.string().trim().max(64).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(10).max(100).default(25)
+});
+
+const logQuerySchema = z.object({
+  lines: z.coerce.number().int().min(10).max(LOG_LINES_MAX).default(200)
+});
+
 // Standalone development has no home app to list the family, so the invite
 // dialog gets a made-up one: the developer identity plus a few names.
 const DEV_FAMILY = [
@@ -64,16 +98,40 @@ const DEV_FAMILY = [
 ];
 
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
-  const app = fastify(options.fastify ?? {});
-  const dev = options.gatewaySecret ? null : options.devUser ? devIdentity(options.devUser) : null;
+  const secret = options.gatewaySecret;
+  const dev = secret ? null : options.devUser ? devIdentity(options.devUser) : null;
+  let requestCounter = 0;
+  const app = fastify({
+    bodyLimit: BODY_LIMIT,
+    ...options.fastify,
+    // The gateway's id for the request, so a line here and the home server's line
+    // for the same request can be matched; a caller that is not the gateway gets
+    // this server's own, as Fastify would have given it.
+    genReqId: (raw) => forwardedRequestId(raw.headers, secret) ?? `req-${(++requestCounter).toString(36)}`
+  });
   const db = openDatabase(options.dbPath);
   app.addHook("onClose", async () => {
+    clearInterval(pruning);
     db.close();
   });
 
+  // Yesterday's season goes on start and once a day after; nothing waits on it.
+  pruneEvents(db, EVENT_RETENTION_DAYS);
+  const pruning = setInterval(() => pruneEvents(db, EVENT_RETENTION_DAYS), 24 * 60 * 60 * 1000);
+  pruning.unref();
+
+  // Every request line says who: the member and the browser's address, as the
+  // gateway forwarded them. Without them the log named only the home container.
+  app.setChildLoggerFactory(function (logger, bindings, loggerOptions, raw) {
+    const identity = secret ? identityFrom(raw.headers, secret) : dev;
+    return logger.child({ ...bindings, user: identity?.id ?? null, ip: clientIpFrom(raw.headers, secret, raw.socket?.remoteAddress) }, loggerOptions);
+  });
+
   app.decorateRequest("identity", null);
+  app.decorateRequest("clientIp", "");
   app.addHook("onRequest", async (request) => {
-    request.identity = options.gatewaySecret ? identityFrom(request.headers, options.gatewaySecret) : dev;
+    request.identity = secret ? identityFrom(request.headers, secret) : dev;
+    request.clientIp = clientIpFrom(request.headers, secret, request.ip);
     // The names a match list shows come from here: whoever visits is on record.
     if (request.identity && request.url.startsWith(`${API}/`)) {
       rememberMember(db, { id: request.identity.id, name: request.identity.name });
@@ -87,19 +145,63 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     reply.header("Referrer-Policy", "no-referrer");
   });
 
-  app.setErrorHandler((error, _request, reply) => {
-    if (error instanceof MatchError) return reply.code(error.status).send({ error: error.message });
-    if (error instanceof z.ZodError) return reply.code(400).send({ error: "Invalid request", details: error.issues });
+  /** An event with everything the request knows about who and where. */
+  const note = (request: FastifyRequest, level: EventLevel, event: string, fields: { matchId?: string | null; detail: string }) => {
+    recordEvent(db, {
+      level,
+      event,
+      actorId: request.identity?.id ?? null,
+      actorName: request.identity?.name ?? null,
+      matchId: fields.matchId ?? null,
+      ip: request.clientIp || null,
+      requestId: String(request.id),
+      detail: fields.detail
+    });
+  };
+  const pathOf = (request: FastifyRequest) => request.url.split("?")[0];
+  const idOf = (request: FastifyRequest) => (request.params as { id?: string }).id ?? null;
+
+  app.setErrorHandler((error, request, reply) => {
+    if (error instanceof MatchError) {
+      if (error.event) note(request, error.event === "move.illegal" ? "warn" : "info", error.event, { matchId: idOf(request), detail: error.message });
+      return reply.code(error.status).send({ error: error.message });
+    }
+    if (error instanceof z.ZodError) {
+      const fields = [...new Set(error.issues.map((issue) => issue.path.join(".") || "(body)"))].join(", ");
+      note(request, "warn", "request.invalid", { matchId: idOf(request), detail: `${request.method} ${pathOf(request)}: ${fields}` });
+      return reply.code(400).send({ error: "Invalid request", details: error.issues });
+    }
     const status = typeof (error as { statusCode?: number }).statusCode === "number" ? (error as { statusCode: number }).statusCode : 500;
-    if (status >= 500) app.log.error({ err: error }, "Unhandled error");
+    if (status === 413) {
+      note(request, "warn", "request.too_large", { matchId: idOf(request), detail: `${request.method} ${pathOf(request)}: body over ${BODY_LIMIT} bytes` });
+    }
+    if (status >= 500) {
+      request.log.error({ err: error }, "Unhandled error");
+      note(request, "error", "request.error", { matchId: idOf(request), detail: `${request.method} ${pathOf(request)}: ${(error as Error).message}` });
+    }
     return reply.code(status).send({ error: status >= 500 ? "Something went wrong" : (error as Error).message });
   });
 
+  // A caller without a valid identity. With a secret configured that is someone
+  // who reached this port without going through the gateway — or a gateway with
+  // the wrong secret — and either is worth a line and an event.
   const requireIdentity = async (request: FastifyRequest, reply: FastifyReply) => {
-    if (!request.identity) return reply.code(401).send({ error: "Not signed in" });
+    if (request.identity) return;
+    if (secret) {
+      const reason = rejectionReason(request.headers, secret);
+      request.log.warn({ reason }, "Request refused at the gateway check");
+      note(request, "warn", "gateway.rejected", { detail: `${request.method} ${pathOf(request)}: ${reason}` });
+    }
+    return reply.code(401).send({ error: "Not signed in" });
   };
-  const me = (request: FastifyRequest) => ({ id: request.identity!.id, name: request.identity!.name });
-  const idOf = (request: FastifyRequest) => (request.params as { id: string }).id;
+  const requireAdmin = async (request: FastifyRequest, reply: FastifyReply) => {
+    await requireIdentity(request, reply);
+    if (reply.sent) return;
+    if (request.identity!.role !== "admin") return reply.code(403).send({ error: "Admins only" });
+  };
+  const me = (request: FastifyRequest): Member => ({ id: request.identity!.id, name: request.identity!.name });
+  const matchId = (request: FastifyRequest) => (request.params as { id: string }).id;
+  const opponentIn = (players: [Member, Member], userId: string) => players.find((player) => player.id !== userId) ?? players[1];
 
   app.get(`${API}/health`, async () => ({ ok: true, version: options.version }));
 
@@ -128,33 +230,76 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
   app.post(`${API}/matches`, { preHandler: requireIdentity }, async (request, reply) => {
     const input = createMatchSchema.parse(request.body ?? {});
-    return reply.code(201).send(createMatch(db, me(request), input));
+    const match = createMatch(db, me(request), input);
+    note(request, "info", "match.created", { matchId: match.id, detail: `${match.game}: invited ${input.opponent.name} (${input.opponent.id}), plays ${input.seat === 0 ? "first" : "second"}` });
+    return reply.code(201).send(match);
   });
 
   app.get(`${API}/matches/:id`, { preHandler: requireIdentity }, async (request) =>
-    getMatch(db, request.identity!.id, idOf(request))
+    getMatch(db, request.identity!.id, matchId(request))
   );
 
-  app.post(`${API}/matches/:id/accept`, { preHandler: requireIdentity }, async (request) =>
-    answerInvitation(db, request.identity!.id, idOf(request), "accept")
-  );
+  app.post(`${API}/matches/:id/accept`, { preHandler: requireIdentity }, async (request) => {
+    const match = answerInvitation(db, request.identity!.id, matchId(request), "accept");
+    const from = opponentIn(match.players, request.identity!.id);
+    note(request, "info", "match.accepted", { matchId: match.id, detail: `${match.game}: accepted the invitation from ${from.name} (${from.id})` });
+    return match;
+  });
 
-  app.post(`${API}/matches/:id/decline`, { preHandler: requireIdentity }, async (request) =>
-    answerInvitation(db, request.identity!.id, idOf(request), "decline")
-  );
+  app.post(`${API}/matches/:id/decline`, { preHandler: requireIdentity }, async (request) => {
+    const match = answerInvitation(db, request.identity!.id, matchId(request), "decline");
+    const from = opponentIn(match.players, request.identity!.id);
+    note(request, "info", "match.declined", { matchId: match.id, detail: `${match.game}: declined the invitation from ${from.name} (${from.id})` });
+    return match;
+  });
 
-  app.post(`${API}/matches/:id/cancel`, { preHandler: requireIdentity }, async (request) =>
-    cancelInvitation(db, request.identity!.id, idOf(request))
-  );
+  app.post(`${API}/matches/:id/cancel`, { preHandler: requireIdentity }, async (request) => {
+    const match = cancelInvitation(db, request.identity!.id, matchId(request));
+    const to = opponentIn(match.players, request.identity!.id);
+    note(request, "info", "match.cancelled", { matchId: match.id, detail: `${match.game}: withdrew the invitation to ${to.name} (${to.id})` });
+    return match;
+  });
 
   app.post(`${API}/matches/:id/moves`, { preHandler: requireIdentity }, async (request) => {
     const input = moveSchema.parse(request.body ?? {});
-    return playMove(db, request.identity!.id, idOf(request), input.move, input.moveCount);
+    const match = playMove(db, request.identity!.id, matchId(request), input.move, input.moveCount);
+    if (match.status === "finished") {
+      const winner = match.winner === null ? "a draw" : `${match.players[match.winner].name} wins`;
+      const score = match.score ? `, ${match.score[0]}–${match.score[1]}` : "";
+      note(request, "info", "match.finished", { matchId: match.id, detail: `${match.game}: ${winner} (${match.finishReason}${score}) after ${match.moveCount} moves` });
+    }
+    return match;
   });
 
-  app.post(`${API}/matches/:id/resign`, { preHandler: requireIdentity }, async (request) =>
-    resign(db, request.identity!.id, idOf(request))
-  );
+  app.post(`${API}/matches/:id/resign`, { preHandler: requireIdentity }, async (request) => {
+    const match = resign(db, request.identity!.id, matchId(request));
+    const to = opponentIn(match.players, request.identity!.id);
+    note(request, "info", "match.resigned", { matchId: match.id, detail: `${match.game}: resigned against ${to.name} (${to.id}) after ${match.moveCount} moves` });
+    return match;
+  });
+
+  // ── The admin's window, read by the home app through the gateway ─────────
+  // (docs/plan.md → Logging). Nothing is written here; the games server never
+  // calls the home server, and the home server asks only on an admin's behalf.
+  app.get(`${API}/admin/events`, { preHandler: requireAdmin }, async (request) => {
+    const query = eventsQuerySchema.parse(request.query ?? {});
+    return {
+      ...listEvents(db, { level: query.level ?? null, event: query.event || null, page: query.page, pageSize: query.pageSize }),
+      retentionDays: EVENT_RETENTION_DAYS,
+      // The one number worth a glance: callers refused at the gateway check lately.
+      rejected24h: countEventsSince(db, "gateway.rejected", 24)
+    };
+  });
+
+  app.get(`${API}/admin/log`, { preHandler: requireAdmin }, async (request) => {
+    const query = logQuerySchema.parse(request.query ?? {});
+    return {
+      lines: options.logBuffer?.tail(query.lines) ?? [],
+      capacity: options.logBuffer?.capacity ?? 0,
+      // The log route needs the buffer index.ts wires in; a test without one gets nothing.
+      available: Boolean(options.logBuffer)
+    };
+  });
 
   if (options.staticPath) {
     await app.register(staticFiles, {

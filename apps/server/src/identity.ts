@@ -10,6 +10,11 @@ export const USER_NAME_HEADER = "x-isputnik-user-name";
 export const USER_ROLE_HEADER = "x-isputnik-user-role";
 export const USER_LANG_HEADER = "x-isputnik-user-lang";
 export const USER_THEME_HEADER = "x-isputnik-user-theme";
+/** The browser's address as the gateway saw it, so a log line here names the
+ *  person's machine rather than the home container. */
+export const CLIENT_IP_HEADER = "x-isputnik-client-ip";
+/** The home server's id for the same request, so its log line and this one match up. */
+export const REQUEST_ID_HEADER = "x-isputnik-request-id";
 
 export type Role = "admin" | "member";
 
@@ -23,7 +28,7 @@ export interface Identity {
   theme: string;
 }
 
-function single(value: string | string[] | undefined): string | undefined {
+export function single(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
@@ -62,6 +67,61 @@ export function identityFrom(headers: IncomingHttpHeaders, secret: string | null
     lang: LANG.test(lang) ? lang : "en",
     theme: THEME.test(theme) ? theme : "minimalist"
   };
+}
+
+/** Whether this request carries the gateway's secret — the one check behind
+ *  every header the gateway is trusted for. */
+export function fromGateway(headers: IncomingHttpHeaders, secret: string | null): boolean {
+  return Boolean(secret) && single(headers[GATEWAY_HEADER]) === secret;
+}
+
+/** Why a request was refused, for the event the refusal leaves behind. The
+ *  secret itself, right or wrong, never appears in it. */
+export function rejectionReason(headers: IncomingHttpHeaders, secret: string | null): string {
+  if (!secret) return "no gateway secret is configured";
+  const sent = single(headers[GATEWAY_HEADER]);
+  if (sent === undefined) return "no gateway header";
+  if (sent !== secret) return "wrong gateway secret";
+  return "gateway headers without a valid identity";
+}
+
+const IP = /^[0-9a-fA-F.:]{1,45}$/;
+
+/** The address to log for a request: the browser's, as the gateway forwarded
+ *  it, when the request really is the gateway's; else the socket's. */
+export function clientIpFrom(headers: IncomingHttpHeaders, secret: string | null, socketAddress: string | undefined): string {
+  if (fromGateway(headers, secret)) {
+    const forwarded = single(headers[CLIENT_IP_HEADER])?.trim();
+    if (forwarded && IP.test(forwarded)) return forwarded;
+  }
+  return socketAddress ?? "";
+}
+
+/** The request id to log: the gateway's for its own requests (bounded, plain
+ *  characters), so the two servers' lines for one request share it. */
+export function forwardedRequestId(headers: IncomingHttpHeaders, secret: string | null): string | undefined {
+  if (!fromGateway(headers, secret)) return undefined;
+  const id = single(headers[REQUEST_ID_HEADER])?.trim();
+  return id && /^[A-Za-z0-9._-]{1,64}$/.test(id) ? id : undefined;
+}
+
+/** The shortest secret the image accepts; `openssl rand -hex 32` gives 64. */
+export const SECRET_MIN_LENGTH = 32;
+
+/** Why the configured secret is not acceptable, or null when it is. Production
+ *  only: a source checkout runs with any secret, or none (the developer identity). */
+export function checkSecret(secret: string | null, production: boolean): string | null {
+  if (!production) return null;
+  if (!secret) {
+    return "GATEWAY_SECRET is not set. The games server only answers requests forwarded by isputnik.home, which signs them with this secret. See docs/plan.md.";
+  }
+  if (/change-me/i.test(secret)) {
+    return "GATEWAY_SECRET is still the example placeholder. Generate one (openssl rand -hex 32) and set the same value on the isputnik container as GAMES_GATEWAY_SECRET.";
+  }
+  if (secret.length < SECRET_MIN_LENGTH) {
+    return `GATEWAY_SECRET is too short (${secret.length} characters): use at least ${SECRET_MIN_LENGTH}, for example from openssl rand -hex 32, and set the same value on the isputnik container.`;
+  }
+  return null;
 }
 
 /** The developer identity a source checkout runs with when no secret is set. */

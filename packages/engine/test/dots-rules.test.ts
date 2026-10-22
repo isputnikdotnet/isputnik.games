@@ -8,6 +8,8 @@ import {
   fromDiagram,
   isPlayable,
   legalMoves,
+  parseMove,
+  parseOptions,
   replay,
   toDiagram,
   undoMove,
@@ -253,5 +255,24 @@ describe("history", () => {
     ];
     expect(toDiagram(fromDiagram(rows))).toEqual(rows);
     expect(() => fromDiagram(["b.", "x."])).toThrow();
+  });
+});
+
+describe("parseOptions and parseMove", () => {
+  it("keeps the fields Dots reads and drops the rest", () => {
+    expect(parseOptions({ size: 10, targetCaptures: 5, padding: "x".repeat(1000) })).toEqual({ size: 10, targetCaptures: 5 });
+    expect(parseOptions({ size: 15 })).toEqual({ size: 15, targetCaptures: null });
+    expect(parseMove({ x: 1, y: 2, note: "ignored" })).toEqual({ x: 1, y: 2 });
+  });
+
+  it("refuses what is not a board or a point", () => {
+    expect(() => parseOptions(null)).toThrow();
+    expect(() => parseOptions({ size: "10" })).toThrow();
+    expect(() => parseOptions({ size: 7 })).toThrow();
+    expect(() => parseOptions({ size: 10, targetCaptures: 0 })).toThrow();
+    expect(() => parseOptions({ size: 10, targetCaptures: 1.5 })).toThrow();
+    expect(() => parseMove("1,1")).toThrow(IllegalMoveError);
+    expect(() => parseMove({ x: "1", y: 1 })).toThrow(IllegalMoveError);
+    expect(() => parseMove({ x: 1.5, y: 1 })).toThrow(IllegalMoveError);
   });
 });

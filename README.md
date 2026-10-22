@@ -50,14 +50,22 @@ LAN on whatever ports they map, so the home app's port works as before.
 
 | Variable | Default | What it does |
 |---|---|---|
-| `GATEWAY_SECRET` | unset | The secret the home gateway signs forwarded requests with. Required in the image; without it the server refuses to start. |
+| `GATEWAY_SECRET` | unset | The secret the home gateway signs forwarded requests with. Required in the image, at least 32 characters (`openssl rand -hex 32`); without one, with a short one, or with the compose example's placeholder the server refuses to start. |
 | `PORT` | `4200` | The port to listen on. |
 | `HOST` | `0.0.0.0` in the image, `127.0.0.1` from source | The address to listen on. |
 | `STATIC_PATH` | `/app/web` in the image | The built web app, served under `/games/`. |
 | `DB_PATH` | `/config/games.sqlite` in the image, `data/games.sqlite` from source | The SQLite file with the online matches. Mount `/config` as a volume. |
 | `PUID` / `PGID` | `1000` / `1000` | The user the server runs as; the entrypoint takes ownership of `/config` for it (Unraid: usually `99` / `100`). |
 | `DEV_USER` | `dev:Developer:admin:en:minimalist` | Source checkouts only, with no secret set: who the server pretends is signed in (`id:name:role:lang:theme`). |
-| `LOG_LEVEL` | `info` | `trace` … `silent`. |
+| `LOG_LEVEL` | `info` | `trace` … `silent`. At `info` every request is a line, including each poll for the other side's move; `warn` keeps only problems. |
+
+**Logs.** The container logs to stdout as usual (`docker logs isputnik-games`),
+and the home app shows the same from Control panel → Settings → Games: the
+newest lines of the server log, and a table of events — who was refused at the
+gateway check, who invited whom, how a match ended, which move was thrown out,
+what broke — kept for 90 days in the games database. Every log line names the
+member and the browser's address the home server forwarded, and carries the
+home server's request id, so the two containers' logs can be read side by side.
 
 ## Developing
 

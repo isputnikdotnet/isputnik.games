@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { checkSecret } from "./identity.js";
 
 const rootDir = process.cwd().includes(path.join("apps", "server"))
   ? path.resolve(process.cwd(), "..", "..")
@@ -17,12 +18,12 @@ const production = process.env.NODE_ENV === "production";
 const gatewaySecret = process.env.GATEWAY_SECRET?.trim() || null;
 
 // The gateway secret is the only thing standing between this server and anyone
-// who can reach its port. The image must therefore refuse to run without one;
-// a source checkout without one is development, and gets a fixed developer
-// identity instead (see identity.ts).
-if (production && !gatewaySecret) {
-  throw new Error("GATEWAY_SECRET is not set. The games server only answers requests forwarded by isputnik.home, which signs them with this secret. See docs/plan.md.");
-}
+// who can reach its port. The image must therefore refuse to run without one,
+// with a short one, or with the compose example's placeholder; a source checkout
+// without one is development, and gets a fixed developer identity instead
+// (see identity.ts → checkSecret).
+const secretProblem = checkSecret(gatewaySecret, production);
+if (secretProblem) throw new Error(secretProblem);
 
 export const config = {
   host: process.env.HOST ?? "127.0.0.1",

@@ -1,10 +1,12 @@
 import type { GameDefinition } from "../game.js";
 import { dotsAi } from "./ai.js";
-import { DEFAULT_OPTIONS, applyMove, createGame, finish, legalMoves, type DotsMove, type DotsOptions, type DotsState } from "./rules.js";
+import { DEFAULT_OPTIONS, applyMove, createGame, finish, legalMoves, parseMove, parseOptions, type DotsMove, type DotsOptions, type DotsState } from "./rules.js";
 
 export const dots: GameDefinition<DotsOptions, DotsState, DotsMove> = {
   id: "dots",
   defaultOptions: DEFAULT_OPTIONS,
+  parseOptions,
+  parseMove,
   createGame,
   legalMoves,
   applyMove,

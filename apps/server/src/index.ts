@@ -1,5 +1,10 @@
 import { config } from "./config.js";
 import { buildApp } from "./app.js";
+import { createLogBuffer } from "./log-buffer.js";
+
+// Every log line goes to stdout as before, and the newest few hundred stay in
+// memory for the admin to read from the home app (log-buffer.ts).
+const logBuffer = createLogBuffer(500);
 
 const app = await buildApp({
   gatewaySecret: config.gatewaySecret,
@@ -8,8 +13,9 @@ const app = await buildApp({
   dbPath: config.dbPath,
   version: config.version,
   stage: config.stage,
+  logBuffer,
   fastify: {
-    logger: { level: process.env.LOG_LEVEL?.trim() || "info" }
+    logger: { level: process.env.LOG_LEVEL?.trim() || "info", stream: logBuffer }
   }
 });
 

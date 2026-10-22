@@ -57,15 +57,32 @@ export const DEFAULT_OPTIONS: DotsOptions = { size: 15, targetCaptures: null };
 
 const code = (player: PlayerIndex) => player + 1;
 
-export function createGame(options: DotsOptions): DotsState {
-  const size = options.size;
-  if (!(BOARD_SIZES as readonly number[]).includes(size)) {
+/** The two fields Dots reads, checked, and nothing else — whatever came with them. */
+export function parseOptions(input: unknown): DotsOptions {
+  if (typeof input !== "object" || input === null) throw new Error("Options must be an object");
+  const { size, targetCaptures } = input as Record<string, unknown>;
+  if (typeof size !== "number" || !(BOARD_SIZES as readonly number[]).includes(size)) {
     throw new Error(`Board size must be one of ${BOARD_SIZES.join(", ")}`);
   }
-  const target = options.targetCaptures;
-  if (target !== null && (!Number.isInteger(target) || target < 1 || target > size * size)) {
+  const target = targetCaptures ?? null;
+  if (target !== null && (typeof target !== "number" || !Number.isInteger(target) || target < 1 || target > size * size)) {
     throw new Error("Capture target must be a whole number of dots that fits on the board");
   }
+  return { size, targetCaptures: target };
+}
+
+/** A point, and only a point: anything else on the object is dropped. */
+export function parseMove(input: unknown): DotsMove {
+  if (typeof input !== "object" || input === null) throw new IllegalMoveError("A move names a point");
+  const { x, y } = input as Record<string, unknown>;
+  if (typeof x !== "number" || typeof y !== "number" || !Number.isInteger(x) || !Number.isInteger(y)) {
+    throw new IllegalMoveError("A move is a pair of whole numbers");
+  }
+  return { x, y };
+}
+
+export function createGame(options: DotsOptions): DotsState {
+  const { size, targetCaptures: target } = parseOptions(options);
   const cells = size * size;
   return {
     size,

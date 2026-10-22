@@ -43,6 +43,13 @@ export interface GameDefinition<O, S extends { status: GameStatus }, M> {
   /** Stable id, used in URLs and (phase 2) in the database: "dots". */
   id: string;
   defaultOptions: O;
+  /** Options as they came off the wire (a request body, a saved game): checked
+   *  and reduced to exactly the fields the game reads, so nothing else is ever
+   *  stored or sent to the other player. Throws on what the game does not allow. */
+  parseOptions(input: unknown): O;
+  /** The same for a move. Throws on a malformed one; whether it is legal in the
+   *  position is applyMove's question. */
+  parseMove(input: unknown): M;
   /** Throws on options outside what the game allows. */
   createGame(options: O): S;
   legalMoves(state: S): M[];

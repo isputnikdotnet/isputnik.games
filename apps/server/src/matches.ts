@@ -61,7 +61,13 @@ export interface MatchActivity {
 }
 
 export class MatchError extends Error {
-  constructor(public status: number, message: string) {
+  /**
+   * @param event The event the refusal leaves in the log (events.ts), for the
+   *   ones worth a record: "move.illegal" (the client sent a move the rules
+   *   refuse — a legitimate client checks first) and "move.refused" (not your
+   *   turn, the match moved on, not being played: a stale page, a double tap).
+   */
+  constructor(public status: number, message: string, public event: "move.illegal" | "move.refused" | null = null) {
     super(message);
     this.name = "MatchError";
   }
@@ -148,8 +154,12 @@ export function createMatch(db: Db, me: Member, input: CreateMatchInput): MatchS
   const game = getGame(input.game);
   if (!game) throw new MatchError(400, "Unknown game");
   if (input.opponent.id === me.id) throw new MatchError(400, "You cannot invite yourself");
+  // Only what the game reads is kept: the client may have sent more, and both
+  // players would download it with every poll.
+  let options: unknown;
   try {
-    game.createGame(input.options);
+    options = game.parseOptions(input.options);
+    game.createGame(options);
   } catch (err) {
     throw new MatchError(400, err instanceof Error ? err.message : "Invalid options");
   }
@@ -159,7 +169,7 @@ export function createMatch(db: Db, me: Member, input: CreateMatchInput): MatchS
   db.prepare(`
     INSERT INTO matches (id, game, options, blue_id, red_id, created_by, status)
     VALUES (?, ?, ?, ?, ?, ?, 'invited')
-  `).run(id, input.game, JSON.stringify(input.options), blue, red, me.id);
+  `).run(id, input.game, JSON.stringify(options), blue, red, me.id);
   return summarize(db, rowOf(db, id));
 }
 
@@ -240,16 +250,18 @@ export function playMove(db: Db, userId: string, id: string, move: unknown, expe
   return db.transaction(() => {
     const row = rowOf(db, id);
     const seat = seatOf(row, userId);
-    if (row.status !== "playing") throw new MatchError(409, "This match is not being played");
-    if (row.turn !== seat) throw new MatchError(409, "It is not your turn");
-    if (row.move_count !== expectedCount) throw new MatchError(409, "The match has moved on; reload it");
+    if (row.status !== "playing") throw new MatchError(409, "This match is not being played", "move.refused");
+    if (row.turn !== seat) throw new MatchError(409, "It is not your turn", "move.refused");
+    if (row.move_count !== expectedCount) throw new MatchError(409, "The match has moved on; reload it", "move.refused");
 
     const game = gameOf(row);
     let state = replay(row);
     try {
+      // The move as the game reads it, not as the client sent it (see createMatch).
+      move = game.parseMove(move);
       state = game.applyMove(state, move);
     } catch (err) {
-      throw new MatchError(400, err instanceof Error ? err.message : "Illegal move");
+      throw new MatchError(400, err instanceof Error ? err.message : "Illegal move", "move.illegal");
     }
     const moves = [...(JSON.parse(row.moves) as unknown[]), move];
     if (state.status.kind === "finished") {

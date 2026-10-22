@@ -1,0 +1,34 @@
+# Weekly dependency PRs, as in isputnik.home: security patches should not wait
+# for the next time someone touches the lockfile. npm covers the root and the
+# three workspaces; grouping keeps the noise to a PR or two a week.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    ignore:
+      # @types/node majors track Node majors: the types must follow the
+      # Dockerfile's base image (node:26-slim), never lead it. Raise by hand as
+      # part of a Node upgrade; minors and patches still arrive in the group.
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
+    groups:
+      # One PR for the routine minor/patch churn; majors still come alone so a
+      # breaking bump gets its own review.
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
