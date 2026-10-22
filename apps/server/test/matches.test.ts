@@ -10,7 +10,8 @@ import {
   listMatches,
   playMove,
   rememberMember,
-  resign
+  resign,
+  summaryFor
 } from "../src/matches.js";
 
 const mum = { id: "mum", name: "Мама" };
@@ -128,5 +129,57 @@ describe("playing", () => {
     const mine = listMatches(db, "mum");
     expect(mine.map((m) => m.id)).toEqual([b.id, a.id]);
     expect(listMatches(db, "kid")).toEqual([]);
+  });
+});
+
+describe("summaryFor", () => {
+  it("counts an invitation I received, not one I sent", () => {
+    const received = createMatch(db, dad, { game: "dots", options: { size: 10, targetCaptures: null }, opponent: mum, seat: 0 });
+    invite();
+    const mine = summaryFor(db, "mum");
+    expect(mine.invitations).toEqual([{ id: received.id, game: "dots", from: { id: "dad", name: "Dad" }, createdAt: expect.any(String) }]);
+    expect(mine.yourMove).toEqual([]);
+    expect(mine.counts).toEqual({ invitations: 1, yourMove: 0 });
+    expect(summaryFor(db, "kid").counts).toEqual({ invitations: 0, yourMove: 0 });
+  });
+
+  it("counts a playing match only when it is my turn", () => {
+    const match = invite(1);
+    answerInvitation(db, "dad", match.id, "accept");
+    // Dad took blue, so he moves first.
+    expect(summaryFor(db, "mum").yourMove).toEqual([]);
+    expect(summaryFor(db, "dad").yourMove).toEqual([{ id: match.id, game: "dots", opponent: { id: "mum", name: "Мама" }, updatedAt: expect.any(String) }]);
+    playMove(db, "dad", match.id, { x: 4, y: 4 }, 0);
+    expect(summaryFor(db, "dad").counts.yourMove).toBe(0);
+    expect(summaryFor(db, "mum").counts.yourMove).toBe(1);
+  });
+
+  it("never counts a declined, cancelled, expired or finished match", () => {
+    const declined = invite();
+    answerInvitation(db, "dad", declined.id, "decline");
+    const cancelled = invite();
+    cancelInvitation(db, "mum", cancelled.id);
+    const expired = invite();
+    db.prepare("UPDATE matches SET created_at = '2020-01-01T00:00:00.000Z' WHERE id = ?").run(expired.id);
+    const finished = invite(1);
+    answerInvitation(db, "dad", finished.id, "accept");
+    resign(db, "dad", finished.id);
+    expect(summaryFor(db, "dad").counts).toEqual({ invitations: 0, yourMove: 0 });
+    expect(summaryFor(db, "mum").counts).toEqual({ invitations: 0, yourMove: 0 });
+  });
+
+  it("orders invitations newest first and matches by last move", () => {
+    const older = createMatch(db, dad, { game: "dots", options: { size: 10, targetCaptures: null }, opponent: mum, seat: 0 });
+    const newer = createMatch(db, kid, { game: "dots", options: { size: 10, targetCaptures: null }, opponent: mum, seat: 0 });
+    // An hour back: older than the other, but nowhere near expiry.
+    db.prepare("UPDATE matches SET created_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 hour') WHERE id = ?").run(older.id);
+    expect(summaryFor(db, "mum").invitations.map((i) => i.id)).toEqual([newer.id, older.id]);
+
+    const stale = invite(1);
+    const fresh = invite(1);
+    answerInvitation(db, "dad", stale.id, "accept");
+    answerInvitation(db, "dad", fresh.id, "accept");
+    db.prepare("UPDATE matches SET updated_at = '2024-01-01T00:00:00.000Z' WHERE id = ?").run(stale.id);
+    expect(summaryFor(db, "dad").yourMove.map((m) => m.id)).toEqual([fresh.id, stale.id]);
   });
 });

@@ -14,7 +14,8 @@ import {
   listMatches,
   playMove,
   rememberMember,
-  resign
+  resign,
+  summaryFor
 } from "./matches.js";
 
 declare module "fastify" {
@@ -119,6 +120,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   app.get(`${API}/matches`, { preHandler: requireIdentity }, async (request) => ({
     matches: listMatches(db, request.identity!.id)
   }));
+
+  // What the home app shows on its own pages: invitations and "your move" counts.
+  app.get(`${API}/summary`, { preHandler: requireIdentity }, async (request) =>
+    summaryFor(db, request.identity!.id)
+  );
 
   app.post(`${API}/matches`, { preHandler: requireIdentity }, async (request, reply) => {
     const input = createMatchSchema.parse(request.body ?? {});

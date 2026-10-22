@@ -53,6 +53,13 @@ export interface MatchDetail extends MatchSummary {
   state: { status: GameStatus };
 }
 
+/** What waits on one member — shown by the home app, not by the games client. */
+export interface MatchActivity {
+  invitations: { id: string; game: string; from: Member; createdAt: string }[];
+  yourMove: { id: string; game: string; opponent: Member; updatedAt: string }[];
+  counts: { invitations: number; yourMove: number };
+}
+
 export class MatchError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -172,6 +179,25 @@ export function listMatches(db: Db, userId: string): MatchSummary[] {
     LIMIT 100
   `).all(userId, userId) as MatchRow[];
   return rows.map((row) => summarize(db, row));
+}
+
+/** Invitations sent to the member and matches waiting on their move. */
+export function summaryFor(db: Db, userId: string): MatchActivity {
+  expireInvitations(db);
+  const other = (row: MatchRow) => memberOf(db, row.blue_id === userId ? row.red_id : row.blue_id);
+  const invited = db.prepare(`
+    SELECT * FROM matches
+    WHERE (blue_id = ? OR red_id = ?) AND status = 'invited' AND created_by != ?
+    ORDER BY created_at DESC, rowid DESC
+  `).all(userId, userId, userId) as MatchRow[];
+  const playing = db.prepare(`
+    SELECT * FROM matches
+    WHERE status = 'playing' AND ((blue_id = ? AND turn = 0) OR (red_id = ? AND turn = 1))
+    ORDER BY updated_at DESC, rowid DESC
+  `).all(userId, userId) as MatchRow[];
+  const invitations = invited.map((row) => ({ id: row.id, game: row.game, from: other(row), createdAt: row.created_at }));
+  const yourMove = playing.map((row) => ({ id: row.id, game: row.game, opponent: other(row), updatedAt: row.updated_at }));
+  return { invitations, yourMove, counts: { invitations: invitations.length, yourMove: yourMove.length } };
 }
 
 /** An invitation nobody answered for INVITATION_DAYS is cancelled. */

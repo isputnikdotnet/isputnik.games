@@ -58,6 +58,32 @@ describe("matches API", () => {
     expect(resigned.json()).toMatchObject({ status: "finished", winner: 1, finishReason: "resigned" });
   });
 
+  it("summarises what waits on the signed-in member", async () => {
+    expect((await get("/games/api/summary", {})).statusCode).toBe(401);
+    const created = await post("/games/api/matches", mum, {
+      game: "dots", options: { size: 10, targetCaptures: null }, opponent: { id: "dad", name: "Dad" }, seat: 0
+    });
+    const id = created.json().id as string;
+
+    const invited = await get("/games/api/summary", dad);
+    expect(invited.statusCode).toBe(200);
+    expect(invited.json()).toEqual({
+      invitations: [{ id, game: "dots", from: { id: "mum", name: "Мама" }, createdAt: expect.any(String) }],
+      yourMove: [],
+      counts: { invitations: 1, yourMove: 0 }
+    });
+    expect((await get("/games/api/summary", mum)).json().counts).toEqual({ invitations: 0, yourMove: 0 });
+
+    await post(`/games/api/matches/${id}/accept`, dad);
+    const playing = await get("/games/api/summary", mum);
+    expect(playing.json()).toEqual({
+      invitations: [],
+      yourMove: [{ id, game: "dots", opponent: { id: "dad", name: "Dad" }, updatedAt: expect.any(String) }],
+      counts: { invitations: 0, yourMove: 1 }
+    });
+    expect((await get("/games/api/summary", dad)).json().counts.yourMove).toBe(0);
+  });
+
   it("validates the request body and requires identity", async () => {
     expect((await get("/games/api/matches", {})).statusCode).toBe(401);
     const bad = await post("/games/api/matches", mum, { game: "dots", opponent: { id: "" } });
