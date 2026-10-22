@@ -1,11 +1,14 @@
 import { useState, type PointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Dots, type DotsMove, type DotsState, type PlayerIndex } from "@isputnik/games-engine";
+import { chainLinks, territoryOutlines } from "./geometry";
 
-// The board as one SVG: grid lines, each side's territory as tinted cells, the
-// dots (captured ones dimmed), a ring on the last move, and a ghost dot under the
-// pointer where a move is possible. Coordinates are board units — one point per
-// unit, centred at (x+0.5, y+0.5) — so it scales to whatever width it is given.
+// The board as one SVG, drawn the way the paper game is: grid lines, a line
+// between neighbouring dots of one colour so a chain reads as a chain, each
+// captured area as a filled loop through the dots that ring it, the dots
+// themselves (captured ones dimmed), a ring on the last move, and a ghost dot
+// under the pointer where a move is possible. Coordinates are board units — one
+// point per unit, centred at (x+0.5, y+0.5) — so it scales to any width.
 export function DotsBoard({
   state,
   onPlace,
@@ -31,14 +34,14 @@ export function DotsBoard({
 
   const canPlay = (p: DotsMove | null): p is DotsMove => Boolean(p && !disabled && turn !== null && Dots.isPlayable(state, p.x, p.y));
 
-  const territories: { x: number; y: number; owner: number }[] = [];
   const dots: { x: number; y: number; owner: number; captured: boolean }[] = [];
   for (let i = 0; i < state.dots.length; i++) {
     const x = i % size;
     const y = (i - x) / size;
-    if (state.territory[i]) territories.push({ x, y, owner: state.territory[i] });
     if (state.dots[i]) dots.push({ x, y, owner: state.dots[i], captured: Dots.isCaptured(state, i) });
   }
+  const links = chainLinks(state);
+  const outlines = territoryOutlines(state);
 
   const lines: number[] = [];
   for (let i = 0; i < size; i++) lines.push(i + 0.5);
@@ -76,8 +79,20 @@ export function DotsBoard({
         ))}
       </g>
       <g className="dots-territory">
-        {territories.map(({ x, y, owner }) => (
-          <rect key={`t${x},${y}`} className={`is-p${owner}`} x={x} y={y} width={1} height={1} />
+        {outlines.map((outline, index) => (
+          <polygon key={index} className={`is-p${outline.owner + 1}`} points={outline.points} />
+        ))}
+      </g>
+      <g className="dots-chains">
+        {links.map((link) => (
+          <line
+            key={`${link.x1},${link.y1}-${link.x2},${link.y2}`}
+            className={`is-p${link.owner + 1}`}
+            x1={link.x1}
+            y1={link.y1}
+            x2={link.x2}
+            y2={link.y2}
+          />
         ))}
       </g>
       <g className="dots-dots">

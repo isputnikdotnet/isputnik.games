@@ -43,16 +43,35 @@
   stroke-width: 0.04;
 }
 
-.dots-territory rect {
-  opacity: 0.22;
+/* A captured area: the loop through the ring's dots, filled and outlined. */
+.dots-territory polygon {
+  fill-opacity: 0.22;
+  stroke-width: 0.1;
+  stroke-linejoin: round;
 }
 
 .dots-territory .is-p1 {
   fill: var(--dots-blue);
+  stroke: var(--dots-blue);
 }
 
 .dots-territory .is-p2 {
   fill: var(--dots-red);
+  stroke: var(--dots-red);
+}
+
+/* The lines between neighbouring dots of one colour, as drawn on paper. */
+.dots-chains line {
+  stroke-width: 0.07;
+  stroke-linecap: round;
+}
+
+.dots-chains .is-p1 {
+  stroke: var(--dots-blue);
+}
+
+.dots-chains .is-p2 {
+  stroke: var(--dots-red);
 }
 
 .dots-dots .is-p1 {
