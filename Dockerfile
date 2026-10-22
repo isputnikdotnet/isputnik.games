@@ -1,5 +1,10 @@
-# ── Stage 1: install all deps ─────────────────────────────────────
+# ── Stage 1: install all deps (with native-module build tools) ────
+# better-sqlite3 compiles from source where no prebuilt binary matches the
+# image's Node; without these the deps stage fails at `npm ci` (node-gyp).
 FROM node:26-slim AS deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /build
 COPY package.json package-lock.json ./
 COPY packages/engine/package.json ./packages/engine/
