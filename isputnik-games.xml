@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<!--
+  Unraid Community Applications template for isputnik.games — a DEPLOYMENT
+  artifact (the container's install manifest), not source code. DO NOT DELETE.
+  The <Icon> below is a raw.githubusercontent URL to Assets/ on the main branch,
+  so the repo-root Assets/ folder must stay too (the web app uses its own copy
+  under apps/web/public/; this template references the root one).
+
+  The games container publishes no port on purpose: only the isputnik.home
+  container talks to it, by name, over a user-defined Docker network, and the
+  home app signs people in for it. See README.md → Running it.
+-->
+<Container version="2">
+  <Name>isputnik-games</Name>
+  <Repository>ghcr.io/isputnikdotnet/isputnik.games:latest</Repository>
+  <Registry>https://ghcr.io/isputnikdotnet/isputnik.games</Registry>
+  <!-- Pick the same user-defined network as the isputnik container (create it
+       once: `docker network create isputnik`). On Docker's default bridge the
+       containers cannot reach each other by name. -->
+  <Network>isputnik</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <!-- The health check (GET /games/api/health) is built into the image. -->
+  <ExtraParams>--stop-timeout=30</ExtraParams>
+  <Support>https://github.com/isputnikdotnet/isputnik.games/issues</Support>
+  <Project>https://github.com/isputnikdotnet/isputnik.games</Project>
+
+  <Overview>
+Family games for isputnik.home, in a container of their own. The first game is Dots (Tochki): two on one screen, against the computer, or online between family members, who invite each other and play from any device.
+
+This container has no sign-in and no web address of its own. The isputnik.home container reaches it by name over a shared Docker network and shows the games at /games in its own interface, so the family signs in once, in isputnik.home. Set up: create a user-defined Docker network (docker network create isputnik) and put both containers on it; generate one long random secret and enter it here as Gateway Secret and in the isputnik container as Games Gateway Secret; set the isputnik container's Games URL to http://isputnik-games:4200. A Games entry then appears in isputnik.home.
+  </Overview>
+
+  <Category>Other:</Category>
+
+  <!-- No <WebUI>: the games are opened through the isputnik container, at its
+       address under /games/. -->
+
+  <TemplateURL>https://raw.githubusercontent.com/isputnikdotnet/isputnik.games/main/isputnik-games.xml</TemplateURL>
+
+  <Icon>https://raw.githubusercontent.com/isputnikdotnet/isputnik.games/main/Assets/icon.svg</Icon>
+
+  <!-- Application Data -->
+
+  <Config Name="Config &amp; Data"
+          Target="/config"
+          Default="/mnt/user/appdata/isputnik-games"
+          Mode="rw"
+          Description="Stores the online matches (a small SQLite database). Keep it apart from the isputnik container's appdata."
+          Type="Path"
+          Display="always"
+          Required="true"
+          Mask="false">/mnt/user/appdata/isputnik-games</Config>
+
+  <!-- Environment Variables -->
+
+  <Config Name="Gateway Secret"
+          Target="GATEWAY_SECRET"
+          Default=""
+          Mode=""
+          Description="A long random string (for example from openssl rand -hex 32) shared with the isputnik container, where it is entered as Games Gateway Secret. Every request the home app forwards carries it, which is how this server knows who is signed in. Required: the server refuses to start without it."
+          Type="Variable"
+          Display="always"
+          Required="true"
+          Mask="true"></Config>
+
+  <Config Name="PUID"
+          Target="PUID"
+          Default="99"
+          Mode=""
+          Description="User ID the server runs as. It runs unprivileged (not root); on first start it takes ownership of the Config &amp; Data path as this user. 99 (nobody) matches the default owner of an Unraid appdata share — leave it unless your share is owned by a different user."
+          Type="Variable"
+          Display="advanced"
+          Required="false"
+          Mask="false">99</Config>
+
+  <Config Name="PGID"
+          Target="PGID"
+          Default="100"
+          Mode=""
+          Description="Group ID the server runs as. 100 (users) matches the default group of an Unraid appdata share — leave it unless your share uses a different group."
+          Type="Variable"
+          Display="advanced"
+          Required="false"
+          Mask="false">100</Config>
+
+  <Config Name="Log Level"
+          Target="LOG_LEVEL"
+          Default="info"
+          Mode=""
+          Description="trace, debug, info, warn, error, fatal or silent. At info every request is logged, including each poll for the other side's move; warn keeps only problems."
+          Type="Variable"
+          Display="advanced"
+          Required="false"
+          Mask="false">info</Config>
+
+</Container>

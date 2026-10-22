@@ -28,6 +28,26 @@ Generate one secret (`openssl rand -hex 32`) and set it as `GAMES_GATEWAY_SECRET
 on the home container and `GATEWAY_SECRET` on this one; point the home container's
 `GAMES_URL` at this container. A "Games" entry then appears in the home app.
 
+**The two containers must share a user-defined Docker network.** The home
+container reaches this one by name (`http://isputnik-games:4200`), and names
+resolve only on a network you created — Docker's default `bridge` has no DNS
+between containers. Compose makes such a network for every project, so the
+compose file above needs nothing more. With plain `docker run`, or on Unraid,
+create it once and start both containers on it:
+
+```bash
+docker network create isputnik
+```
+
+**Unraid** — the repository carries a Community Applications template,
+[`isputnik-games.xml`](isputnik-games.xml). It publishes no port, maps `/config`
+to `/mnt/user/appdata/isputnik-games`, runs as `99:100` to match a default
+appdata share, and asks for the gateway secret. Set its Network Type to the
+network above, and the same on the isputnik container (edit it, change Network
+Type, apply); then fill the isputnik container's `Games URL` and `Games Gateway
+Secret` fields. Containers on a user-defined network are still published to the
+LAN on whatever ports they map, so the home app's port works as before.
+
 | Variable | Default | What it does |
 |---|---|---|
 | `GATEWAY_SECRET` | unset | The secret the home gateway signs forwarded requests with. Required in the image; without it the server refuses to start. |
