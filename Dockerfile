@@ -24,7 +24,13 @@ RUN npm run build --workspace packages/engine \
 # ── Stage 3: runtime-only node_modules ────────────────────────────
 FROM deps AS prod-deps
 COPY packages/engine/package.json ./packages/engine/
-RUN npm ci --omit=dev --workspace apps/server --workspace packages/engine
+RUN npm ci --omit=dev --workspace apps/server --workspace packages/engine     && mkdir -p apps/server/node_modules
+# (mkdir: npm nests a package under apps/server/node_modules when the root holds
+# another version of it — nanoid 6 for the server beside nanoid 3 for vite — and
+# the final stage copies that folder too. When nothing is nested npm never
+# creates it, and COPY --from of a missing path fails the whole build; an empty
+# folder copies as nothing. v0.1.0 shipped without this copy and the container
+# died at startup: "Cannot find package 'nanoid'".)
 
 # ── Stage 4: production image ─────────────────────────────────────
 FROM node:26-slim
@@ -35,13 +41,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends gosu \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=prod-deps /build/node_modules ./node_modules
+COPY --from=prod-deps /build/apps/server/node_modules ./apps/server/node_modules
 # The engine is a workspace package: npm links it from node_modules to this path.
 COPY --from=build /build/packages/engine/package.json ./packages/engine/
 COPY --from=build /build/packages/engine/dist ./packages/engine/dist
+# The server's own package.json carries "type": "module"; without it Node reads
+# dist/*.js as CommonJS first and warns on every start.
+COPY --from=build /build/apps/server/package.json ./apps/server/
 COPY --from=build /build/apps/server/dist ./apps/server/dist
 COPY --from=build /build/apps/web/dist ./web
 # Read by config.ts for the version.
 COPY package.json ./
+
+# Import smoke test: every production dependency of the server must load from
+# this tree, so a missing package fails THIS build instead of the container at
+# startup. Runs from apps/server so resolution matches the server code's own
+# view (nested packages live in apps/server/node_modules).
+RUN cd apps/server && node -e 'const deps=Object.keys(require("./package.json").dependencies);(async()=>{for(const d of deps){try{await import(d)}catch(e){  console.error("runtime dep failed to load:",d,"-",e.message);process.exit(1)}}console.log(deps.length+" runtime deps load OK")})()'
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
