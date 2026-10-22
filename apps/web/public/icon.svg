@@ -1,11 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#07191d"/>
-  <g stroke="#c89d62" stroke-opacity="0.35" stroke-width="1.5">
-    <path d="M16 8v48M32 8v48M48 8v48M8 16h48M8 32h48M8 48h48"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">isputnik.games app icon</title>
+  <desc id="desc">A flat rounded square: a cream die with five pips, a teal orbit passing around it, and an orange satellite on the orbit.</desc>
+  <defs>
+    <!-- Lower half of the orbit (along its major axis) is drawn again on top of the die. -->
+    <clipPath id="orbit-front">
+      <rect x="-200" y="240" width="900" height="500" transform="rotate(-24 250 240)"/>
+    </clipPath>
+  </defs>
+
+  <rect width="512" height="512" rx="108" fill="#16213a"/>
+
+  <!-- orbit, behind the die -->
+  <ellipse cx="250" cy="240" rx="222" ry="80" fill="none" stroke="#5fb8b0" stroke-width="22" transform="rotate(-24 250 240)"/>
+
+  <!-- die -->
+  <rect x="156" y="168" width="200" height="200" rx="44" fill="#f1f3ee"/>
+  <g fill="#16213a">
+    <circle cx="206" cy="218" r="20"/>
+    <circle cx="306" cy="218" r="20"/>
+    <circle cx="256" cy="268" r="20"/>
+    <circle cx="206" cy="318" r="20"/>
+    <circle cx="306" cy="318" r="20"/>
   </g>
-  <circle cx="16" cy="16" r="5" fill="#3a86ff"/>
-  <circle cx="48" cy="16" r="5" fill="#e5383b"/>
-  <circle cx="32" cy="32" r="5" fill="#3a86ff"/>
-  <circle cx="16" cy="48" r="5" fill="#e5383b"/>
-  <circle cx="48" cy="48" r="5" fill="#3a86ff"/>
+
+  <!-- orbit, in front of the die -->
+  <ellipse cx="250" cy="240" rx="222" ry="80" fill="none" stroke="#5fb8b0" stroke-width="22" transform="rotate(-24 250 240)" clip-path="url(#orbit-front)"/>
+
+  <!-- satellite; the navy stroke breaks the orbit around it -->
+  <circle cx="397.5" cy="124.1" r="32" fill="#e9a95f" stroke="#16213a" stroke-width="16"/>
 </svg>
