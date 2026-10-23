@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { SeaBattle } from "@isputnik/games-engine";
-import { SeaBattlePage } from "../src/games/seabattle/SeaBattlePage";
-import { loadSeaBattleGame } from "../src/games/seabattle/storage";
+import { StarBattle } from "@isputnik/games-engine";
+import { StarBattlePage } from "../src/games/starbattle/StarBattlePage";
+import { loadStarBattleGame } from "../src/games/starbattle/storage";
 
 // A square in jsdom: the SVG has no layout, so give it a box. The board is 11
 // units wide (one for the labels), a square at (x, y) sits at unit (x+1, y+1).
@@ -15,54 +15,54 @@ function tapAt(board: HTMLElement, x: number, y: number) {
 }
 
 async function startTwoPlayer(user: ReturnType<typeof userEvent.setup>) {
-  render(<SeaBattlePage />);
+  render(<StarBattlePage />);
   await user.click(screen.getByRole("button", { name: "Two players, one screen" }));
-  await user.click(screen.getByRole("button", { name: "Small — 6 ships" }));
+  await user.click(screen.getByRole("button", { name: "Small — 6 craft" }));
   await user.click(screen.getByRole("button", { name: "Start game" }));
 }
 
-describe("SeaBattlePage, two players on one screen", () => {
+describe("StarBattlePage, two players on one screen", () => {
   beforeEach(() => {
     localStorage.clear();
-    window.history.replaceState(null, "", "/games/seabattle");
+    window.history.replaceState(null, "", "/games/starbattle");
   });
 
-  it("lays a fleet by hand: ships go down, lift again, and Ready waits for the whole fleet", async () => {
+  it("lays a fleet by hand: vessels go down, lift again, and Ready waits for the whole fleet", async () => {
     const user = userEvent.setup();
     await startTwoPlayer(user);
 
     // The curtain first: only Player 1 should see the next screen.
     await user.click(screen.getByRole("button", { name: "I'm Player 1" }));
-    expect(screen.getByRole("heading", { name: "Player 1, lay your fleet" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Player 1, deploy your fleet" })).toBeInTheDocument();
     const ready = screen.getByRole("button", { name: "Ready" });
     expect(ready).toBeDisabled();
-    expect(screen.getByText("6 ships to lay")).toBeInTheDocument();
+    expect(screen.getByText("6 craft to deploy")).toBeInTheDocument();
 
     // The three-decker is picked first; lying across from (0,0).
-    const board = screen.getByRole("img", { name: "Your sea, 10 by 10" });
+    const board = screen.getByRole("img", { name: "Your sector, 10 by 10" });
     tapAt(board, 0, 0);
-    expect(screen.getByText("5 ships to lay")).toBeInTheDocument();
+    expect(screen.getByText("5 craft to deploy")).toBeInTheDocument();
     // A two-decker touching it is refused; one clear of it goes down.
     tapAt(board, 3, 1);
-    expect(screen.getByText("5 ships to lay")).toBeInTheDocument();
+    expect(screen.getByText("5 craft to deploy")).toBeInTheDocument();
     tapAt(board, 5, 0);
-    expect(screen.getByText("4 ships to lay")).toBeInTheDocument();
-    // Tapping a laid ship lifts it.
+    expect(screen.getByText("4 craft to deploy")).toBeInTheDocument();
+    // Tapping a deployed vessel lifts it.
     tapAt(board, 6, 0);
-    expect(screen.getByText("5 ships to lay")).toBeInTheDocument();
+    expect(screen.getByText("5 craft to deploy")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Random" }));
-    expect(screen.getByText("The fleet is laid.")).toBeInTheDocument();
+    expect(screen.getByText("The fleet is deployed.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Ready" }));
 
-    // Player 2's turn to lay, behind the curtain.
-    expect(screen.getByRole("heading", { name: "Pass the device to Player 2" })).toBeInTheDocument();
-    const saved = loadSeaBattleGame();
+    // Player 2's turn to deploy, behind the curtain.
+    expect(screen.getByRole("heading", { name: "Hand the console to Player 2" })).toBeInTheDocument();
+    const saved = loadStarBattleGame();
     expect(saved?.state.placed).toEqual([true, false]);
     expect(saved?.moves[0].kind).toBe("place");
   });
 
-  it("fires: a miss passes the device, a hit keeps the turn, and the game ends when a fleet is sunk", async () => {
+  it("fires: a miss passes the device, a hit keeps the turn, and the game ends when a fleet is destroyed", async () => {
     const user = userEvent.setup();
     await startTwoPlayer(user);
     await user.click(screen.getByRole("button", { name: "I'm Player 1" }));
@@ -72,57 +72,57 @@ describe("SeaBattlePage, two players on one screen", () => {
     await user.click(screen.getByRole("button", { name: "Random" }));
     await user.click(screen.getByRole("button", { name: "Ready" }));
 
-    // Both fleets laid; Player 1 fires first.
+    // Both fleets deployed; Player 1 fires first.
     await user.click(screen.getByRole("button", { name: "I'm Player 1" }));
     expect(screen.getByRole("status")).toHaveTextContent("Player 1, fire!");
-    const fleetOf2 = loadSeaBattleGame()!.state.ships[1]!;
-    const enemy = () => screen.getByRole("img", { name: "Enemy sea, 10 by 10" });
+    const fleetOf2 = loadStarBattleGame()!.state.vessels[1]!;
+    const enemy = () => screen.getByRole("img", { name: "Enemy sector, 10 by 10" });
 
-    // Find water and a deck of the three-decker on Player 2's sea.
-    const occupied = new Set(fleetOf2.flatMap((ship) => SeaBattle.shipCells(ship).map((c) => `${c.x},${c.y}`)));
+    // Find water and a deck of the three-decker on Player 2's sector.
+    const occupied = new Set(fleetOf2.flatMap((vessel) => StarBattle.vesselCells(vessel).map((c) => `${c.x},${c.y}`)));
     const water = (() => {
       for (let i = 0; i < 100; i++) if (!occupied.has(`${i % 10},${Math.floor(i / 10)}`)) return { x: i % 10, y: Math.floor(i / 10) };
       throw new Error("no water");
     })();
-    const three = fleetOf2.find((ship) => ship.length === 3)!;
-    const deck = SeaBattle.shipCells(three)[1];
+    const three = fleetOf2.find((vessel) => vessel.length === 3)!;
+    const deck = StarBattle.vesselCells(three)[1];
 
     tapAt(enemy(), deck.x, deck.y);
-    expect(screen.getByRole("status")).toHaveTextContent("Hit! Fire again.");
-    expect(screen.getByText(/Player 1: .* — hit/)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Damaged! Fire again.");
+    expect(screen.getByText(/Player 1: .* — damaged/)).toBeInTheDocument();
     // The same square again does nothing.
     tapAt(enemy(), deck.x, deck.y);
-    expect(screen.getByRole("status")).toHaveTextContent("Hit! Fire again.");
+    expect(screen.getByRole("status")).toHaveTextContent("Damaged! Fire again.");
 
     tapAt(enemy(), water.x, water.y);
     // A miss: the device goes to Player 2, who sees the result before the boards.
-    expect(screen.getByRole("heading", { name: "Pass the device to Player 2" })).toBeInTheDocument();
-    expect(screen.getByText(/Player 1: .* — miss/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Hand the console to Player 2" })).toBeInTheDocument();
+    expect(screen.getByText(/Player 1: .* — empty space/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "I'm Player 2" }));
     expect(screen.getByRole("status")).toHaveTextContent("Player 2, fire!");
-    // Player 2 sees their own fleet with the hit on it, and nothing of Player 1's ships.
-    const own = screen.getByRole("img", { name: "Your sea, 10 by 10" });
-    expect(own.querySelectorAll(".sea-ship")).toHaveLength(6);
-    expect(own.querySelectorAll(".sea-hit")).toHaveLength(1);
-    expect(screen.getByRole("img", { name: "Enemy sea, 10 by 10" }).querySelectorAll(".sea-ship")).toHaveLength(0);
+    // Player 2 sees their own fleet with the hit on it, and nothing of Player 1's vessels.
+    const own = screen.getByRole("img", { name: "Your sector, 10 by 10" });
+    expect(own.querySelectorAll(".star-vessel")).toHaveLength(6);
+    expect(own.querySelectorAll(".star-hit")).toHaveLength(1);
+    expect(screen.getByRole("img", { name: "Enemy sector, 10 by 10" }).querySelectorAll(".star-vessel")).toHaveLength(0);
 
     // Player 2 sinks everything of Player 1 in one run.
-    const fleetOf1 = loadSeaBattleGame()!.state.ships[0]!;
-    const target = () => screen.getByRole("img", { name: "Enemy sea, 10 by 10" });
-    for (const ship of fleetOf1) for (const c of SeaBattle.shipCells(ship)) tapAt(target(), c.x, c.y);
+    const fleetOf1 = loadStarBattleGame()!.state.vessels[0]!;
+    const target = () => screen.getByRole("img", { name: "Enemy sector, 10 by 10" });
+    for (const vessel of fleetOf1) for (const c of StarBattle.vesselCells(vessel)) tapAt(target(), c.x, c.y);
     const dialog = screen.getByRole("dialog", { name: "Game over" });
     expect(dialog).toHaveTextContent("Player 2 wins");
     expect(dialog).toHaveTextContent("Player 1 0 : 6 Player 2");
-    expect(dialog).toHaveTextContent("Player 1's fleet is sunk.");
+    expect(dialog).toHaveTextContent("Player 1's fleet is destroyed.");
     await user.click(within(dialog).getByRole("button", { name: "Play again" }));
-    expect(screen.getByRole("heading", { name: "Pass the device to Player 1" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Hand the console to Player 1" })).toBeInTheDocument();
   });
 
-  it("ending the game asks first and counts the ships sunk", async () => {
+  it("ending the game asks first and counts the vessels destroyed", async () => {
     const user = userEvent.setup();
     await startTwoPlayer(user);
     await user.click(screen.getByRole("button", { name: "I'm Player 1" }));
-    // No ending while a fleet is still to be laid.
+    // No ending while a fleet is still to be deployed.
     expect(screen.queryByRole("button", { name: "End game" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Random" }));
     await user.click(screen.getByRole("button", { name: "Ready" }));

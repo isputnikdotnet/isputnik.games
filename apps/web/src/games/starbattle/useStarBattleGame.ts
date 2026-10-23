@@ -1,63 +1,63 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { SeaBattle, type PlayerIndex, type SeaBattleMove } from "@isputnik/games-engine";
+import { StarBattle, type PlayerIndex, type StarBattleMove } from "@isputnik/games-engine";
 import {
-  clearSeaBattleGame,
-  loadSeaBattleGame,
-  saveSeaBattleGame,
-  saveSeaBattleSetup,
-  type LoadedSeaBattleGame,
-  type SeaBattleSetup
+  clearStarBattleGame,
+  loadStarBattleGame,
+  saveStarBattleGame,
+  saveStarBattleSetup,
+  type LoadedStarBattleGame,
+  type StarBattleSetup
 } from "./storage";
 
-// One local game of Sea Battle: the position, the setup it was started with,
+// One local game of Star Battle: the position, the setup it was started with,
 // and the moves so far. Every change goes through the engine and is saved at
-// once; the computer lays its fleet and fires from an effect, with a pause per
+// once; the computer deploys its fleet and fires from an effect, with a pause per
 // shot so a person can follow its run of hits.
 const COMPUTER_PLACE_MS = 600;
 const COMPUTER_SHOT_MS = 800;
 
-export interface SeaBattleGameController {
-  game: LoadedSeaBattleGame | null;
+export interface StarBattleGameController {
+  game: LoadedStarBattleGame | null;
   thinking: boolean;
-  start(setup: SeaBattleSetup): void;
-  play(move: SeaBattleMove): void;
+  start(setup: StarBattleSetup): void;
+  play(move: StarBattleMove): void;
   end(): void;
   abandon(): void;
   /** Whether the seat to move is a person at this screen. */
   humanToMove: boolean;
 }
 
-export function isComputerSeat(setup: SeaBattleSetup, player: PlayerIndex): boolean {
+export function isComputerSeat(setup: StarBattleSetup, player: PlayerIndex): boolean {
   return setup.mode === "computer" && setup.computerPlays === player;
 }
 
-export function useSeaBattleGame(): SeaBattleGameController {
-  const [game, setGame] = useState<LoadedSeaBattleGame | null>(() => loadSeaBattleGame());
+export function useStarBattleGame(): StarBattleGameController {
+  const [game, setGame] = useState<LoadedStarBattleGame | null>(() => loadStarBattleGame());
   const [thinking, setThinking] = useState(false);
   const timer = useRef<number | null>(null);
 
-  const update = useCallback((next: LoadedSeaBattleGame | null) => {
+  const update = useCallback((next: LoadedStarBattleGame | null) => {
     setGame(next);
-    if (next) saveSeaBattleGame(next);
-    else clearSeaBattleGame();
+    if (next) saveStarBattleGame(next);
+    else clearStarBattleGame();
   }, []);
 
-  const start = useCallback((setup: SeaBattleSetup) => {
-    saveSeaBattleSetup(setup);
-    update({ setup, moves: [], state: SeaBattle.createGame({ fleet: setup.fleet }) });
+  const start = useCallback((setup: StarBattleSetup) => {
+    saveStarBattleSetup(setup);
+    update({ setup, moves: [], state: StarBattle.createGame({ fleet: setup.fleet }) });
   }, [update]);
 
-  const play = useCallback((move: SeaBattleMove) => {
+  const play = useCallback((move: StarBattleMove) => {
     setGame((current) => {
       if (!current || current.state.status.kind !== "playing") return current;
       let state;
       try {
-        state = SeaBattle.applyMove(current.state, move);
+        state = StarBattle.applyMove(current.state, move);
       } catch {
         return current;
       }
       const next = { setup: current.setup, moves: [...current.moves, move], state };
-      saveSeaBattleGame(next);
+      saveStarBattleGame(next);
       return next;
     });
   }, []);
@@ -65,8 +65,8 @@ export function useSeaBattleGame(): SeaBattleGameController {
   const end = useCallback(() => {
     setGame((current) => {
       if (!current || current.state.status.kind !== "playing") return current;
-      const next = { ...current, state: SeaBattle.finish(current.state, "agreed") };
-      saveSeaBattleGame(next);
+      const next = { ...current, state: StarBattle.finish(current.state, "agreed") };
+      saveStarBattleGame(next);
       return next;
     });
   }, []);
@@ -84,10 +84,10 @@ export function useSeaBattleGame(): SeaBattleGameController {
     setThinking(true);
     const level = game.setup.level;
     const state = game.state;
-    const delay = SeaBattle.phaseOf(state) === "placing" ? COMPUTER_PLACE_MS : COMPUTER_SHOT_MS;
+    const delay = StarBattle.phaseOf(state) === "placing" ? COMPUTER_PLACE_MS : COMPUTER_SHOT_MS;
     timer.current = window.setTimeout(() => {
       timer.current = null;
-      const move = SeaBattle.chooseSeaBattleMove(state, level, Math.random);
+      const move = StarBattle.chooseStarBattleMove(state, level, Math.random);
       setThinking(false);
       if (move) play(move);
     }, delay);

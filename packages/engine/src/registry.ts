@@ -3,12 +3,12 @@
 // (phase 2) the server's match tables take it from this list.
 import type { GameDefinition, GameStatus } from "./game.js";
 import { dots } from "./dots/index.js";
-import { seabattle } from "./seabattle/index.js";
+import { starbattle } from "./starbattle/index.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- each game has its own option/state/move shapes
 export type AnyGame = GameDefinition<any, { status: GameStatus }, any>;
 
-export const GAMES: readonly AnyGame[] = [dots, seabattle];
+export const GAMES: readonly AnyGame[] = [dots, starbattle];
 
 export const GAME_IDS = GAMES.map((game) => game.id);
 

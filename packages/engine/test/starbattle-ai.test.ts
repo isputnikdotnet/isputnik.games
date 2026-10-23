@@ -1,26 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { seededRandom } from "../src/random.js";
-import { chooseMove, chooseShot } from "../src/seabattle/ai.js";
+import { chooseMove, chooseShot } from "../src/starbattle/ai.js";
 import {
   UNKNOWN,
   applyMove,
   createGame,
   fleetProblem,
   randomFleet,
-  shipAt,
-  type SeaBattleState
-} from "../src/seabattle/rules.js";
+  vesselAt,
+  type StarBattleState
+} from "../src/starbattle/rules.js";
 
-function ready(seed = 1): SeaBattleState {
+function ready(seed = 1): StarBattleState {
   const random = seededRandom(seed);
   let state = createGame({ fleet: "classic" });
-  state = applyMove(state, { kind: "place", ships: randomFleet("classic", 10, random) });
-  state = applyMove(state, { kind: "place", ships: randomFleet("classic", 10, random) });
+  state = applyMove(state, { kind: "place", vessels: randomFleet("classic", 10, random) });
+  state = applyMove(state, { kind: "place", vessels: randomFleet("classic", 10, random) });
   return state;
 }
 
 /** Plays the computer against itself until one side wins; returns the shots fired. */
-function playOut(level: "easy" | "normal" | "hard", seed: number): { shots: number; state: SeaBattleState } {
+function playOut(level: "easy" | "normal" | "hard", seed: number): { shots: number; state: StarBattleState } {
   const random = seededRandom(seed);
   let state = ready(seed);
   let shots = 0;
@@ -36,12 +36,12 @@ function playOut(level: "easy" | "normal" | "hard", seed: number): { shots: numb
   return { shots, state };
 }
 
-describe("sea battle ai", () => {
+describe("sector battle ai", () => {
   it("lays a legal fleet when it is its turn to place", () => {
     const state = createGame({ fleet: "small" });
     const move = chooseMove(state, "easy", seededRandom(3))!;
     expect(move.kind).toBe("place");
-    if (move.kind === "place") expect(fleetProblem(move.ships, "small", 10)).toBeNull();
+    if (move.kind === "place") expect(fleetProblem(move.vessels, "small", 10)).toBeNull();
     expect(chooseMove({ ...state, status: { kind: "finished", winner: null, reason: "agreed" } }, "easy", seededRandom(3))).toBeNull();
   });
 
@@ -59,7 +59,7 @@ describe("sea battle ai", () => {
       const random = seededRandom(seed);
       let state = ready(seed);
       const water: number[] = [];
-      for (let i = 0; i < 100; i++) if (!shipAt(state.ships[0]!, i % 10, Math.floor(i / 10))) water.push(i);
+      for (let i = 0; i < 100; i++) if (!vesselAt(state.vessels[0]!, i % 10, Math.floor(i / 10))) water.push(i);
       let shots = 0;
       let next = 0;
       while (state.status.kind === "playing") {
@@ -86,10 +86,10 @@ describe("sea battle ai", () => {
     expect(hard).toBeLessThan(normal);
   });
 
-  it("goes after a ship it has found", () => {
+  it("goes after a vessel it has found", () => {
     let state = ready(2);
     // Seat 0's turn. Find a deck of seat 1's four-decker and hit it.
-    const four = state.ships[1]!.find((s) => s.length === 4)!;
+    const four = state.vessels[1]!.find((s) => s.length === 4)!;
     const deck = four.horizontal ? { x: four.x + 1, y: four.y } : { x: four.x, y: four.y + 1 };
     state = applyMove(state, { kind: "shoot", ...deck });
     expect(state.status).toEqual({ kind: "playing", turn: 0 });
@@ -112,15 +112,15 @@ describe("sea battle ai", () => {
     }
   });
 
-  it("at hard, never fires where nothing afloat could lie", () => {
+  it("at hard, never fires where nothing intact could lie", () => {
     // Sink everything but the four-decker of a known fleet, then see where hard aims.
     const random = seededRandom(9);
     let state = ready(9);
-    const theirs = state.ships[1]!;
-    for (const ship of theirs) {
-      if (ship.length === 4) continue;
-      for (let i = 0; i < ship.length; i++) {
-        state = applyMove(state, { kind: "shoot", x: ship.horizontal ? ship.x + i : ship.x, y: ship.horizontal ? ship.y : ship.y + i });
+    const theirs = state.vessels[1]!;
+    for (const vessel of theirs) {
+      if (vessel.length === 4) continue;
+      for (let i = 0; i < vessel.length; i++) {
+        state = applyMove(state, { kind: "shoot", x: vessel.horizontal ? vessel.x + i : vessel.x, y: vessel.horizontal ? vessel.y : vessel.y + i });
       }
     }
     expect(state.status).toEqual({ kind: "playing", turn: 0 });

@@ -1,29 +1,38 @@
-/* Sea Battle: squared paper, two seas. Hits and the enemy's wrecks keep a
-   fixed red so they read on every theme; the water and ships follow it. */
+/* Star Battle: two sectors of a star chart. The board is a dark field on every
+   theme — space is dark — so its colours are its own, not the theme's. */
 :root {
-  --sea-hit: #d64045;
-  --sea-ship: var(--blue);
+  --star-space: #0b1026;
+  --star-space-enemy: #160f2e;
+  --star-line: rgba(176, 196, 255, 0.16);
+  --star-label: rgba(196, 210, 255, 0.7);
+  --star-star: rgba(255, 255, 255, 0.55);
+  --star-craft: #8fc1ff;
+  --star-cockpit: #e8f3ff;
+  --star-hit: #ff9f43;
+  --star-miss: rgba(196, 210, 255, 0.65);
+  --star-last: #ffd166;
+  --star-aim: #7ee8fa;
 }
 
-.sea-layout {
+.star-layout {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-.sea-boards {
+.star-boards {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-5);
   align-items: start;
 }
 
-.sea-figure {
+.star-figure {
   margin: 0;
   min-width: 0;
 }
 
-.sea-figure figcaption {
+.star-figure figcaption {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -32,20 +41,20 @@
   font-size: var(--text-sm);
 }
 
-.sea-figure figcaption strong {
+.star-figure figcaption strong {
   font-size: var(--text-md);
 }
 
-/* The enemy sea is where the player acts: first on a phone, right on a desktop. */
-.sea-figure.is-enemy {
+/* The enemy sector is where the player acts: first on a phone, right on a desktop. */
+.star-figure.is-enemy {
   order: 2;
 }
 
-.sea-figure.is-own {
+.star-figure.is-own {
   order: 1;
 }
 
-.sea-board {
+.star-board {
   display: block;
   width: 100%;
   height: auto;
@@ -55,86 +64,113 @@
   overflow: visible;
 }
 
-.sea-board.is-live {
+.star-board.is-live {
   cursor: crosshair;
 }
 
-.sea-bg {
-  fill: var(--surface-raised);
-  stroke: var(--line);
+.star-bg {
+  fill: var(--star-space);
+}
+
+.star-grid line:first-child,
+.star-grid line:nth-child(11),
+.star-grid line:nth-child(12),
+.star-grid line:last-child {
   stroke-width: 0.06;
 }
 
-.sea-board.is-enemy .sea-bg {
-  fill: color-mix(in srgb, var(--surface-raised) 85%, var(--blue) 15%);
+.star-board.is-enemy .star-bg {
+  fill: var(--star-space-enemy);
 }
 
-.sea-grid line {
-  stroke: var(--line);
-  stroke-width: 0.035;
+.star-stars circle {
+  fill: var(--star-star);
 }
 
-.sea-labels text {
-  fill: var(--muted);
+.star-grid line {
+  stroke: var(--star-line);
+  stroke-width: 0.03;
+}
+
+.star-labels text {
+  fill: var(--star-label);
   font-size: 0.5px;
   font-weight: 600;
   font-family: inherit;
 }
 
-.sea-ship {
-  fill: var(--sea-ship);
-  fill-opacity: 0.85;
-  stroke: var(--sea-ship);
-  stroke-width: 0.06;
+.star-vessel rect {
+  fill: var(--star-craft);
+  fill-opacity: 0.9;
+  stroke: var(--star-cockpit);
+  stroke-width: 0.04;
 }
 
-.sea-ship.is-sunk {
-  fill: var(--ink);
-  fill-opacity: 0.55;
-  stroke: var(--ink);
+.star-cockpit {
+  fill: var(--star-cockpit);
 }
 
-.sea-ghost {
-  fill: var(--sea-ship);
-  fill-opacity: 0.35;
-  stroke: var(--sea-ship);
-  stroke-width: 0.06;
-  stroke-dasharray: 0.15 0.1;
+.star-vessel.is-destroyed rect {
+  fill: #5a4a6e;
+  fill-opacity: 0.7;
+  stroke: #9a7fb5;
+}
+
+.star-vessel.is-destroyed .star-cockpit {
+  fill: #9a7fb5;
+}
+
+.star-ghost {
   pointer-events: none;
 }
 
-.sea-ghost.is-invalid {
-  fill: var(--sea-hit);
-  stroke: var(--sea-hit);
+.star-ghost rect {
+  fill: var(--star-craft);
+  fill-opacity: 0.35;
+  stroke: var(--star-craft);
+  stroke-width: 0.06;
+  stroke-dasharray: 0.15 0.1;
 }
 
-.sea-miss {
-  fill: var(--muted);
+.star-ghost .star-cockpit {
+  fill: var(--star-craft);
+  fill-opacity: 0.6;
 }
 
-.sea-hit line {
-  stroke: var(--sea-hit);
-  stroke-width: 0.12;
-  stroke-linecap: round;
+.star-ghost.is-invalid rect,
+.star-ghost.is-invalid .star-cockpit {
+  fill: var(--star-hit);
+  stroke: var(--star-hit);
 }
 
-.sea-last {
+.star-miss {
+  fill: var(--star-miss);
+}
+
+.star-hit {
+  fill: var(--star-hit);
+  stroke: #fff1d6;
+  stroke-width: 0.03;
+  stroke-linejoin: round;
+}
+
+.star-last {
   fill: none;
-  stroke: var(--gold);
+  stroke: var(--star-last);
   stroke-width: 0.08;
 }
 
-.sea-aim {
-  fill: var(--accent);
-  fill-opacity: 0.18;
-  stroke: var(--accent);
+.star-aim {
+  fill: var(--star-aim);
+  fill-opacity: 0.2;
+  stroke: var(--star-aim);
   stroke-width: 0.06;
   pointer-events: none;
 }
 
 /* ── Side panel ────────────────────────────────────────────────────────── */
 
-.sea-side {
+.star-side {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -145,56 +181,56 @@
   background: var(--surface);
 }
 
-.sea-status {
+.star-status {
   margin: 0;
   font-weight: var(--weight-semibold);
 }
 
-.sea-status.is-finished {
+.star-status.is-finished {
   font-size: var(--text-lg);
 }
 
-.sea-last-line,
-.sea-reason {
+.star-last-line,
+.star-reason {
   margin: 0;
   font-size: var(--text-sm);
 }
 
-.sea-actions {
+.star-actions {
   display: flex;
   gap: var(--space-2);
   margin-left: auto;
 }
 
-/* ── Laying the fleet ──────────────────────────────────────────────────── */
+/* ── Deploying the fleet ───────────────────────────────────────────────── */
 
-.sea-editor {
+.star-editor {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-.sea-editor-head h2 {
+.star-editor-head h2 {
   margin: 0;
 }
 
-.sea-editor-head p {
+.star-editor-head p {
   margin: var(--space-1) 0 0;
 }
 
-.sea-editor-body {
+.star-editor-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;
   gap: var(--space-5);
   align-items: start;
 }
 
-.sea-editor-board {
+.star-editor-board {
   width: min(100%, calc(100dvh - 260px));
   margin: 0 auto;
 }
 
-.sea-editor-side {
+.star-editor-side {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -204,50 +240,50 @@
   background: var(--surface);
 }
 
-.sea-tray {
+.star-tray {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
 }
 
-.sea-tray-ship {
+.star-tray-vessel {
   gap: 8px;
 }
 
-.sea-tray-decks {
+.star-tray-decks {
   display: inline-flex;
   gap: 2px;
 }
 
-.sea-tray-deck {
+.star-tray-deck {
   width: 10px;
   height: 10px;
-  border-radius: 2px;
+  border-radius: 3px;
   background: currentColor;
 }
 
-.sea-tray-count {
+.star-tray-count {
   font-size: var(--text-sm);
 }
 
-.sea-editor-actions {
+.star-editor-actions {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
 
-.sea-editor-actions .secondary-button {
+.star-editor-actions .secondary-button {
   justify-content: flex-start;
 }
 
-.sea-editor-left {
+.star-editor-left {
   margin: 0;
   font-size: var(--text-sm);
 }
 
-/* ── Passing the device ────────────────────────────────────────────────── */
+/* ── Handing over the console ──────────────────────────────────────────── */
 
-.sea-curtain {
+.star-curtain {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -261,64 +297,64 @@
   text-align: center;
 }
 
-.sea-curtain h2,
-.sea-curtain p {
+.star-curtain h2,
+.star-curtain p {
   margin: 0;
 }
 
-.sea-curtain-last {
+.star-curtain-last {
   font-weight: var(--weight-semibold);
 }
 
 @media (max-width: 820px) {
-  .sea-boards {
+  .star-boards {
     grid-template-columns: minmax(0, 1fr);
     justify-items: center;
   }
 
-  .sea-figure {
+  .star-figure {
     width: 100%;
   }
 
-  .sea-figure.is-enemy {
+  .star-figure.is-enemy {
     order: 1;
   }
 
-  .sea-figure.is-own {
+  .star-figure.is-own {
     order: 2;
     width: 70%;
   }
 
-  .sea-editor-body {
+  .star-editor-body {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .sea-editor-board {
+  .star-editor-board {
     width: min(100%, calc(100dvh - 360px));
   }
 
-  .sea-editor-actions {
+  .star-editor-actions {
     flex-direction: row;
     flex-wrap: wrap;
   }
 
-  .sea-editor-actions .secondary-button {
+  .star-editor-actions .secondary-button {
     flex: 1 1 auto;
     justify-content: center;
   }
 
-  .sea-side {
+  .star-side {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .sea-actions {
+  .star-actions {
     margin-left: 0;
     flex-wrap: wrap;
   }
 
-  .sea-actions .primary-button,
-  .sea-actions .secondary-button {
+  .star-actions .primary-button,
+  .star-actions .secondary-button {
     flex: 1 1 auto;
     justify-content: center;
   }

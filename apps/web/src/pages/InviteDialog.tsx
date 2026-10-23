@@ -7,7 +7,7 @@ import { Dialog } from "../shared/Dialog";
 import { MessageBox } from "../shared/MessageBox";
 import { CATALOG } from "../games/catalog";
 import { loadDotsSetup, saveDotsSetup } from "../games/dots/storage";
-import { loadSeaBattleSetup, saveSeaBattleSetup } from "../games/seabattle/storage";
+import { loadStarBattleSetup, saveStarBattleSetup } from "../games/starbattle/storage";
 
 const DOTS_TARGETS: (number | null)[] = [null, 5, 10, 20];
 
@@ -20,7 +20,7 @@ export function InviteDialog({ myId, onClose, onSent }: { myId: string; onClose:
   const [opponent, setOpponent] = useState<Member | null>(null);
   const [size, setSize] = useState<number>(() => loadDotsSetup().size);
   const [target, setTarget] = useState<number | null>(() => loadDotsSetup().targetCaptures);
-  const [fleet, setFleet] = useState<FleetKind>(() => loadSeaBattleSetup().fleet);
+  const [fleet, setFleet] = useState<FleetKind>(() => loadStarBattleSetup().fleet);
   const [seat, setSeat] = useState<PlayerIndex>(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export function InviteDialog({ myId, onClose, onSent }: { myId: string; onClose:
       const options = game === "dots" ? { size, targetCaptures: target } : { fleet };
       const match = await createMatch({ game, options, opponent, seat });
       if (game === "dots") saveDotsSetup({ ...loadDotsSetup(), size, targetCaptures: target });
-      else saveSeaBattleSetup({ ...loadSeaBattleSetup(), fleet });
+      else saveStarBattleSetup({ ...loadStarBattleSetup(), fleet });
       onSent(match);
     } catch (err) {
       setError(err instanceof Error ? err.message : "");
@@ -122,17 +122,17 @@ export function InviteDialog({ myId, onClose, onSent }: { myId: string; onClose:
             ))}
           </>
         )}
-        {game === "seabattle" && (
+        {game === "starbattle" && (
           <>
-            {row(t("seabattle.setup.fleet"), (
+            {row(t("starbattle.setup.fleet"), (
               <div className="chip-row">
-                <Button variant="chip" selected={fleet === "classic"} onClick={() => setFleet("classic")}>{t("seabattle.setup.fleetClassic")}</Button>
-                <Button variant="chip" selected={fleet === "small"} onClick={() => setFleet("small")}>{t("seabattle.setup.fleetSmall")}</Button>
+                <Button variant="chip" selected={fleet === "classic"} onClick={() => setFleet("classic")}>{t("starbattle.setup.fleetClassic")}</Button>
+                <Button variant="chip" selected={fleet === "small"} onClick={() => setFleet("small")}>{t("starbattle.setup.fleetSmall")}</Button>
               </div>
             ))}
-            {row(t("seabattle.setup.firesFirst"), (
+            {row(t("starbattle.setup.firesFirst"), (
               <div className="chip-row">
-                <Button variant="chip" selected={seat === 0} onClick={() => setSeat(0)}>{t("seabattle.players.you")}</Button>
+                <Button variant="chip" selected={seat === 0} onClick={() => setSeat(0)}>{t("starbattle.players.you")}</Button>
                 <Button variant="chip" selected={seat === 1} onClick={() => setSeat(1)}>{opponent?.name ?? t("invite.them")}</Button>
               </div>
             ))}

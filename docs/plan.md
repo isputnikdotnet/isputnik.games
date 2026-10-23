@@ -300,23 +300,29 @@ Each new game is a folder in `packages/engine/src/<game>/` implementing
 `GameDefinition`, a page in `apps/web/src/games/<game>/`, an entry in the web
 app's catalog (`games/catalog.ts`: icon, name, summary) and a line in the
 registry. Everything else — identity, matches, invitations, polling — is shared.
-Built: Sea Battle (below). Candidates: Tic-tac-toe on a big board
+Built: Star Battle (below). Candidates: Tic-tac-toe on a big board
 (Крестики-нолики / Gomoku), Checkers (Шашки).
 
-### Sea Battle (Морской бой) — built 2026-10-23
+### Star Battle (Звёздный бой) — built 2026-10-23 as Sea Battle, in orbit since 0.5.0
 
-The paper game of hidden fleets, under its generic name (the board-game
-trademark is somebody else's). Game id `seabattle`.
+The squared-paper game of hidden fleets (Морской бой), under a name of its own
+(the board-game trademark is somebody else's) and, since the app is iSputnik,
+set in space: each player deploys a fleet of spacecraft in a 10×10 sector of a
+star chart, the single-module craft are sputniks, and the squares around a
+destroyed craft are a debris field — the story behind the rule that marks them
+as misses. Game id `starbattle`; it shipped one release as `seabattle`, so the
+server rewrites that id in the matches table on open and the web router opens
+the old address under the new id.
 
-- **Rules**: 10×10 sea each. Fleet "classic" is 4-3-3-2-2-2-1-1-1-1 (ten ships,
+- **Rules**: 10×10 sector each. Fleet "classic" is 4-3-3-2-2-2-1-1-1-1 (ten ships,
   twenty decks); "small" is 3-2-2-1-1-1 for a quick game — the one option, so
-  the two players share it. Ships are straight and may not touch, not even at
-  a corner. A hit earns another shot; a miss passes the turn. A sunk ship's
+  the two players share it. Craft are straight and may not touch, not even at
+  a corner. A hit earns another shot; a miss passes the turn. A destroyed craft's
   surrounding squares are marked as misses for the shooter, since nothing can
-  lie there. The game ends when a fleet is wholly sunk; score is ships sunk,
+  lie there. The game ends when a fleet is wholly destroyed; score is craft destroyed,
   which is what the match list shows.
-- **Laying the fleet is a move.** Seat 0 lays first, then seat 1, then seat 0
-  fires first — so the one move type, `{kind: "place", ships}` or
+- **Deploying the fleet is a move.** Seat 0 deploys first, then seat 1, then seat 0
+  fires first — so the one move type, `{kind: "place", vessels}` or
   `{kind: "shoot", x, y}`, carries the whole game through the same match
   tables, move count and turn column as Dots. Placing in parallel would need a
   "both to move" turn the home app's "your move" count does not know; sequential
@@ -324,26 +330,27 @@ trademark is somebody else's). Game id `seabattle`.
 - **Hidden information.** The state holds both fleets, so the engine gained an
   optional `viewFor(state, seat)` on `GameDefinition`: the server answers every
   read and every move with the view for the asking seat, in which the other
-  fleet is reduced to the ships already sunk (`placed` still says it was laid).
+  fleet is reduced to the craft already destroyed (`placed` still says it was laid).
   The computer opponent reads only what a player could — its own shots and the
-  sunk ships — never the other fleet. A local game keeps the whole state on the
+  destroyed craft — never the other fleet. A local game keeps the whole state on the
   device; with two people on one screen a curtain goes up between turns.
-- **Computer opponent.** Lays its fleet at random. Easy fires at random and,
-  once a ship is found, at any neighbour of a hit, forgetting the ship now and
+- **Computer opponent.** Deploys its fleet at random. Easy fires at random and,
+  once a craft is found, at any neighbour of a hit, forgetting the craft now and
   then. Normal hunts along the line and searches on the lattice the longest
-  ship afloat must cross, skipping squares nothing afloat fits in. Hard counts,
-  for every open square, the consistent placements of the ships still afloat
-  (no miss, no sunk deck, touching no hit it does not cover) and fires where the
-  count is highest, which with a ship found becomes the placements through its
-  hits. Measured over sixty random fleets: about 63, 58 and 55 shots to sink a
-  classic fleet — the four single-deckers keep the levels close, as on paper.
-- **Web**: `games/seabattle/` — `SeaBoard` (one sea as SVG: lettered columns
-  in the interface language, А–К in Russian), `FleetEditor` (tray of ships,
-  tap to lay, tap to lift, rotate, Random, Clear, Ready), `SeaBattleBoards`
-  (the viewer's two seas), the local page with the curtain, and the match page.
+  craft intact must cross, skipping squares nothing intact fits in. Hard counts,
+  for every open square, the consistent placements of the craft still intact
+  (no miss, no destroyed module, touching no hit it does not cover) and fires
+  where the count is highest, which with a craft found becomes the placements
+  through its hits. Measured over sixty random fleets: about 63, 58 and 55 shots
+  to destroy a classic fleet — the four sputniks keep the levels close, as on paper.
+- **Web**: `games/starbattle/` — `SectorBoard` (one sector as SVG over a
+  starfield: lettered columns in the interface language, А–К in Russian, craft
+  as capsules, a burst for a hit), `FleetEditor` (tray of craft, tap to deploy,
+  tap to lift, rotate, Random, Clear, Ready), `StarBattleBoards` (the viewer's
+  two sectors), the local page with the curtain, and the match page.
   The invite dialog became the lobby's own (`pages/InviteDialog`) with a game
   chip row and each game's settings; `GameOverDialog` moved to `shared/`.
-- **Home side**: the cards on For you name the game (`user:games.seabattle`);
+- **Home side**: the cards on For you name the game (`user:games.starbattle`);
   nothing else changed there.
 
 ## Open points

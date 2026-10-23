@@ -10,12 +10,16 @@ export type Route =
 
 const ID = /^[A-Za-z0-9_-]+$/;
 
+/** Game ids that were renamed: an old address (a bookmark, a card on the home
+ *  app from before its upgrade) opens the game under its new id. */
+const RENAMED_GAMES: Record<string, string> = { seabattle: "starbattle" };
+
 export function parseRoute(pathname: string): Route {
   let rest = pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname;
   rest = rest.replace(/^\/+|\/+$/g, "");
   if (rest === "") return { name: "lobby" };
   const parts = rest.split("/");
-  const [gameId] = parts;
+  const gameId = RENAMED_GAMES[parts[0]] ?? parts[0];
   if (!/^[a-z][a-z0-9-]*$/.test(gameId)) return { name: "notFound" };
   if (parts.length === 1) return { name: "game", gameId };
   // /games/<game>/m/<match id> — an online match.

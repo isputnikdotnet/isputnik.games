@@ -61,7 +61,7 @@ export interface GameDefinition<O, S extends { status: GameStatus }, M> {
    *  (captures in Dots). Omitted when the game keeps no score. */
   scoreOf?(state: S): [number, number];
   /** The state as one seat may see it, for games with hidden information (a
-   *  fleet in Sea Battle). The server sends each player their view and never
+   *  fleet in Star Battle). The server sends each player their view and never
    *  the whole state; a game without secrets omits it. */
   viewFor?(state: S, seat: PlayerIndex): S;
   ai?: GameAi<S, M>;

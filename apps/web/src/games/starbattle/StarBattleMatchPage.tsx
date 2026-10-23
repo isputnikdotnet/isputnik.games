@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Flag } from "lucide-react";
-import { SeaBattle, otherPlayer, type PlayerIndex, type SeaBattleMove, type SeaBattleState } from "@isputnik/games-engine";
+import { StarBattle, otherPlayer, type PlayerIndex, type StarBattleMove, type StarBattleState } from "@isputnik/games-engine";
 import { ApiError, answerMatch, postMove, resignMatch } from "../../api";
 import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
@@ -11,14 +11,14 @@ import { href, navigate } from "../../router";
 import { useSession } from "../../session";
 import { useMatch } from "../dots/useMatch";
 import { FleetEditor } from "./FleetEditor";
-import { SeaBattleBoards, lastShotLine } from "./SeaBattleBoards";
-import { PageHead } from "./SeaBattlePage";
+import { StarBattleBoards, lastShotLine } from "./StarBattleBoards";
+import { PageHead } from "./StarBattlePage";
 
-// An online match of Sea Battle. The server holds both fleets and sends this
+// An online match of Star Battle. The server holds both fleets and sends this
 // seat its own view: its fleet, its shots, and of the other fleet only the
-// ships it has sunk. Laying the fleet is the first move; while it is their
+// vessels it has destroyed. Deploying the fleet is the first move; while it is their
 // move the page polls (useMatch).
-export function SeaBattleMatchPage({ matchId }: { matchId: string }) {
+export function StarBattleMatchPage({ matchId }: { matchId: string }) {
   const { t } = useTranslation();
   const session = useSession();
   const myId = session.status === "ready" ? session.user.id : "";
@@ -30,8 +30,8 @@ export function SeaBattleMatchPage({ matchId }: { matchId: string }) {
 
   if (!match) {
     return (
-      <section className="sea-page">
-        <PageHead title={t("games.seabattle.name")} />
+      <section className="star-page">
+        <PageHead title={t("games.starbattle.name")} />
         {error
           ? <MessageBox tone="error" title={t("match.loadFailed")}>{error === "network" ? t("app.unavailableBody") : error}</MessageBox>
           : <p className="app-status muted">{t("app.loading")}</p>}
@@ -42,14 +42,14 @@ export function SeaBattleMatchPage({ matchId }: { matchId: string }) {
   const mySeat: PlayerIndex = match.players[0].id === myId ? 0 : 1;
   const theirSeat = otherPlayer(mySeat);
   const them = match.players[theirSeat];
-  const state = match.state as SeaBattleState;
-  const phase = SeaBattle.phaseOf(state);
+  const state = match.state as StarBattleState;
+  const phase = StarBattle.phaseOf(state);
   const myMove = match.status === "playing" && match.turn === mySeat;
   const finished = match.status === "finished";
   const names: [string, string] = [mySeat === 0 ? t("match.you") : them.name, mySeat === 1 ? t("match.you") : them.name];
-  const columns = t("seabattle.columns");
+  const columns = t("starbattle.columns");
 
-  const send = async (move: SeaBattleMove) => {
+  const send = async (move: StarBattleMove) => {
     if (!myMove || sending) return;
     setSending(true);
     setMoveError(null);
@@ -88,15 +88,15 @@ export function SeaBattleMatchPage({ matchId }: { matchId: string }) {
     case "cancelled": statusLine = t("match.cancelled"); break;
     case "playing":
       if (phase === "placing") {
-        statusLine = myMove ? t("seabattle.place.title", { player: t("match.you") }) : t("seabattle.status.waitLaying", { name: them.name });
+        statusLine = myMove ? t("starbattle.place.title", { player: t("match.you") }) : t("starbattle.status.waitDeploying", { name: them.name });
       } else if (myMove && state.lastShot && state.lastShot.by === mySeat && state.lastShot.result !== "miss") {
-        statusLine = state.lastShot.result === "sunk" ? t("seabattle.status.sunkAgain") : t("seabattle.status.hitAgain");
+        statusLine = state.lastShot.result === "destroyed" ? t("starbattle.status.destroyedAgain") : t("starbattle.status.hitAgain");
       } else {
-        statusLine = myMove ? t("seabattle.status.yourShot") : t("seabattle.status.theirShot", { name: them.name });
+        statusLine = myMove ? t("starbattle.status.yourShot") : t("starbattle.status.theirShot", { name: them.name });
       }
       break;
     case "finished":
-      statusLine = match.winner === null ? t("seabattle.end.draw") : match.winner === mySeat ? t("match.won") : t("match.lost", { name: them.name });
+      statusLine = match.winner === null ? t("starbattle.end.draw") : match.winner === mySeat ? t("match.won") : t("match.lost", { name: them.name });
       break;
   }
 
@@ -104,38 +104,38 @@ export function SeaBattleMatchPage({ matchId }: { matchId: string }) {
     if (!finished) return null;
     const loser = names[otherPlayer(match.winner ?? 0)];
     switch (match.finishReason) {
-      case "target": return t("seabattle.end.reasonTarget", { player: loser });
-      case "agreed": return t("seabattle.end.reasonAgreed");
-      case "resigned": return t("seabattle.end.reasonResigned", { player: loser });
+      case "target": return t("starbattle.end.reasonTarget", { player: loser });
+      case "agreed": return t("starbattle.end.reasonAgreed");
+      case "resigned": return t("starbattle.end.reasonResigned", { player: loser });
       default: return null;
     }
   })();
   const lastLine = state.lastShot ? lastShotLine(t, columns, state.lastShot, names[state.lastShot.by]) : null;
   const score = match.score ?? [0, 0];
-  const scoreLine = t("seabattle.end.scoreLine", { p1Name: names[0], p1: score[0], p2: score[1], p2Name: names[1] });
+  const scoreLine = t("starbattle.end.scoreLine", { p1Name: names[0], p1: score[0], p2: score[1], p2Name: names[1] });
 
-  const laying = match.status === "playing" && phase === "placing" && myMove && !state.placed[mySeat];
+  const deploying = match.status === "playing" && phase === "placing" && myMove && !state.placed[mySeat];
 
   return (
-    <section className="sea-page">
-      <PageHead title={t("games.seabattle.name")} />
-      {laying ? (
+    <section className="star-page">
+      <PageHead title={t("games.starbattle.name")} />
+      {deploying ? (
         <>
           <FleetEditor
             fleet={state.fleet}
             size={state.size}
-            title={t("seabattle.place.title", { player: t("match.you") })}
-            readyLabel={t("seabattle.place.ready")}
+            title={t("starbattle.place.title", { player: t("match.you") })}
+            readyLabel={t("starbattle.place.ready")}
             busy={sending}
-            onReady={(ships) => void send({ kind: "place", ships })}
+            onReady={(vessels) => void send({ kind: "place", vessels })}
           />
           {moveError && <MessageBox tone="error" title={t("match.moveFailed")}>{moveError}</MessageBox>}
         </>
       ) : (
-        <div className="sea-layout">
+        <div className="star-layout">
           {match.status === "playing" || finished
             ? (
-              <SeaBattleBoards
+              <StarBattleBoards
                 state={state}
                 viewer={mySeat}
                 names={names}
@@ -144,14 +144,14 @@ export function SeaBattleMatchPage({ matchId }: { matchId: string }) {
               />
             )
             : <p className="app-status muted">{statusLine}</p>}
-          <aside className="sea-side">
+          <aside className="star-side">
             {(match.status === "playing" || finished) && (
-              <p className={`sea-status${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
+              <p className={`star-status${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
             )}
-            {lastLine && !finished && <p className="muted sea-last-line">{lastLine}</p>}
-            {reason && <p className="muted sea-reason">{reason}</p>}
+            {lastLine && !finished && <p className="muted star-last-line">{lastLine}</p>}
+            {reason && <p className="muted star-reason">{reason}</p>}
             {moveError && <MessageBox tone="error" title={t("match.moveFailed")}>{moveError}</MessageBox>}
-            <div className="sea-actions">
+            <div className="star-actions">
               {match.status === "playing" && (
                 <Button variant="secondary" onClick={() => setConfirmResign(true)}>
                   <Flag size={16} aria-hidden="true" /> {t("match.resign")}

@@ -94,7 +94,7 @@ describe("matches API", () => {
     expect(unknown.json().error).toBe("Unknown game");
   });
 
-  it("sends each player of Sea Battle their own view: the other fleet stays on the server", async () => {
+  it("sends each player of Star Battle their own view: the other fleet stays on the server", async () => {
     const fleet = (shift: number) => [
       { x: 0, y: shift, length: 3, horizontal: true },
       { x: 4, y: shift, length: 2, horizontal: true },
@@ -104,41 +104,41 @@ describe("matches API", () => {
       { x: 4, y: shift + 2, length: 1, horizontal: true }
     ];
     const created = await post("/games/api/matches", mum, {
-      game: "seabattle", options: { fleet: "small", extra: true }, opponent: { id: "dad", name: "Dad" }, seat: 0
+      game: "starbattle", options: { fleet: "small", extra: true }, opponent: { id: "dad", name: "Dad" }, seat: 0
     });
     expect(created.statusCode).toBe(201);
     expect(created.json().options).toEqual({ fleet: "small" });
     const id = created.json().id as string;
     await post(`/games/api/matches/${id}/accept`, dad);
 
-    // A shot before the fleets are laid is illegal; mum lays hers, then dad his.
+    // A shot before the fleets are deployed is illegal; mum lays hers, then dad his.
     expect((await post(`/games/api/matches/${id}/moves`, mum, { move: { kind: "shoot", x: 0, y: 0 }, moveCount: 0 })).statusCode).toBe(400);
-    const laid = await post(`/games/api/matches/${id}/moves`, mum, { move: { kind: "place", ships: fleet(0) }, moveCount: 0 });
-    expect(laid.statusCode).toBe(200);
-    expect(laid.json().state.ships).toEqual([fleet(0), null]);
-    expect(laid.json().turn).toBe(1);
+    const deployed = await post(`/games/api/matches/${id}/moves`, mum, { move: { kind: "place", vessels: fleet(0) }, moveCount: 0 });
+    expect(deployed.statusCode).toBe(200);
+    expect(deployed.json().state.vessels).toEqual([fleet(0), null]);
+    expect(deployed.json().turn).toBe(1);
 
-    // Dad's view before he lays his own: mum's fleet is there as "laid", not as ships.
+    // Dad's view before he lays his own: mum's fleet is there as "deployed", not as vessels.
     const dadView = (await get(`/games/api/matches/${id}`, dad)).json();
     expect(dadView.state.placed).toEqual([true, false]);
-    expect(dadView.state.ships).toEqual([[], null]);
+    expect(dadView.state.vessels).toEqual([[], null]);
 
-    await post(`/games/api/matches/${id}/moves`, dad, { move: { kind: "place", ships: fleet(5) }, moveCount: 1 });
+    await post(`/games/api/matches/${id}/moves`, dad, { move: { kind: "place", vessels: fleet(5) }, moveCount: 1 });
     // Mum fires first; a hit keeps the turn, a miss passes it.
     const hit = await post(`/games/api/matches/${id}/moves`, mum, { move: { kind: "shoot", x: 0, y: 5 }, moveCount: 2 });
     expect(hit.json().state.lastShot).toEqual({ by: 0, x: 0, y: 5, result: "hit" });
     expect(hit.json().turn).toBe(0);
-    expect(hit.json().state.ships[1]).toEqual([]);
-    const sunk = await post(`/games/api/matches/${id}/moves`, mum, { move: { kind: "shoot", x: 0, y: 7 }, moveCount: 3 });
-    expect(sunk.json().state.lastShot.result).toBe("sunk");
-    expect(sunk.json().state.ships[1]).toEqual([{ x: 0, y: 7, length: 1, horizontal: true }]);
-    expect(sunk.json().score).toEqual([1, 0]);
+    expect(hit.json().state.vessels[1]).toEqual([]);
+    const destroyed = await post(`/games/api/matches/${id}/moves`, mum, { move: { kind: "shoot", x: 0, y: 7 }, moveCount: 3 });
+    expect(destroyed.json().state.lastShot.result).toBe("destroyed");
+    expect(destroyed.json().state.vessels[1]).toEqual([{ x: 0, y: 7, length: 1, horizontal: true }]);
+    expect(destroyed.json().score).toEqual([1, 0]);
     const miss = await post(`/games/api/matches/${id}/moves`, mum, { move: { kind: "shoot", x: 9, y: 9 }, moveCount: 4 });
     expect(miss.json().turn).toBe(1);
-    // The JSON dad gets never carries mum's unsunk ships, anywhere.
+    // The JSON dad gets never carries mum's unsunk vessels, anywhere.
     const dadNow = (await get(`/games/api/matches/${id}`, dad)).json();
-    expect(dadNow.state.ships[0]).toEqual([]);
-    expect(dadNow.state.ships[1]).toEqual(fleet(5));
+    expect(dadNow.state.vessels[0]).toEqual([]);
+    expect(dadNow.state.vessels[1]).toEqual(fleet(5));
     expect(JSON.stringify(dadNow)).not.toContain('{"x":0,"y":0,"length":3');
   });
 
