@@ -122,7 +122,8 @@ describe("StarBattlePage, against the computer", () => {
     }
     const dialog = screen.getByRole("dialog", { name: "Game over" });
     expect(dialog).toHaveTextContent("You win");
-    expect(dialog).toHaveTextContent("You 6 : 0 Computer");
+    // The computer's run of shots may have destroyed a one-module vessel of ours: its score is the game's.
+    expect(dialog).toHaveTextContent(`You 6 : ${loadStarBattleGame()!.state.destroyed[1]} Computer`);
     expect(dialog).toHaveTextContent("Computer's fleet is destroyed.");
     expect(within(dialog).getByRole("button", { name: "New game" })).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Main menu" }));
