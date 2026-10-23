@@ -364,6 +364,21 @@
     "newGame": "New game",
     "exit": "Exit game",
     "taken": "Pieces taken",
+    "theme": {
+      "open": "Board style",
+      "title": "Board style",
+      "done": "Done",
+      "mono": "Mono",
+      "monoHint": "White and grey, the plainest",
+      "classic": "Classic",
+      "classicHint": "Light wood",
+      "green": "Green",
+      "greenHint": "The tournament board",
+      "slate": "Slate",
+      "slateHint": "Cool grey-blue",
+      "walnut": "Walnut",
+      "walnutHint": "Framed, shaded pieces"
+    },
     "end": {
       "winner": "{{player}} wins",
       "draw": "A draw",

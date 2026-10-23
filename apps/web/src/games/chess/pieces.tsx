@@ -4,6 +4,10 @@
 // 45-unit square: White is light with a dark outline, Black dark with light
 // detail lines, so both read on either colour of square and on every theme.
 
+// Loading the pieces sets the board theme on the page (theme.ts), so every
+// place that draws one — the lobby preview too — wears the chosen look.
+import "./theme";
+
 const BASE = <rect x="10" y="35" width="25" height="5" rx="1.6" />;
 
 const SHAPES: Record<string, { body: React.ReactNode; detail?: React.ReactNode }> = {
@@ -110,6 +114,28 @@ export function ChessPiece({ letter, className }: { letter: string; className?: 
     >
       <g className="chess-piece-body">{shape.body}</g>
       {shape.detail && <g className="chess-piece-detail">{shape.detail}</g>}
+    </svg>
+  );
+}
+
+/** The shading Walnut paints its pieces with (chess.css names the ids), put
+ *  once on a page that has a board. Every other theme fills flat, and where
+ *  these are missing Walnut falls back to flat ivory and ebony. */
+export function ChessDefs() {
+  return (
+    <svg className="chess-defs" width="0" height="0" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="chess-ivory" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fffaf0" />
+          <stop offset="0.55" stopColor="#f0e2c4" />
+          <stop offset="1" stopColor="#c9b18a" />
+        </linearGradient>
+        <linearGradient id="chess-ebony" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#5a4130" />
+          <stop offset="0.5" stopColor="#2a1c14" />
+          <stop offset="1" stopColor="#120a06" />
+        </linearGradient>
+      </defs>
     </svg>
   );
 }

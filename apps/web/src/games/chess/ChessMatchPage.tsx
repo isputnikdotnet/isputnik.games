@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Flag, Repeat2 } from "lucide-react";
+import { ArrowLeft, Flag, Palette, Repeat2 } from "lucide-react";
 import type { ChessMove, ChessState, PlayerIndex } from "@isputnik/games-engine";
 import { ApiError, answerMatch, postMessage, postMove, resignMatch } from "../../api";
 import { Comms } from "../../shared/Comms";
@@ -18,6 +18,7 @@ import { useMatch } from "../dots/useMatch";
 import { chessLines } from "./comms";
 import { chessReason } from "./ending";
 import { ChessTable } from "./ChessTable";
+import { ChessThemeDialog } from "./ThemeDialog";
 
 // An online game of chess: the same table, the server's position, and the
 // other player somewhere else. The board faces your colour; moves go to the
@@ -35,6 +36,7 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
   const [confirmResign, setConfirmResign] = useState(false);
   const [resultDismissed, setResultDismissed] = useState(false);
   const [flipped, setFlipped] = useState(false);
+  const [choosingTheme, setChoosingTheme] = useState(false);
 
   if (!match) {
     return (
@@ -159,6 +161,9 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
                 <Button variant="secondary" onClick={() => setFlipped((f) => !f)}>
                   <Repeat2 size={16} aria-hidden="true" /> {t("chess.flip")}
                 </Button>
+                <Button variant="secondary" onClick={() => setChoosingTheme(true)}>
+                  <Palette size={16} aria-hidden="true" /> {t("chess.theme.open")}
+                </Button>
                 <Button variant="secondary" onClick={() => setConfirmResign(true)}>
                   <Flag size={16} aria-hidden="true" /> {t("match.resign")}
                 </Button>
@@ -180,6 +185,7 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
         }
       />
 
+      {choosingTheme && <ChessThemeDialog onClose={() => setChoosingTheme(false)} />}
       {finished && !resultDismissed && (
         <GameOverDialog
           headline={statusLine}

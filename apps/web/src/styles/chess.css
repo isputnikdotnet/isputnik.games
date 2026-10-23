@@ -1,9 +1,18 @@
-/* Chess: a wooden board and its pieces keep their colours on every theme —
-   light and dark squares are the game's own language, like Dots' blue and red.
+/* Chess: the board and its pieces keep their own colours whatever the app's
+   theme — light and dark squares are the game's own language, like Dots' blue
+   and red. Which colours is the player's choice (theme.ts), from flat Mono to
+   shaded Walnut; Classic wood is the default. The selectors match the root
+   (the whole page) and a theme swatch alike, so the picker can show each one;
+   every theme starts from the Classic set below and changes what it needs.
    The panel beside the board wears the app's theme. */
-:root {
+:root,
+[data-chess-theme] {
   --chess-light: #ecdcbf;
   --chess-dark: #a97f5a;
+  --chess-light-grain: none;
+  --chess-dark-grain: none;
+  --chess-frame: transparent;
+  --chess-frame-width: 0;
   --chess-mark: rgba(30, 72, 40, 0.42);
   --chess-last: rgba(222, 186, 46, 0.42);
   --chess-selected: rgba(222, 186, 46, 0.68);
@@ -13,6 +22,66 @@
   --chess-black-fill: #2b2622;
   --chess-black-line: #0f0d0b;
   --chess-black-detail: #d8cfbf;
+  --chess-white-paint: var(--chess-white-fill);
+  --chess-black-paint: var(--chess-black-fill);
+  --chess-piece-shadow: none;
+}
+
+/* Mono: white and grey, pieces pure white and pure black — the least to look at. */
+[data-chess-theme="mono"] {
+  --chess-light: #ffffff;
+  --chess-dark: #b9b9b9;
+  --chess-mark: rgba(0, 0, 0, 0.3);
+  --chess-last: rgba(0, 0, 0, 0.12);
+  --chess-selected: rgba(0, 0, 0, 0.24);
+  --chess-white-fill: #ffffff;
+  --chess-white-line: #000000;
+  --chess-black-fill: #000000;
+  --chess-black-line: #000000;
+  --chess-black-detail: #ffffff;
+}
+
+/* Green: cream and green, the tournament board. */
+[data-chess-theme="green"] {
+  --chess-light: #eeeed2;
+  --chess-dark: #769656;
+  --chess-mark: rgba(20, 40, 20, 0.36);
+  --chess-last: rgba(246, 246, 105, 0.5);
+  --chess-selected: rgba(246, 246, 105, 0.8);
+}
+
+/* Slate: grey-blue, cool and quiet. */
+[data-chess-theme="slate"] {
+  --chess-light: #dee3e6;
+  --chess-dark: #8ca2ad;
+  --chess-mark: rgba(20, 40, 60, 0.36);
+  --chess-last: rgba(120, 180, 230, 0.45);
+  --chess-selected: rgba(120, 180, 230, 0.75);
+  --chess-black-fill: #232a30;
+  --chess-black-line: #0b0f12;
+  --chess-black-detail: #c9d4db;
+}
+
+/* Walnut: a framed board of grained wood, ivory and ebony pieces shaded
+   (gradients from ChessDefs) and standing on a shadow. */
+[data-chess-theme="walnut"] {
+  --chess-light: #e3c79c;
+  --chess-dark: #7a4a2a;
+  --chess-light-grain: repeating-linear-gradient(100deg, rgba(120, 80, 40, 0.07) 0 2px, transparent 2px 7px);
+  --chess-dark-grain: repeating-linear-gradient(80deg, rgba(30, 12, 0, 0.16) 0 2px, transparent 2px 6px);
+  --chess-frame: #3e2414;
+  --chess-frame-width: 6px;
+  --chess-mark: rgba(30, 20, 10, 0.42);
+  --chess-last: rgba(236, 170, 60, 0.42);
+  --chess-selected: rgba(236, 170, 60, 0.7);
+  --chess-white-fill: #f6ecd6;
+  --chess-white-line: #3a2a1a;
+  --chess-black-fill: #241812;
+  --chess-black-line: #0b0603;
+  --chess-black-detail: #c9a777;
+  --chess-white-paint: url(#chess-ivory) var(--chess-white-fill);
+  --chess-black-paint: url(#chess-ebony) var(--chess-black-fill);
+  --chess-piece-shadow: drop-shadow(0 1.5px 1.2px rgba(0, 0, 0, 0.45));
 }
 
 /* On the game stage the board and its two players are one column; the
@@ -34,6 +103,7 @@
   aspect-ratio: 1;
   border-radius: 8px;
   overflow: hidden;
+  border: var(--chess-frame-width) solid var(--chess-frame);
   box-shadow: 0 10px 30px var(--shadow);
   user-select: none;
   touch-action: manipulation;
@@ -57,11 +127,11 @@
 }
 
 .chess-square.is-light {
-  background: var(--chess-light);
+  background: var(--chess-light-grain), var(--chess-light);
 }
 
 .chess-square.is-dark {
-  background: var(--chess-dark);
+  background: var(--chess-dark-grain), var(--chess-dark);
 }
 
 /* The last move's two squares, and the piece picked up: a tint over the square. */
@@ -148,6 +218,7 @@
 .chess-piece {
   display: block;
   overflow: visible;
+  filter: var(--chess-piece-shadow);
 }
 
 .chess-piece-body > * {
@@ -162,7 +233,7 @@
 }
 
 .chess-piece.is-white .chess-piece-body > * {
-  fill: var(--chess-white-fill);
+  fill: var(--chess-white-paint);
   stroke: var(--chess-white-line);
 }
 
@@ -171,7 +242,7 @@
 }
 
 .chess-piece.is-black .chess-piece-body > * {
-  fill: var(--chess-black-fill);
+  fill: var(--chess-black-paint);
   stroke: var(--chess-black-line);
 }
 
@@ -341,6 +412,62 @@
   inset: 8%;
   width: 84%;
   height: 84%;
+}
+
+/* ── Board style (ThemeDialog.tsx) ───────────────────────────────────── */
+
+.chess-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.chess-themes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.chess-theme-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-2);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.chess-theme-choice:hover {
+  border-color: var(--muted);
+}
+
+.chess-theme-choice.is-selected {
+  border-color: var(--mint);
+  background: color-mix(in srgb, var(--mint) 10%, var(--surface));
+}
+
+.chess-theme-board {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  width: 72px;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: var(--chess-frame-width) solid var(--chess-frame);
+  border-width: min(var(--chess-frame-width), 4px);
+  border-radius: 6px;
+}
+
+.chess-theme-name {
+  font-weight: var(--weight-semibold);
+}
+
+.chess-theme-hint {
+  font-size: var(--text-sm);
+  line-height: 1.3;
 }
 
 /* ── A phone ───────────────────────────────────────────────────────────── */

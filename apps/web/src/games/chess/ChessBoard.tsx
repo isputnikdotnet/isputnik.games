@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Chess, type ChessMove, type ChessState, type PlayerIndex, type Promotion } from "@isputnik/games-engine";
 import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
-import { ChessPiece } from "./pieces";
+import { ChessDefs, ChessPiece } from "./pieces";
 
 const FILES = "abcdefgh";
 
@@ -57,6 +57,7 @@ export function ChessBoard({
 
   return (
     <>
+      <ChessDefs />
       <div
         className={`chess-board${movable === null ? " is-idle" : ""}`}
         role="group"
