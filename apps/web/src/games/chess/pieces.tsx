@@ -82,6 +82,20 @@ const SHAPES: Record<string, { body: React.ReactNode; detail?: React.ReactNode }
   }
 };
 
+/** The same piece as a group inside another SVG (the lobby's board preview),
+ *  its top-left corner at (x, y) and `size` units square. */
+export function PieceGlyph({ letter, x, y, size }: { letter: string; x: number; y: number; size: number }) {
+  const shape = SHAPES[letter.toLowerCase()];
+  if (!shape) return null;
+  const white = letter === letter.toUpperCase();
+  return (
+    <g className={`chess-piece ${white ? "is-white" : "is-black"}`} transform={`translate(${x} ${y}) scale(${size / 45})`}>
+      <g className="chess-piece-body">{shape.body}</g>
+      {shape.detail && <g className="chess-piece-detail">{shape.detail}</g>}
+    </g>
+  );
+}
+
 /** A piece by its letter: "N" a White knight, "q" a Black queen. */
 export function ChessPiece({ letter, className }: { letter: string; className?: string }) {
   const shape = SHAPES[letter.toLowerCase()];

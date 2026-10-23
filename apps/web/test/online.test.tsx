@@ -58,10 +58,10 @@ beforeEach(() => {
 });
 
 describe("lobby, online section", () => {
-  it("groups matches by who they wait on, and accepting opens the match", async () => {
+  it("puts what waits on you first, the rest after, and accepting opens the match", async () => {
     vi.mocked(api.fetchMatches).mockResolvedValue([
       summary({ id: "inv", status: "invited", createdBy: "dad", players: [{ id: "dad", name: "Dad" }, { id: "mum", name: "Мама" }], turn: null }),
-      summary({ id: "mine", turn: 0 }),
+      summary({ id: "mine", turn: 0, score: [3, 1] }),
       summary({ id: "theirs", turn: 1, score: [2, 1] }),
       summary({ id: "done", status: "finished", turn: null, winner: 1, finishReason: "resigned" })
     ]);
@@ -69,16 +69,41 @@ describe("lobby, online section", () => {
     const user = userEvent.setup();
     withSession(<LobbyPage />);
 
-    const invitations = await screen.findByRole("heading", { name: "Invitations" });
-    const invitationList = invitations.parentElement!;
-    expect(within(invitationList).getByText(/Dad invites you/)).toBeInTheDocument();
-    expect(within(screen.getByRole("heading", { name: "Your move" }).parentElement!).getByText("vs Dad")).toBeInTheDocument();
-    expect(within(screen.getByRole("heading", { name: "Waiting for the other player" }).parentElement!).getByText(/2 : 1/)).toBeInTheDocument();
-    expect(within(screen.getByRole("heading", { name: "Finished" }).parentElement!).getByText(/Dad wins/)).toBeInTheDocument();
+    const waiting = await screen.findByRole("region", { name: /^Waiting for you/ });
+    await within(waiting).findByText("Dad invites you");
+    expect(screen.getByText(/2 games are waiting on you\./)).toBeInTheDocument();
+    const cards = within(waiting).getAllByRole("listitem");
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).toHaveTextContent("Invitation");
+    expect(cards[1]).toHaveTextContent("Your move");
+    expect(cards[1]).toHaveTextContent("vs Dad");
+    expect(cards[1]).toHaveTextContent("3 : 1");
+    // Their move: one quiet line, each a link to its match.
+    expect(within(waiting).getByRole("link", { name: "Dots vs Dad" })).toHaveAttribute("href", "/games/dots/m/theirs");
 
-    await user.click(within(invitationList).getByRole("button", { name: "Accept" }));
+    // The Dots card says it is your move there.
+    const games = screen.getByRole("region", { name: "Choose a game" });
+    const dotsCard = within(games).getByRole("heading", { name: "Dots" }).closest("article")!;
+    expect(dotsCard).toHaveTextContent("Your move");
+
+    const recent = screen.getByRole("region", { name: "Recent games" });
+    expect(within(recent).getByRole("link", { name: /Dots vs Dad.*Dad wins/ })).toHaveAttribute("href", "/games/dots/m/done");
+
+    await user.click(within(cards[0]).getByRole("button", { name: "Accept" }));
     expect(api.answerMatch).toHaveBeenCalledWith("inv", "accept");
     await waitFor(() => expect(window.location.pathname).toBe("/games/dots/m/inv"));
+  });
+
+  it("a game card's Invite opens the dialog on that game", async () => {
+    vi.mocked(api.fetchMatches).mockResolvedValue([]);
+    vi.mocked(api.fetchMembers).mockResolvedValue([{ id: "dad", name: "Dad" }]);
+    const user = userEvent.setup();
+    withSession(<LobbyPage />);
+    const games = await screen.findByRole("region", { name: "Choose a game" });
+    const chessCard = within(games).getByRole("heading", { name: "Chess" }).closest("article")!;
+    await user.click(within(chessCard).getByRole("button", { name: "Invite" }));
+    const dialog = screen.getByRole("dialog", { name: "Invite to play" });
+    expect(within(dialog).getByRole("button", { name: "Chess" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("sends an invitation from the dialog", async () => {

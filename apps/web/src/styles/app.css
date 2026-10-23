@@ -561,76 +561,459 @@
 }
 
 /* ── Lobby ─────────────────────────────────────────────────────────────── */
+/* What waits on the member, the games, the last results (LobbyPage). */
+
+.lobby {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.lobby-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.lobby-head .page-head {
+  margin-bottom: 0;
+}
+
+.lobby-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.lobby-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  box-sizing: border-box;
+  border-radius: 11px;
+  background: var(--accent);
+  color: var(--canvas);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+}
+
+/* A state, small and solid so it is seen first: on a waiting card beside the
+   game's name, on a game card over its picture. */
+.lobby-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.lobby-pill.is-move {
+  background: var(--accent);
+  color: var(--canvas);
+}
+
+.lobby-pill.is-move::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.lobby-pill.is-progress {
+  background: var(--ink);
+  color: var(--canvas);
+}
+
+.lobby-pill.is-invite,
+.lobby-pill.is-new {
+  background: #f2b84b;
+  color: #1d2a2b;
+}
+
+/* ── Waiting for you ─────────────────────────────────────────────────── */
+
+.lobby-waiting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.lobby-waiting > .muted {
+  margin: 0;
+}
+
+.waiting-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.waiting-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.waiting-card-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-decoration: none;
+}
+
+.waiting-card-main .muted {
+  font-size: var(--text-sm);
+}
+
+.waiting-card-kind {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.waiting-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: none;
+}
+
+.waiting-card-actions a,
+.game-card-play {
+  text-decoration: none;
+}
+
+.lobby-theirs {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.lobby-theirs-link {
+  color: var(--ink);
+}
+
+.avatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #1d2a2b;
+  font-weight: var(--weight-bold);
+  line-height: 1;
+}
+
+/* ── The games ───────────────────────────────────────────────────────── */
+
+.lobby-games {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.lobby-games-head p {
+  margin: 2px 0 0;
+  font-size: var(--text-sm);
+}
 
 .lobby-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: var(--space-4);
 }
 
 .game-card {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto;
-  gap: var(--space-2) var(--space-4);
-  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--surface);
-  text-decoration: none;
-  transition: transform 120ms ease, border-color 120ms ease;
 }
 
-.game-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
+.game-card-art {
+  position: relative;
+  line-height: 0;
 }
 
-.game-card-icon {
-  grid-row: 1 / 3;
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  background: var(--surface-2);
-  color: var(--accent);
+.game-preview {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 200 / 112;
 }
 
-.game-card-text {
+.game-card-pills {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  line-height: normal;
+}
+
+.game-card-new {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  line-height: normal;
+}
+
+.game-card-pills .lobby-pill,
+.game-card-new {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.game-card-body {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
 }
 
-.game-card-text strong {
+.game-card-body h3 {
+  margin: 0;
   font-size: var(--text-lg);
 }
 
-.game-card-cta {
-  justify-self: start;
-  align-self: end;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--canvas);
+.game-card-body > p {
+  margin: 0;
   font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
 }
 
-/* ── Online matches ────────────────────────────────────────────────────── */
-
-.lobby-online {
-  margin-top: var(--space-8);
+.game-card-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.lobby-online-head {
+.lobby-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+}
+
+.game-card-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-1);
+}
+
+.game-card-play {
+  flex: 1 1 auto;
+}
+
+/* The pictures: Dots on the theme's own paper, Chess on its wooden board. */
+.game-preview.is-dots .game-preview-ground {
+  fill: var(--field);
+}
+
+.game-preview.is-dots .game-preview-grid line {
+  stroke: var(--line);
+}
+
+.game-preview-ring {
+  fill: var(--dots-red);
+  fill-opacity: 0.2;
+  stroke: var(--dots-red);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.game-preview-red {
+  fill: var(--dots-red);
+}
+
+.game-preview-blue {
+  fill: var(--dots-blue);
+}
+
+.game-preview-light {
+  fill: var(--chess-light);
+}
+
+.game-preview-dark {
+  fill: var(--chess-dark);
+}
+
+.game-preview-last {
+  fill: var(--chess-last);
+}
+
+/* ── Recent games ────────────────────────────────────────────────────── */
+
+.lobby-recent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.recent-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.recent-list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.recent-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  text-decoration: none;
 }
+
+.recent-row:hover {
+  background: var(--hover);
+}
+
+.recent-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.recent-row-main .muted {
+  font-size: var(--text-xs);
+}
+
+.recent-result {
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.recent-result.is-won {
+  color: var(--success);
+}
+
+.game-card-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.game-card-pills-inline {
+  display: none;
+}
+
+/* A phone: one column; the games as rows with a thumbnail, their states
+   beside the name, the long summary left to the game's own page. */
+@media (max-width: 740px) {
+  .lobby {
+    gap: var(--space-5);
+  }
+
+  .waiting-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .waiting-card-actions {
+    flex-direction: row;
+  }
+
+  .lobby-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+  }
+
+  .game-card {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border: 0;
+    border-radius: 0;
+  }
+
+  .lobby-grid .game-card + .game-card {
+    border-top: 1px solid var(--line);
+  }
+
+  .game-card-art {
+    flex: none;
+    width: 88px;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+
+  .game-card-pills,
+  .game-card-new {
+    display: none;
+  }
+
+  .game-card-pills-inline {
+    display: contents;
+  }
+
+  .game-card-body {
+    padding: 0;
+    gap: 4px;
+  }
+
+  .game-card-body > p,
+  .game-card-actions .secondary-button {
+    display: none;
+  }
+
+  .game-card-actions {
+    margin: 0;
+    padding: 0;
+  }
+
+  .game-card-play {
+    flex: 0 0 auto;
+    min-height: 36px;
+  }
+}
+
+/* ── Match rows (the guest lobby) ──────────────────────────────────────── */
 
 .match-group {
   margin-top: var(--space-4);

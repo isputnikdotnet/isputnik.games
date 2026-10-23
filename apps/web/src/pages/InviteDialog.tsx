@@ -18,11 +18,17 @@ const DOTS_TARGETS: (number | null)[] = [null, 5, 10, 20];
 // "Who" may also be someone with no account (docs/plan.md → Guests): then the
 // home server makes a link for them, shown here once, and the match waits for
 // them to open it.
-export function InviteDialog({ myId, onClose, onSent }: { myId: string; onClose: () => void; onSent: (match: MatchSummary) => void }) {
+export function InviteDialog({ myId, game: initialGame = "dots", onClose, onSent }: {
+  myId: string;
+  /** The game picked to begin with (a game card's Invite). */
+  game?: string;
+  onClose: () => void;
+  onSent: (match: MatchSummary) => void;
+}) {
   const { t, i18n } = useTranslation();
   const session = useSession();
   const guestsAllowed = session.status === "ready" && session.guests;
-  const [game, setGame] = useState<string>("dots");
+  const [game, setGame] = useState<string>(initialGame);
   const [members, setMembers] = useState<Member[] | null>(null);
   const [opponent, setOpponent] = useState<Member | null>(null);
   const [guest, setGuest] = useState(false);

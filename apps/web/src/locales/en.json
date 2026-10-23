@@ -18,16 +18,45 @@
     "lead": "Pick a game. Two on one screen, against the computer, or online with someone in the family.",
     "play": "Play",
     "continue": "Continue",
+    "greeting": {
+      "morning": "Good morning, {{name}}.",
+      "afternoon": "Good afternoon, {{name}}.",
+      "evening": "Good evening, {{name}}."
+    },
+    "waitingCount_one": "One game is waiting on you.",
+    "waitingCount_other": "{{count}} games are waiting on you.",
+    "waiting": {
+      "title": "Waiting for you",
+      "none": "Nothing is waiting on you right now.",
+      "theirs": "Their move:",
+      "vs": "{{game}} vs {{name}}",
+      "sent": "{{game}}, waiting for {{name}} to accept"
+    },
+    "pill": {
+      "invitation": "Invitation",
+      "yourMove_one": "Your move",
+      "yourMove_other": "Your move · {{count}}",
+      "inProgress": "In progress",
+      "new": "New"
+    },
+    "games": {
+      "title": "Choose a game",
+      "lead": "Against the computer, two at one screen, or online.",
+      "modes": "Ways to play",
+      "invite": "Invite"
+    },
+    "modes": {
+      "computer": "Computer",
+      "local": "One screen",
+      "online": "Online"
+    },
+    "recent": {
+      "title": "Recent games"
+    },
     "online": {
-      "title": "Online matches",
       "invite": "Invite a member",
-      "invitations": "Invitations",
-      "yourTurn": "Your move",
-      "waiting": "Waiting for the other player",
-      "finished": "Finished",
       "empty": "No online matches yet. Invite a member to play.",
       "from": "{{name}} invites you",
-      "to": "Waiting for {{name}} to accept",
       "accept": "Accept",
       "decline": "Decline",
       "withdraw": "Withdraw",
