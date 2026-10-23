@@ -1,47 +1,70 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Flag, RotateCcw } from "lucide-react";
+import { ArrowLeft, LogOut, Satellite } from "lucide-react";
 import { StarBattle, otherPlayer, type PlayerIndex } from "@isputnik/games-engine";
 import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
 import { GameOverDialog } from "../../shared/GameOverDialog";
-import { follow, href } from "../../router";
+import { follow, href, navigate } from "../../router";
 import { FleetEditor } from "./FleetEditor";
-import { NewGameForm } from "./NewGameForm";
+import { NewGameDialog } from "./NewGameDialog";
 import { StarBattleBoards, lastShotLine } from "./StarBattleBoards";
-import { isComputerSeat, useStarBattleGame } from "./useStarBattleGame";
+import { useStarBattleGame } from "./useStarBattleGame";
 import type { StarBattleSetup } from "./storage";
 
-type Pending = "end" | "new" | null;
-
-// A local game: against the computer, or two people passing one device. The
-// whole position is on this screen, so with two people a curtain goes up
-// between turns and only the player whose turn it is sees their sector.
+// A local game, always against the computer. The page opens on the new-game
+// dialog when nothing is in progress; a game can be left at any point with
+// Exit game, and a finished one offers a new game or the way back to the lobby.
 export function StarBattlePage() {
   const { t } = useTranslation();
   const controller = useStarBattleGame();
-  const [pending, setPending] = useState<Pending>(null);
-  const [resultDismissed, setResultDismissed] = useState<string | null>(null);
-  /** In a two-player game: the seat the screen is showing to. */
-  const [revealed, setRevealed] = useState<PlayerIndex | null>(null);
   const { game } = controller;
-
-  const seatName = (setup: StarBattleSetup, player: PlayerIndex) => {
-    if (isComputerSeat(setup, player)) return t("starbattle.players.computer");
-    if (setup.mode === "computer") return t("starbattle.players.you");
-    return t(player === 0 ? "starbattle.players.p1" : "starbattle.players.p2");
-  };
+  const [settingUp, setSettingUp] = useState(() => controller.game === null);
+  const [confirmExit, setConfirmExit] = useState(false);
+  const [resultDismissed, setResultDismissed] = useState<string | null>(null);
 
   const begin = (setup: StarBattleSetup) => {
-    setRevealed(null);
+    setSettingUp(false);
+    setResultDismissed(null);
     controller.start(setup);
   };
+  const toLobby = () => {
+    controller.abandon();
+    navigate(href());
+  };
+
+  const dialogs = (
+    <>
+      {settingUp && <NewGameDialog onStart={begin} onClose={() => setSettingUp(false)} />}
+      {confirmExit && (
+        <Dialog
+          title={t("starbattle.confirmExit.title")}
+          confirmLabel={t("starbattle.confirmExit.confirm")}
+          cancelLabel={t("starbattle.confirmExit.cancel")}
+          danger
+          onConfirm={toLobby}
+          onClose={() => setConfirmExit(false)}
+        >
+          {t("starbattle.confirmExit.body")}
+        </Dialog>
+      )}
+    </>
+  );
 
   if (!game) {
     return (
       <section className="star-page">
         <PageHead title={t("games.starbattle.name")} />
-        <NewGameForm onStart={begin} />
+        <section className="star-menu">
+          <Satellite size={40} aria-hidden="true" />
+          <h2>{t("games.starbattle.name")}</h2>
+          <p className="muted">{t("starbattle.menu.lead")}</p>
+          <div className="star-menu-actions">
+            <Button variant="primary" onClick={() => setSettingUp(true)}>{t("starbattle.newGame")}</Button>
+            <Button variant="secondary" onClick={() => navigate(href())}>{t("starbattle.mainMenu")}</Button>
+          </div>
+        </section>
+        {dialogs}
       </section>
     );
   }
@@ -51,13 +74,11 @@ export function StarBattlePage() {
   const phase = StarBattle.phaseOf(state);
   const finished = status.kind === "finished";
   const actor = status.kind === "playing" ? status.turn : null;
-  const humanSeat: PlayerIndex | null = setup.mode === "computer" ? otherPlayer(setup.computerPlays) : null;
-  const viewer: PlayerIndex = humanSeat ?? revealed ?? 0;
-  const names: [string, string] = [seatName(setup, 0), seatName(setup, 1)];
+  const me: PlayerIndex = otherPlayer(setup.computerPlays);
+  const names: [string, string] = [0, 1].map((seat) => (seat === me ? t("starbattle.players.you") : t("starbattle.players.computer"))) as [string, string];
   const columns = t("starbattle.columns");
-  const needsHandover = setup.mode === "local" && actor !== null && revealed !== actor;
   const endingKey = finished ? `${state.moveCount}:${status.reason}` : null;
-  const showResult = endingKey !== null && resultDismissed !== endingKey;
+  const showResult = endingKey !== null && resultDismissed !== endingKey && !settingUp;
 
   let statusLine: string;
   if (status.kind === "finished") {
@@ -69,7 +90,7 @@ export function StarBattlePage() {
   } else if (state.lastShot && state.lastShot.by === status.turn && state.lastShot.result !== "miss") {
     statusLine = state.lastShot.result === "destroyed" ? t("starbattle.status.destroyedAgain") : t("starbattle.status.hitAgain");
   } else {
-    statusLine = setup.mode === "computer" ? t("starbattle.status.yourShot") : t("starbattle.status.fire", { player: names[status.turn] });
+    statusLine = t("starbattle.status.yourShot");
   }
 
   const reason = (() => {
@@ -84,26 +105,27 @@ export function StarBattlePage() {
   const lastLine = state.lastShot ? lastShotLine(t, columns, state.lastShot, names[state.lastShot.by]) : null;
   const scoreLine = t("starbattle.end.scoreLine", { p1Name: names[0], p1: state.destroyed[0], p2: state.destroyed[1], p2Name: names[1] });
 
+  const exitButton = (
+    <Button variant="secondary" onClick={() => setConfirmExit(true)}>
+      <LogOut size={16} aria-hidden="true" /> {t("starbattle.exitGame")}
+    </Button>
+  );
+
   let body: React.ReactNode;
-  if (needsHandover) {
+  if (phase === "placing" && controller.humanToMove && actor !== null) {
     body = (
-      <section className="star-curtain">
-        <h2>{t("starbattle.handover.title", { player: names[actor] })}</h2>
-        {lastLine && <p className="star-curtain-last">{lastLine}</p>}
-        <p className="muted">{t("starbattle.handover.body", { player: names[actor] })}</p>
-        <Button variant="primary" onClick={() => setRevealed(actor)}>{t("starbattle.handover.ready", { player: names[actor] })}</Button>
-      </section>
-    );
-  } else if (phase === "placing" && controller.humanToMove && actor !== null) {
-    body = (
-      <FleetEditor
-        key={actor}
-        fleet={state.fleet}
-        size={state.size}
-        title={t("starbattle.place.title", { player: names[actor] })}
-        readyLabel={t("starbattle.place.ready")}
-        onReady={(vessels) => controller.play({ kind: "place", vessels })}
-      />
+      <>
+        <FleetEditor
+          fleet={state.fleet}
+          size={state.size}
+          title={t("starbattle.place.title", { player: names[actor] })}
+          readyLabel={t("starbattle.place.ready")}
+          onReady={(vessels) => controller.play({ kind: "place", vessels })}
+        />
+        <div className="star-side">
+          <div className="star-actions">{exitButton}</div>
+        </div>
+      </>
     );
   } else {
     body = (
@@ -113,9 +135,9 @@ export function StarBattlePage() {
           : (
             <StarBattleBoards
               state={state}
-              viewer={viewer}
+              viewer={me}
               names={names}
-              canFire={controller.humanToMove && actor === viewer}
+              canFire={controller.humanToMove && actor === me}
               onFire={(x, y) => controller.play({ kind: "shoot", x, y })}
               revealEnemy={finished}
             />
@@ -125,20 +147,11 @@ export function StarBattlePage() {
           {lastLine && !finished && <p className="muted star-last-line">{lastLine}</p>}
           {reason && <p className="muted star-reason">{reason}</p>}
           <div className="star-actions">
-            {!finished && (
-              <>
-                <Button variant="secondary" onClick={() => setPending("end")} disabled={phase === "placing"}>
-                  <Flag size={16} aria-hidden="true" /> {t("starbattle.endGame")}
-                </Button>
-                <Button variant="secondary" onClick={() => (state.moveCount === 0 ? controller.abandon() : setPending("new"))}>
-                  <RotateCcw size={16} aria-hidden="true" /> {t("starbattle.newGame")}
-                </Button>
-              </>
-            )}
+            {!finished && exitButton}
             {finished && (
               <>
-                <Button variant="primary" onClick={() => begin(setup)}>{t("starbattle.end.again")}</Button>
-                <Button variant="secondary" onClick={controller.abandon}>{t("starbattle.end.change")}</Button>
+                <Button variant="primary" onClick={() => setSettingUp(true)}>{t("starbattle.newGame")}</Button>
+                <Button variant="secondary" onClick={toLobby}>{t("starbattle.mainMenu")}</Button>
               </>
             )}
           </div>
@@ -151,40 +164,17 @@ export function StarBattlePage() {
     <section className="star-page">
       <PageHead title={t("games.starbattle.name")} />
       {body}
-
       {showResult && (
         <GameOverDialog
           headline={statusLine}
           scoreLine={scoreLine}
           reason={reason}
-          primary={{ label: t("starbattle.end.again"), onClick: () => begin(setup) }}
-          secondary={{ label: t("starbattle.end.change"), onClick: controller.abandon }}
+          primary={{ label: t("starbattle.newGame"), onClick: () => setSettingUp(true) }}
+          secondary={{ label: t("starbattle.mainMenu"), onClick: toLobby }}
           onClose={() => setResultDismissed(endingKey)}
         />
       )}
-      {pending === "end" && (
-        <Dialog
-          title={t("starbattle.confirmEnd.title")}
-          confirmLabel={t("starbattle.confirmEnd.confirm")}
-          cancelLabel={t("starbattle.confirmEnd.cancel")}
-          onConfirm={() => { controller.end(); setPending(null); }}
-          onClose={() => setPending(null)}
-        >
-          {t("starbattle.confirmEnd.body")}
-        </Dialog>
-      )}
-      {pending === "new" && (
-        <Dialog
-          title={t("starbattle.confirmNew.title")}
-          confirmLabel={t("starbattle.confirmNew.confirm")}
-          cancelLabel={t("starbattle.confirmNew.cancel")}
-          danger
-          onConfirm={() => { controller.abandon(); setPending(null); }}
-          onClose={() => setPending(null)}
-        >
-          {t("starbattle.confirmNew.body")}
-        </Dialog>
-      )}
+      {dialogs}
     </section>
   );
 }

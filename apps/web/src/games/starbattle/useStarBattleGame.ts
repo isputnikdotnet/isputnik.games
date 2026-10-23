@@ -13,8 +13,8 @@ import {
 // and the moves so far. Every change goes through the engine and is saved at
 // once; the computer deploys its fleet and fires from an effect, with a pause per
 // shot so a person can follow its run of hits.
-const COMPUTER_PLACE_MS = 600;
-const COMPUTER_SHOT_MS = 800;
+/** Mutable so a test can take the waiting out. */
+export const COMPUTER_DELAYS = { place: 600, shot: 800 };
 
 export interface StarBattleGameController {
   game: LoadedStarBattleGame | null;
@@ -28,7 +28,7 @@ export interface StarBattleGameController {
 }
 
 export function isComputerSeat(setup: StarBattleSetup, player: PlayerIndex): boolean {
-  return setup.mode === "computer" && setup.computerPlays === player;
+  return setup.computerPlays === player;
 }
 
 export function useStarBattleGame(): StarBattleGameController {
@@ -84,7 +84,7 @@ export function useStarBattleGame(): StarBattleGameController {
     setThinking(true);
     const level = game.setup.level;
     const state = game.state;
-    const delay = StarBattle.phaseOf(state) === "placing" ? COMPUTER_PLACE_MS : COMPUTER_SHOT_MS;
+    const delay = StarBattle.phaseOf(state) === "placing" ? COMPUTER_DELAYS.place : COMPUTER_DELAYS.shot;
     timer.current = window.setTimeout(() => {
       timer.current = null;
       const move = StarBattle.chooseStarBattleMove(state, level, Math.random);

@@ -281,9 +281,9 @@
   font-size: var(--text-sm);
 }
 
-/* ── Handing over the console ──────────────────────────────────────────── */
+/* ── Between games ─────────────────────────────────────────────────────── */
 
-.star-curtain {
+.star-menu {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -297,13 +297,25 @@
   text-align: center;
 }
 
-.star-curtain h2,
-.star-curtain p {
+.star-menu h2,
+.star-menu p {
   margin: 0;
 }
 
-.star-curtain-last {
-  font-weight: var(--weight-semibold);
+.star-menu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* The new-game settings, in the dialog. */
+.star-setup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  color: var(--ink);
 }
 
 @media (max-width: 820px) {

@@ -350,6 +350,12 @@ the old address under the new id.
   two sectors), the local page with the curtain, and the match page.
   The invite dialog became the lobby's own (`pages/InviteDialog`) with a game
   chip row and each game's settings; `GameOverDialog` moved to `shared/`.
+- **Local play is against the computer only** (owner, 2026-10-23): two people
+  on one screen would have to hide their fleets from each other on it, so the
+  pass-the-device mode Dots has was taken out of this game. The page opens on a
+  small menu; **New game** is a dialog (fleet, who fires first, level); **Exit
+  game** is there from the first screen on and abandons the game after a
+  confirmation; a finished game offers **New game** or **Main menu** (the lobby).
 - **Home side**: the cards on For you name the game (`user:games.starbattle`);
   nothing else changed there.
 

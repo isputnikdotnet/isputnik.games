@@ -5,12 +5,11 @@ import { StarBattle, type AiLevel, type FleetKind, type PlayerIndex, type StarBa
 // first two moves); the position is replayed through the rules on load.
 const KEY = "isputnik-games.starbattle.local";
 
-export type StarBattleMode = "computer" | "local";
-
+// A local game is always against the computer: two people on one screen would
+// have to hide their fleets from each other on it, which is no game at all.
 export interface StarBattleSetup {
   fleet: FleetKind;
-  mode: StarBattleMode;
-  /** Which seat the computer takes in computer mode; seat 0 fires first. */
+  /** Which seat the computer takes; seat 0 fires first. */
   computerPlays: PlayerIndex;
   level: AiLevel;
 }
@@ -29,7 +28,6 @@ export interface LoadedStarBattleGame {
 
 export const DEFAULT_SETUP: StarBattleSetup = {
   fleet: "classic",
-  mode: "computer",
   computerPlays: 1,
   level: "normal"
 };
@@ -38,7 +36,6 @@ function isSetup(value: unknown): value is StarBattleSetup {
   if (!value || typeof value !== "object") return false;
   const s = value as Record<string, unknown>;
   return (StarBattle.FLEET_KINDS as readonly unknown[]).includes(s.fleet)
-    && (s.mode === "computer" || s.mode === "local")
     && (s.computerPlays === 0 || s.computerPlays === 1)
     && (s.level === "easy" || s.level === "normal" || s.level === "hard");
 }
