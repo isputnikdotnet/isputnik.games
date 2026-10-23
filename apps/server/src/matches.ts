@@ -3,7 +3,7 @@
 // only from the seat whose turn it is. Everything here is a plain function over
 // the database so the routes stay thin and the tests need no HTTP.
 import { nanoid } from "nanoid";
-import { getGame, otherPlayer, type AnyGame, type GameStatus, type PlayerIndex } from "@isputnik/games-engine";
+import { getGame, otherPlayer, type AnyGame, type GameEvent, type GameStatus, type PlayerIndex } from "@isputnik/games-engine";
 import type { Db } from "./db.js";
 
 export type MatchStatus = "invited" | "playing" | "finished" | "declined" | "cancelled";
@@ -49,8 +49,24 @@ export interface MatchSummary {
   finishedAt: string | null;
 }
 
+/** A line said in the match's Comms panel. */
+export interface MatchMessage {
+  id: number;
+  by: PlayerIndex;
+  text: string;
+  /** The move count when it was said. */
+  afterMove: number;
+  at: string;
+}
+
+/** How long a message may be: a line, not a letter. */
+export const MESSAGE_MAX = 120;
+
 export interface MatchDetail extends MatchSummary {
   state: { status: GameStatus };
+  /** What every move did, in order (GameDefinition.narrate). */
+  feed: GameEvent[];
+  messages: MatchMessage[];
 }
 
 /** What waits on one member — shown by the home app, not by the games client. */
@@ -99,19 +115,41 @@ function gameOf(row: MatchRow): AnyGame {
   return game;
 }
 
-function replay(row: MatchRow): { status: GameStatus } {
+interface Replay {
+  state: { status: GameStatus };
+  feed: GameEvent[];
+}
+
+function replay(row: MatchRow): Replay {
   const game = gameOf(row);
   let state = game.createGame(JSON.parse(row.options));
-  for (const move of JSON.parse(row.moves) as unknown[]) state = game.applyMove(state, move);
+  const feed: GameEvent[] = [];
+  for (const move of JSON.parse(row.moves) as unknown[]) {
+    const next = game.applyMove(state, move);
+    const event = game.narrate?.(state, move, next);
+    if (event) feed.push(event);
+    state = next;
+  }
   if (row.status === "finished" && state.status.kind === "playing" && (row.finish_reason === "agreed" || row.finish_reason === "resigned")) {
     state = game.finish(state, row.finish_reason, row.winner === null ? undefined : otherPlayer(row.winner as PlayerIndex));
   }
-  return state;
+  return { state, feed };
+}
+
+function messagesOf(db: Db, row: MatchRow): MatchMessage[] {
+  const rows = db.prepare("SELECT id, author_id, text, after_move, at FROM match_messages WHERE match_id = ? ORDER BY id").all(row.id) as
+    { id: number; author_id: string; text: string; after_move: number; at: string }[];
+  return rows.map((m) => ({ id: m.id, by: m.author_id === row.blue_id ? 0 : 1, text: m.text, afterMove: m.after_move, at: m.at }));
+}
+
+/** The whole answer for one seat: the summary, their view, the feed, the talk. */
+function detailFor(db: Db, row: MatchRow, replayed: Replay, seat: PlayerIndex): MatchDetail {
+  return { ...summarize(db, row, replayed.state), state: viewOf(row, replayed.state, seat), feed: replayed.feed, messages: messagesOf(db, row) };
 }
 
 function summarize(db: Db, row: MatchRow, state?: { status: GameStatus }): MatchSummary {
   const game = gameOf(row);
-  const replayed = state ?? replay(row);
+  const replayed = state ?? replay(row).state;
   return {
     id: row.id,
     game: row.game,
@@ -183,8 +221,7 @@ export function createMatch(db: Db, me: Member, input: CreateMatchInput): MatchS
 export function getMatch(db: Db, userId: string, id: string): MatchDetail {
   const row = rowOf(db, id);
   const seat = seatOf(row, userId);
-  const state = replay(row);
-  return { ...summarize(db, row, state), state: viewOf(row, state, seat) };
+  return detailFor(db, row, replay(row), seat);
 }
 
 export function listMatches(db: Db, userId: string): MatchSummary[] {
@@ -262,11 +299,14 @@ export function playMove(db: Db, userId: string, id: string, move: unknown, expe
     if (row.move_count !== expectedCount) throw new MatchError(409, "The match has moved on; reload it", "move.refused");
 
     const game = gameOf(row);
-    let state = replay(row);
+    const before = replay(row);
+    let state = before.state;
+    let event: GameEvent | null = null;
     try {
       // The move as the game reads it, not as the client sent it (see createMatch).
       move = game.parseMove(move);
       state = game.applyMove(state, move);
+      event = game.narrate?.(before.state, move, state) ?? null;
     } catch (err) {
       throw new MatchError(400, err instanceof Error ? err.message : "Illegal move", "move.illegal");
     }
@@ -284,8 +324,21 @@ export function playMove(db: Db, userId: string, id: string, move: unknown, expe
       `).run(JSON.stringify(moves), moves.length, state.status.turn, id);
     }
     const updated = rowOf(db, id);
-    return { ...summarize(db, updated, state), state: viewOf(updated, state, seat) };
+    return detailFor(db, updated, { state, feed: event ? [...before.feed, event] : before.feed }, seat);
   })();
+}
+
+/** A line in the match's Comms panel, from either player, while it is being
+ *  played or once it is over — not before the other side has even accepted. */
+export function postMessage(db: Db, userId: string, id: string, text: string): MatchDetail {
+  const row = rowOf(db, id);
+  const seat = seatOf(row, userId);
+  if (row.status !== "playing" && row.status !== "finished") throw new MatchError(409, "This match is not being played");
+  const line = text.replace(/\s+/g, " ").trim();
+  if (!line) throw new MatchError(400, "Say something");
+  if (line.length > MESSAGE_MAX) throw new MatchError(400, `A message is at most ${MESSAGE_MAX} characters`);
+  db.prepare("INSERT INTO match_messages (match_id, author_id, text, after_move) VALUES (?, ?, ?, ?)").run(id, userId, line, row.move_count);
+  return detailFor(db, row, replay(row), seat);
 }
 
 export function resign(db: Db, userId: string, id: string): MatchDetail {
@@ -299,7 +352,6 @@ export function resign(db: Db, userId: string, id: string): MatchDetail {
       WHERE id = ?
     `).run(otherPlayer(seat), id);
     const updated = rowOf(db, id);
-    const state = replay(updated);
-    return { ...summarize(db, updated, state), state: viewOf(updated, state, seat) };
+    return detailFor(db, updated, replay(updated), seat);
   })();
 }

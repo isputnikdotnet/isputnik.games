@@ -2,36 +2,42 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Flag } from "lucide-react";
 import { StarBattle, otherPlayer, type PlayerIndex, type StarBattleMove, type StarBattleState } from "@isputnik/games-engine";
-import { ApiError, answerMatch, postMove, resignMatch } from "../../api";
+import { ApiError, answerMatch, postMessage, postMove, resignMatch } from "../../api";
 import { Button } from "../../shared/Button";
+import { Comms } from "../../shared/Comms";
 import { Dialog } from "../../shared/Dialog";
 import { GameOverDialog } from "../../shared/GameOverDialog";
 import { MessageBox } from "../../shared/MessageBox";
+import { useArena } from "../../shared/useArena";
+import { withTalk, type CommsLine } from "../../shared/commsLines";
 import { href, navigate } from "../../router";
 import { useSession } from "../../session";
 import { useMatch } from "../dots/useMatch";
+import { ArenaHead, ArenaStatus, turnNumber } from "./ArenaFrame";
 import { FleetEditor } from "./FleetEditor";
 import { StarBattleBoards, lastShotLine } from "./StarBattleBoards";
-import { PageHead } from "./StarBattlePage";
+import { starBattleLines } from "./comms";
 
-// An online match of Star Battle. The server holds both fleets and sends this
-// seat its own view: its fleet, its shots, and of the other fleet only the
-// vessels it has destroyed. Deploying the fleet is the first move; while it is their
-// move the page polls (useMatch).
+// An online match of Star Battle in the arena. The server holds both fleets
+// and sends this seat its own view, the feed of every move and what was said;
+// the Comms panel shows them and takes a line to say back.
 export function StarBattleMatchPage({ matchId }: { matchId: string }) {
   const { t } = useTranslation();
+  useArena("star");
   const session = useSession();
   const myId = session.status === "ready" ? session.user.id : "";
   const { match, error, refresh, adopt } = useMatch(matchId, myId);
   const [sending, setSending] = useState(false);
+  const [saying, setSaying] = useState(false);
   const [moveError, setMoveError] = useState<string | null>(null);
+  const [sayError, setSayError] = useState<string | null>(null);
   const [confirmResign, setConfirmResign] = useState(false);
   const [resultDismissed, setResultDismissed] = useState(false);
 
   if (!match) {
     return (
       <section className="star-page">
-        <PageHead title={t("games.starbattle.name")} />
+        <ArenaHead chip={t("app.loading")} />
         {error
           ? <MessageBox tone="error" title={t("match.loadFailed")}>{error === "network" ? t("app.unavailableBody") : error}</MessageBox>
           : <p className="app-status muted">{t("app.loading")}</p>}
@@ -60,6 +66,18 @@ export function StarBattleMatchPage({ matchId }: { matchId: string }) {
       setMoveError(err instanceof ApiError ? err.message : t("app.unavailableBody"));
     } finally {
       setSending(false);
+    }
+  };
+
+  const say = async (text: string) => {
+    setSaying(true);
+    setSayError(null);
+    try {
+      adopt(await postMessage(match.id, text));
+    } catch (err) {
+      setSayError(err instanceof ApiError ? err.message : t("comms.sendFailed"));
+    } finally {
+      setSaying(false);
     }
   };
 
@@ -100,6 +118,14 @@ export function StarBattleMatchPage({ matchId }: { matchId: string }) {
       break;
   }
 
+  const chip = finished
+    ? t("starbattle.arena.over")
+    : match.status !== "playing"
+      ? statusLine
+      : phase === "placing"
+        ? t("starbattle.arena.deploying")
+        : myMove ? t("starbattle.arena.yourTurn") : t("starbattle.arena.theirTurn", { name: them.name });
+
   const reason = (() => {
     if (!finished) return null;
     const loser = names[otherPlayer(match.winner ?? 0)];
@@ -114,11 +140,21 @@ export function StarBattleMatchPage({ matchId }: { matchId: string }) {
   const score = match.score ?? [0, 0];
   const scoreLine = t("starbattle.end.scoreLine", { p1Name: names[0], p1: score[0], p2: score[1], p2Name: names[1] });
 
+  const speaker = (seat: PlayerIndex) => ({ who: seat === mySeat ? "you" as const : "them" as const, name: names[seat] });
+  const lines: CommsLine[] = withTalk(starBattleLines(match.feed, mySeat, names, columns, t), match.messages, speaker);
+  if (finished) {
+    lines.push({ key: "end", kind: "system", text: match.winner === null ? t("comms.draw") : t("comms.winner", { name: names[match.winner] }) });
+  } else if (match.status === "playing" && phase === "battle") {
+    lines.push({ key: "turn", kind: "system", text: myMove ? t("comms.yourMove") : t("comms.toMove", { name: them.name }) });
+  }
+  const phrases = [t("comms.phrases.gg"), t("comms.phrases.nice"), t("comms.phrases.yourMove"), t("comms.phrases.rematch")];
+  const talkable = match.status === "playing" || finished;
+
   const deploying = match.status === "playing" && phase === "placing" && myMove && !state.placed[mySeat];
 
   return (
     <section className="star-page">
-      <PageHead title={t("games.starbattle.name")} />
+      <ArenaHead chip={chip} turn={match.status === "playing" && phase === "battle" || finished ? turnNumber(match.feed) : null} />
       {deploying ? (
         <>
           <FleetEditor
@@ -131,48 +167,43 @@ export function StarBattleMatchPage({ matchId }: { matchId: string }) {
           />
           {moveError && <MessageBox tone="error" title={t("match.moveFailed")}>{moveError}</MessageBox>}
         </>
+      ) : (match.status === "playing" || finished) && (phase !== "placing" || state.placed[mySeat]) ? (
+        <>
+          <StarBattleBoards
+            state={state}
+            viewer={mySeat}
+            names={names}
+            canFire={myMove && phase === "battle" && !sending}
+            onFire={(x, y) => void send({ kind: "shoot", x, y })}
+          />
+          <Comms lines={lines} onSend={talkable ? (text) => void say(text) : undefined} phrases={phrases} sendTo={them.name} busy={saying} error={sayError} />
+          {moveError && <MessageBox tone="error" title={t("match.moveFailed")}>{moveError}</MessageBox>}
+        </>
       ) : (
-        <div className="star-layout">
-          {match.status === "playing" || finished
-            ? (
-              <StarBattleBoards
-                state={state}
-                viewer={mySeat}
-                names={names}
-                canFire={myMove && phase === "battle" && !sending}
-                onFire={(x, y) => void send({ kind: "shoot", x, y })}
-              />
-            )
-            : <p className="app-status muted">{statusLine}</p>}
-          <aside className="star-side">
-            {(match.status === "playing" || finished) && (
-              <p className={`star-status${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
-            )}
-            {lastLine && !finished && <p className="muted star-last-line">{lastLine}</p>}
-            {reason && <p className="muted star-reason">{reason}</p>}
-            {moveError && <MessageBox tone="error" title={t("match.moveFailed")}>{moveError}</MessageBox>}
-            <div className="star-actions">
-              {match.status === "playing" && (
-                <Button variant="secondary" onClick={() => setConfirmResign(true)}>
-                  <Flag size={16} aria-hidden="true" /> {t("match.resign")}
-                </Button>
-              )}
-              {match.status === "invited" && match.createdBy === myId && (
-                <Button variant="secondary" onClick={() => void withdraw()}>{t("lobby.online.withdraw")}</Button>
-              )}
-              {match.status === "invited" && match.createdBy !== myId && (
-                <>
-                  <Button variant="primary" onClick={() => answerMatch(match.id, "accept").then(() => refresh())}>{t("lobby.online.accept")}</Button>
-                  <Button variant="secondary" onClick={() => answerMatch(match.id, "decline").then(() => navigate(href()))}>{t("lobby.online.decline")}</Button>
-                </>
-              )}
-              {(finished || match.status === "declined" || match.status === "cancelled") && (
-                <Button variant="primary" onClick={() => navigate(href())}>{t("app.allGames")}</Button>
-              )}
-            </div>
-          </aside>
-        </div>
+        <>
+          <p className="app-status muted">{statusLine}</p>
+          {talkable && <Comms lines={lines} onSend={(text) => void say(text)} phrases={phrases} sendTo={them.name} busy={saying} error={sayError} />}
+        </>
       )}
+      <ArenaStatus line={statusLine} detail={reason ?? (phase === "battle" ? lastLine : null)}>
+        {match.status === "playing" && (
+          <Button variant="secondary" onClick={() => setConfirmResign(true)}>
+            <Flag size={16} aria-hidden="true" /> {t("match.resign")}
+          </Button>
+        )}
+        {match.status === "invited" && match.createdBy === myId && (
+          <Button variant="secondary" onClick={() => void withdraw()}>{t("lobby.online.withdraw")}</Button>
+        )}
+        {match.status === "invited" && match.createdBy !== myId && (
+          <>
+            <Button variant="primary" onClick={() => answerMatch(match.id, "accept").then(() => refresh())}>{t("lobby.online.accept")}</Button>
+            <Button variant="secondary" onClick={() => answerMatch(match.id, "decline").then(() => navigate(href()))}>{t("lobby.online.decline")}</Button>
+          </>
+        )}
+        {(finished || match.status === "declined" || match.status === "cancelled") && (
+          <Button variant="primary" onClick={() => navigate(href())}>{t("app.allGames")}</Button>
+        )}
+      </ArenaStatus>
 
       {finished && !resultDismissed && (
         <GameOverDialog

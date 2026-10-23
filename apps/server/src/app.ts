@@ -15,6 +15,7 @@ import {
 import { EVENT_LEVELS, EVENT_RETENTION_DAYS, countEventsSince, listEvents, pruneEvents, recordEvent, type EventLevel } from "./events.js";
 import type { LogBuffer } from "./log-buffer.js";
 import {
+  MESSAGE_MAX,
   MatchError,
   answerInvitation,
   cancelInvitation,
@@ -22,6 +23,7 @@ import {
   getMatch,
   listMatches,
   playMove,
+  postMessage,
   rememberMember,
   resign,
   summaryFor,
@@ -71,6 +73,10 @@ const createMatchSchema = z.object({
   options: z.unknown(),
   opponent: memberSchema,
   seat: z.union([z.literal(0), z.literal(1)]).default(0)
+});
+
+const messageSchema = z.object({
+  text: z.string().min(1).max(MESSAGE_MAX)
 });
 
 const moveSchema = z.object({
@@ -269,6 +275,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       note(request, "info", "match.finished", { matchId: match.id, detail: `${match.game}: ${winner} (${match.finishReason}${score}) after ${match.moveCount} moves` });
     }
     return match;
+  });
+
+  app.post(`${API}/matches/:id/messages`, { preHandler: requireIdentity }, async (request, reply) => {
+    const input = messageSchema.parse(request.body ?? {});
+    return reply.code(201).send(postMessage(db, request.identity!.id, matchId(request), input.text));
   });
 
   app.post(`${API}/matches/:id/resign`, { preHandler: requireIdentity }, async (request) => {

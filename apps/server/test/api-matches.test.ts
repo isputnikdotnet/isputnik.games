@@ -142,6 +142,31 @@ describe("matches API", () => {
     expect(JSON.stringify(dadNow)).not.toContain('{"x":0,"y":0,"length":3');
   });
 
+  it("carries the feed and the talk with every view of a match", async () => {
+    const created = await post("/games/api/matches", mum, {
+      game: "dots", options: { size: 10, targetCaptures: null }, opponent: { id: "dad", name: "Dad" }, seat: 0
+    });
+    const id = created.json().id as string;
+    // Nothing to say before the other side has accepted.
+    expect((await post(`/games/api/matches/${id}/messages`, mum, { text: "hurry up" })).statusCode).toBe(409);
+    await post(`/games/api/matches/${id}/accept`, dad);
+
+    const moved = await post(`/games/api/matches/${id}/moves`, mum, { move: { x: 1, y: 1 }, moveCount: 0 });
+    expect(moved.json().feed).toEqual([{ by: 0, kind: "dot", x: 1, y: 1, captured: 0, lost: false }]);
+    expect(moved.json().messages).toEqual([]);
+
+    const said = await post(`/games/api/matches/${id}/messages`, dad, { text: "  nice   opening " });
+    expect(said.statusCode).toBe(201);
+    expect(said.json().messages).toEqual([{ id: 1, by: 1, text: "nice opening", afterMove: 1, at: expect.any(String) }]);
+    expect((await post(`/games/api/matches/${id}/messages`, dad, { text: "   " })).statusCode).toBe(400);
+    expect((await post(`/games/api/matches/${id}/messages`, dad, { text: "x".repeat(121) })).statusCode).toBe(400);
+    expect((await post(`/games/api/matches/${id}/messages`, as("kid", "Kid"), { text: "hi" })).statusCode).toBe(404);
+
+    const view = (await get(`/games/api/matches/${id}`, mum)).json();
+    expect(view.feed).toHaveLength(1);
+    expect(view.messages).toHaveLength(1);
+  });
+
   it("offers a made-up family in standalone development only", async () => {
     expect((await get("/games/api/dev/members", mum)).statusCode).toBe(404);
     const dev = await buildApp({ gatewaySecret: null, devUser: "dev:Developer:admin", staticPath: "", dbPath: ":memory:", version: "0.0.0-test", stage: null });

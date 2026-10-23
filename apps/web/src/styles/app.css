@@ -263,6 +263,179 @@
   margin: var(--space-2) 0 0;
 }
 
+/* ── Comms ─────────────────────────────────────────────────────────────── */
+/* The one console every game wears. Dark on every theme: a log of the game
+   reads as a terminal, and who is always the same two colours. */
+.comms {
+  --comms-you: #22d3ee;
+  --comms-them: #b48cff;
+  --comms-good: #4ade80;
+  --comms-bad: #ff5f6b;
+  --comms-muted: #6f7da3;
+  --comms-ink: #e6ecff;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid rgba(140, 170, 255, 0.18);
+  border-radius: 12px;
+  background: #070b16;
+  color: var(--comms-ink);
+  font-family: "Cascadia Code", "JetBrains Mono", Consolas, "SF Mono", Menlo, monospace;
+}
+
+.comms-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(140, 170, 255, 0.14);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9db4e8;
+}
+
+.comms-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--comms-you);
+}
+
+.comms-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--comms-you);
+  box-shadow: 0 0 8px var(--comms-you);
+}
+
+.comms-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 260px;
+  padding: 10px 14px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.comms-line {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) 1fr auto;
+  align-items: baseline;
+  column-gap: 12px;
+}
+
+.comms-line.is-system {
+  grid-template-columns: 1fr;
+}
+
+.comms-system {
+  color: var(--comms-muted);
+}
+
+.comms-name {
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comms-line.is-you .comms-name { color: var(--comms-you); }
+.comms-line.is-them .comms-name { color: var(--comms-them); }
+
+.comms-say {
+  font-style: italic;
+}
+
+.comms-result {
+  font-weight: 700;
+  text-align: right;
+}
+
+.comms-result.is-good { color: var(--comms-good); }
+.comms-result.is-bad { color: var(--comms-bad); }
+.comms-result.is-neutral { color: #7f8db0; }
+
+.comms-prompt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 14px;
+  border-top: 1px solid rgba(140, 170, 255, 0.14);
+}
+
+.comms-caret {
+  color: var(--comms-you);
+}
+
+.comms-prompt input {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--comms-ink);
+  font: inherit;
+  font-size: 15px;
+  outline: 0;
+}
+
+.comms-prompt input::placeholder {
+  color: var(--comms-muted);
+}
+
+.comms-send.icon-button {
+  width: 38px;
+  min-height: 38px;
+  border-color: rgba(34, 211, 238, 0.5);
+  background: rgba(34, 211, 238, 0.12);
+  color: var(--comms-you);
+}
+
+.comms-quick {
+  display: flex;
+  gap: 6px;
+  padding: 0 14px 10px;
+  overflow-x: auto;
+}
+
+.comms-chip.chip-button {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 0 12px;
+  border-color: rgba(140, 170, 255, 0.22);
+  background: rgba(140, 170, 255, 0.08);
+  color: #9db4e8;
+  font: inherit;
+  font-size: 12px;
+}
+
+.comms-chip.chip-button:hover:not(:disabled) {
+  color: #ffffff;
+  border-color: var(--comms-you);
+  background: rgba(140, 170, 255, 0.12);
+}
+
+.comms-error {
+  margin: 0;
+  padding: 0 14px 10px;
+  font-size: 12px;
+  color: var(--comms-bad);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 /* ── Lobby ─────────────────────────────────────────────────────────────── */
 
 .lobby-grid {

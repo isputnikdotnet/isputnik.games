@@ -129,7 +129,11 @@
       "cancel": "Keep playing"
     },
     "boardAria": "Dots board, {{size}} by {{size}}",
-    "pointAria": "Point {{x}}, {{y}}"
+    "pointAria": "Point {{x}}, {{y}}",
+    "comms": {
+      "dot": "dot {{x}},{{y}}",
+      "lost": "lost"
+    }
   },
   "common": {
     "gameOver": "Game over"
@@ -155,7 +159,8 @@
     },
     "menu": {
       "lead": "Deploy your fleet in your sector and find the computer's before it finds yours.",
-      "resume": "A game is in progress."
+      "resume": "A game is in progress.",
+      "idle": "Standing by"
     },
     "place": {
       "title": "{{player}}, deploy your fleet",
@@ -212,6 +217,39 @@
       "reasonTarget": "{{player}}'s fleet is destroyed.",
       "reasonAgreed": "Ended by agreement.",
       "reasonResigned": "{{player}} resigned."
+    },
+    "comms": {
+      "deploy": "deployed the fleet",
+      "fire": "fire {{cell}}",
+      "miss": "MISS",
+      "hit": "HIT",
+      "destroyed": "SUNK"
+    },
+    "arena": {
+      "yourTurn": "Your turn",
+      "theirTurn": "{{name}}'s turn",
+      "deploying": "Deploying",
+      "over": "Game over",
+      "turn": "Turn {{count}}",
+      "intact": "{{count}} / {{total}} craft intact"
+    }
+  },
+  "comms": {
+    "title": "Comms",
+    "live": "Live",
+    "you": "You",
+    "placeholder": "message {{name}}…",
+    "send": "Send",
+    "yourMove": "your move",
+    "toMove": "{{name}} to move",
+    "winner": "{{name}} wins",
+    "draw": "a draw",
+    "sendFailed": "Unable to send that",
+    "phrases": {
+      "gg": "good game",
+      "nice": "nice one",
+      "yourMove": "your move!",
+      "rematch": "rematch?"
     }
   }
 }

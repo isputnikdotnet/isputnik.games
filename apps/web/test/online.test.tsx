@@ -45,7 +45,9 @@ const summary = (over: Partial<MatchSummary> = {}): MatchSummary => ({
 
 const detail = (over: Partial<MatchSummary> = {}, state = Dots.createGame({ size: 10, targetCaptures: null })): MatchDetail => ({
   ...summary(over),
-  state
+  state,
+  feed: [],
+  messages: []
 });
 
 const withSession = (ui: React.ReactElement) => render(<SessionContext.Provider value={session}>{ui}</SessionContext.Provider>);

@@ -35,6 +35,19 @@ CREATE TABLE IF NOT EXISTS matches (
 CREATE INDEX IF NOT EXISTS matches_blue ON matches (blue_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS matches_red ON matches (red_id, updated_at DESC);
 
+-- A line said in a match's Comms panel. Kept with the match; after_move is the
+-- move count when it was said, so the panel can slot it between the moves.
+CREATE TABLE IF NOT EXISTS match_messages (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  match_id   TEXT NOT NULL REFERENCES matches (id) ON DELETE CASCADE,
+  author_id  TEXT NOT NULL,
+  text       TEXT NOT NULL,
+  after_move INTEGER NOT NULL,
+  at         TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS match_messages_match ON match_messages (match_id, id);
+
 -- What happened, for the admin: who was refused at the gateway, who invited whom,
 -- how a match ended, which move was thrown out, what broke. Read by the home app
 -- through the gateway (GET /games/api/admin/events) and pruned after a season.

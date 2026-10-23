@@ -1,7 +1,7 @@
 // The games API, under the same /games prefix the pages live at. The home gateway
 // authenticates every call; this module only needs to echo its CSRF token on
 // state-changing requests, the way the home SPA does.
-import type { GameStatus, PlayerIndex } from "@isputnik/games-engine";
+import type { GameEvent, GameStatus, PlayerIndex } from "@isputnik/games-engine";
 
 export const API_BASE = "/games/api";
 
@@ -44,8 +44,19 @@ export interface MatchSummary {
   finishedAt: string | null;
 }
 
+export interface MatchMessage {
+  id: number;
+  by: PlayerIndex;
+  text: string;
+  afterMove: number;
+  at: string;
+}
+
 export interface MatchDetail<S extends { status: GameStatus } = { status: GameStatus }> extends MatchSummary {
   state: S;
+  /** What every move did, in order, for the Comms panel. */
+  feed: GameEvent[];
+  messages: MatchMessage[];
 }
 
 export class ApiError extends Error {
@@ -124,6 +135,10 @@ export function answerMatch(id: string, answer: "accept" | "decline" | "cancel")
 
 export function postMove(id: string, move: unknown, moveCount: number): Promise<MatchDetail> {
   return post<MatchDetail>(`/matches/${encodeURIComponent(id)}/moves`, { move, moveCount });
+}
+
+export function postMessage(id: string, text: string): Promise<MatchDetail> {
+  return post<MatchDetail>(`/matches/${encodeURIComponent(id)}/messages`, { text });
 }
 
 export function resignMatch(id: string): Promise<MatchDetail> {

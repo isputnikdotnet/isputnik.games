@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Flag } from "lucide-react";
 import type { DotsMove, DotsState, PlayerIndex } from "@isputnik/games-engine";
-import { ApiError, answerMatch, postMove, resignMatch, type MatchDetail } from "../../api";
+import { ApiError, answerMatch, postMessage, postMove, resignMatch, type MatchDetail } from "../../api";
+import { Comms } from "../../shared/Comms";
+import { withTalk, type CommsLine } from "../../shared/commsLines";
+import { dotsLines } from "./comms";
 import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
 import { MessageBox } from "../../shared/MessageBox";
@@ -21,6 +24,8 @@ export function DotsMatchPage({ matchId }: { matchId: string }) {
   const myId = session.status === "ready" ? session.user.id : "";
   const { match, error, refresh, adopt } = useMatch(matchId, myId);
   const [sending, setSending] = useState(false);
+  const [saying, setSaying] = useState(false);
+  const [sayError, setSayError] = useState<string | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
   const [confirmResign, setConfirmResign] = useState(false);
   const [resultDismissed, setResultDismissed] = useState(false);
@@ -55,6 +60,18 @@ export function DotsMatchPage({ matchId }: { matchId: string }) {
       setMoveError(err instanceof ApiError ? err.message : t("app.unavailableBody"));
     } finally {
       setSending(false);
+    }
+  };
+
+  const say = async (text: string) => {
+    setSaying(true);
+    setSayError(null);
+    try {
+      adopt(await postMessage(match.id, text));
+    } catch (err) {
+      setSayError(err instanceof ApiError ? err.message : t("comms.sendFailed"));
+    } finally {
+      setSaying(false);
     }
   };
 
@@ -101,6 +118,16 @@ export function DotsMatchPage({ matchId }: { matchId: string }) {
   const score = match.score ?? [0, 0];
   const scoreLine = t("dots.end.scoreLine", { blueName: seatName(0), blue: score[0], red: score[1], redName: seatName(1) });
 
+  const names: [string, string] = [seatName(0), seatName(1)];
+  const lines: CommsLine[] = withTalk(dotsLines(match.feed, mySeat, names, t), match.messages, (seat) => ({ who: seat === mySeat ? "you" : "them", name: names[seat] }));
+  if (finished) {
+    lines.push({ key: "end", kind: "system", text: match.winner === null ? t("comms.draw") : t("comms.winner", { name: names[match.winner] }) });
+  } else if (match.status === "playing") {
+    lines.push({ key: "turn", kind: "system", text: myMove ? t("comms.yourMove") : t("comms.toMove", { name: them.name }) });
+  }
+  const talkable = match.status === "playing" || finished;
+  const phrases = [t("comms.phrases.gg"), t("comms.phrases.nice"), t("comms.phrases.yourMove"), t("comms.phrases.rematch")];
+
   return (
     <section className="dots-page">
       <Head />
@@ -136,6 +163,9 @@ export function DotsMatchPage({ matchId }: { matchId: string }) {
               <Button variant="primary" onClick={() => navigate(href())}>{t("app.allGames")}</Button>
             )}
           </div>
+          {talkable && (
+            <Comms lines={lines} onSend={(text) => void say(text)} phrases={phrases} sendTo={them.name} busy={saying} error={sayError} />
+          )}
         </aside>
       </div>
 

@@ -39,6 +39,12 @@ export class IllegalMoveError extends Error {
   }
 }
 
+/** What a move did, in the game's own terms, for a log of the game (the Comms
+ *  panel): who, what kind of thing, and the game's fields — a square and a
+ *  result, a point and the captures it made. Plain JSON; the web app puts it
+ *  into words. Never carries anything the other player may not see. */
+export type GameEvent = { by: PlayerIndex; kind: string } & Record<string, unknown>;
+
 export interface GameDefinition<O, S extends { status: GameStatus }, M> {
   /** Stable id, used in URLs and (phase 2) in the database: "dots". */
   id: string;
@@ -64,5 +70,25 @@ export interface GameDefinition<O, S extends { status: GameStatus }, M> {
    *  fleet in Star Battle). The server sends each player their view and never
    *  the whole state; a game without secrets omits it. */
   viewFor?(state: S, seat: PlayerIndex): S;
+  /** The event a legal move produced, given the position before and after it;
+   *  null for a move not worth a line. */
+  narrate?(before: S, move: M, after: S): GameEvent | null;
   ai?: GameAi<S, M>;
+}
+
+/** Replays a move list and collects the events along the way. */
+export function narrateMoves<O, S extends { status: GameStatus }, M>(
+  game: GameDefinition<O, S, M>,
+  options: O,
+  moves: readonly M[]
+): { state: S; events: GameEvent[] } {
+  let state = game.createGame(options);
+  const events: GameEvent[] = [];
+  for (const move of moves) {
+    const next = game.applyMove(state, move);
+    const event = game.narrate?.(state, move, next);
+    if (event) events.push(event);
+    state = next;
+  }
+  return { state, events };
 }

@@ -276,3 +276,17 @@ describe("parseOptions and parseMove", () => {
     expect(() => parseMove({ x: 1.5, y: 1 })).toThrow(IllegalMoveError);
   });
 });
+
+describe("narrate", () => {
+  it("says who placed a dot, what it captured, and when it was lost in a house", async () => {
+    const { dots } = await import("../src/dots/index.js");
+    const { narrateMoves } = await import("../src/game.js");
+    // Blue rings red's (2,2) with a diamond; red then plays into the house.
+    const moves: DotsMove[] = [{ x: 2, y: 1 }, { x: 2, y: 2 }, { x: 1, y: 2 }, { x: 8, y: 8 }, { x: 3, y: 2 }, { x: 8, y: 7 }, { x: 2, y: 3 }, { x: 2, y: 2 }];
+    expect(() => narrateMoves(dots, { size: 10, targetCaptures: null }, moves)).toThrow(IllegalMoveError);
+    const { events } = narrateMoves(dots, { size: 10, targetCaptures: null }, moves.slice(0, 7));
+    expect(events).toHaveLength(7);
+    expect(events[0]).toEqual({ by: 0, kind: "dot", x: 2, y: 1, captured: 0, lost: false });
+    expect(events[6]).toEqual({ by: 0, kind: "dot", x: 2, y: 3, captured: 1, lost: false });
+  });
+});

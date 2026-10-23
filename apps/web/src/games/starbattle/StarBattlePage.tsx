@@ -1,27 +1,38 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, LogOut, Satellite } from "lucide-react";
-import { StarBattle, otherPlayer, type PlayerIndex } from "@isputnik/games-engine";
+import { LogOut, Satellite } from "lucide-react";
+import { StarBattle, otherPlayer, starbattle, type PlayerIndex, type StarBattleMove } from "@isputnik/games-engine";
 import { Button } from "../../shared/Button";
+import { Comms } from "../../shared/Comms";
 import { Dialog } from "../../shared/Dialog";
 import { GameOverDialog } from "../../shared/GameOverDialog";
-import { follow, href, navigate } from "../../router";
+import { useArena } from "../../shared/useArena";
+import { useFeed } from "../../shared/useFeed";
+import type { CommsLine } from "../../shared/commsLines";
+import { href, navigate } from "../../router";
+import { ArenaHead, ArenaStatus, turnNumber } from "./ArenaFrame";
 import { FleetEditor } from "./FleetEditor";
 import { NewGameDialog } from "./NewGameDialog";
 import { StarBattleBoards, lastShotLine } from "./StarBattleBoards";
+import { starBattleLines } from "./comms";
 import { useStarBattleGame } from "./useStarBattleGame";
 import type { StarBattleSetup } from "./storage";
 
-// A local game, always against the computer. The page opens on the new-game
-// dialog when nothing is in progress; a game can be left at any point with
-// Exit game, and a finished one offers a new game or the way back to the lobby.
+const NO_MOVES: StarBattleMove[] = [];
+
+// A local game, always against the computer, in the arena: the dark space
+// theme the page wears on every app theme. It opens on the new-game dialog
+// when nothing is in progress; a game can be left at any point with Exit
+// game, and a finished one offers a new game or the way back to the lobby.
 export function StarBattlePage() {
   const { t } = useTranslation();
+  useArena("star");
   const controller = useStarBattleGame();
   const { game } = controller;
   const [settingUp, setSettingUp] = useState(() => controller.game === null);
   const [confirmExit, setConfirmExit] = useState(false);
   const [resultDismissed, setResultDismissed] = useState<string | null>(null);
+  const feed = useFeed(starbattle, { fleet: game?.setup.fleet ?? "classic" }, game?.moves ?? NO_MOVES);
 
   const begin = (setup: StarBattleSetup) => {
     setSettingUp(false);
@@ -54,7 +65,7 @@ export function StarBattlePage() {
   if (!game) {
     return (
       <section className="star-page">
-        <PageHead title={t("games.starbattle.name")} />
+        <ArenaHead chip={t("starbattle.menu.idle")} />
         <section className="star-menu">
           <Satellite size={40} aria-hidden="true" />
           <h2>{t("games.starbattle.name")}</h2>
@@ -93,6 +104,12 @@ export function StarBattlePage() {
     statusLine = t("starbattle.status.yourShot");
   }
 
+  const chip = finished
+    ? t("starbattle.arena.over")
+    : phase === "placing"
+      ? t("starbattle.arena.deploying")
+      : actor === me ? t("starbattle.arena.yourTurn") : t("starbattle.arena.theirTurn", { name: names[otherPlayer(me)] });
+
   const reason = (() => {
     if (status.kind !== "finished") return null;
     switch (status.reason) {
@@ -105,16 +122,23 @@ export function StarBattlePage() {
   const lastLine = state.lastShot ? lastShotLine(t, columns, state.lastShot, names[state.lastShot.by]) : null;
   const scoreLine = t("starbattle.end.scoreLine", { p1Name: names[0], p1: state.destroyed[0], p2: state.destroyed[1], p2Name: names[1] });
 
+  const lines: CommsLine[] = starBattleLines(feed, me, names, columns, t);
+  if (finished) {
+    lines.push({ key: "end", kind: "system", text: status.winner === null ? t("comms.draw") : t("comms.winner", { name: names[status.winner] }) });
+  } else if (phase === "battle" && actor !== null) {
+    lines.push({ key: "turn", kind: "system", text: actor === me ? t("comms.yourMove") : t("comms.toMove", { name: names[actor] }) });
+  }
+
   const exitButton = (
     <Button variant="secondary" onClick={() => setConfirmExit(true)}>
       <LogOut size={16} aria-hidden="true" /> {t("starbattle.exitGame")}
     </Button>
   );
 
-  let body: React.ReactNode;
-  if (phase === "placing" && controller.humanToMove && actor !== null) {
-    body = (
-      <>
+  return (
+    <section className="star-page">
+      <ArenaHead chip={chip} turn={phase === "battle" || finished ? turnNumber(feed) : null} />
+      {phase === "placing" && controller.humanToMove && actor !== null ? (
         <FleetEditor
           fleet={state.fleet}
           size={state.size}
@@ -122,48 +146,30 @@ export function StarBattlePage() {
           readyLabel={t("starbattle.place.ready")}
           onReady={(vessels) => controller.play({ kind: "place", vessels })}
         />
-        <div className="star-side">
-          <div className="star-actions">{exitButton}</div>
-        </div>
-      </>
-    );
-  } else {
-    body = (
-      <div className="star-layout">
-        {phase === "placing"
-          ? <p className="app-status muted" role="status">{statusLine}</p>
-          : (
-            <StarBattleBoards
-              state={state}
-              viewer={me}
-              names={names}
-              canFire={controller.humanToMove && actor === me}
-              onFire={(x, y) => controller.play({ kind: "shoot", x, y })}
-              revealEnemy={finished}
-            />
-          )}
-        <aside className="star-side">
-          {phase !== "placing" && <p className={`star-status${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>}
-          {lastLine && !finished && <p className="muted star-last-line">{lastLine}</p>}
-          {reason && <p className="muted star-reason">{reason}</p>}
-          <div className="star-actions">
-            {!finished && exitButton}
-            {finished && (
-              <>
-                <Button variant="primary" onClick={() => setSettingUp(true)}>{t("starbattle.newGame")}</Button>
-                <Button variant="secondary" onClick={toLobby}>{t("starbattle.mainMenu")}</Button>
-              </>
-            )}
-          </div>
-        </aside>
-      </div>
-    );
-  }
-
-  return (
-    <section className="star-page">
-      <PageHead title={t("games.starbattle.name")} />
-      {body}
+      ) : phase === "placing" ? (
+        <p className="app-status muted">{statusLine}</p>
+      ) : (
+        <>
+          <StarBattleBoards
+            state={state}
+            viewer={me}
+            names={names}
+            canFire={controller.humanToMove && actor === me}
+            onFire={(x, y) => controller.play({ kind: "shoot", x, y })}
+            revealEnemy={finished}
+          />
+          <Comms lines={lines} />
+        </>
+      )}
+      <ArenaStatus line={statusLine} detail={phase === "placing" ? null : reason ?? lastLine}>
+        {!finished && exitButton}
+        {finished && (
+          <>
+            <Button variant="primary" onClick={() => setSettingUp(true)}>{t("starbattle.newGame")}</Button>
+            <Button variant="secondary" onClick={toLobby}>{t("starbattle.mainMenu")}</Button>
+          </>
+        )}
+      </ArenaStatus>
       {showResult && (
         <GameOverDialog
           headline={statusLine}
@@ -176,17 +182,5 @@ export function StarBattlePage() {
       )}
       {dialogs}
     </section>
-  );
-}
-
-export function PageHead({ title }: { title: string }) {
-  const { t } = useTranslation();
-  return (
-    <header className="page-head page-head-row">
-      <a className="text-link" href={href()} onClick={(event) => follow(event, href())}>
-        <ArrowLeft size={16} aria-hidden="true" /> {t("app.allGames")}
-      </a>
-      <h1>{title}</h1>
-    </header>
   );
 }

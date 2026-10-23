@@ -2,10 +2,10 @@ import { useTranslation } from "react-i18next";
 import { StarBattle, otherPlayer, type PlayerIndex, type StarBattleState, type ShotResult } from "@isputnik/games-engine";
 import { SectorBoard, cellName } from "./SectorBoard";
 
-// The two sectors as one player sees them: their own fleet with the other side's
-// shots on it, and the enemy waters with their own shots and the vessels they
-// have destroyed. The same for a local game (whole state, one side shown at a time)
-// and an online match (the server's view for this seat).
+// The two sectors as one player sees them, each in its panel: their own fleet
+// with the other side's shots on it, and the enemy sector with their own shots
+// and the craft they have destroyed. Each panel says how much of that fleet
+// is still intact, in words and as a row of pips.
 export function StarBattleBoards({
   state,
   viewer,
@@ -33,12 +33,12 @@ export function StarBattleBoards({
   const open = (x: number, y: number) => state.shots[viewer][y * state.size + x] === StarBattle.UNKNOWN;
 
   return (
-    <div className="star-boards">
-      <figure className="star-figure is-enemy">
-        <figcaption>
-          <strong>{t("starbattle.sector.theirs", { name: names[other] })}</strong>
-          <span className="muted">{t("starbattle.sector.intact", { count: total - state.destroyed[viewer] })}</span>
-        </figcaption>
+    <div className="arena-boards">
+      <section className="arena-panel is-enemy" aria-label={t("starbattle.sector.enemyAria")}>
+        <header className="arena-panel-head">
+          <h2>{t("starbattle.sector.theirs", { name: names[other] })}</h2>
+          <Intact intact={total - state.destroyed[viewer]} total={total} tone="them" />
+        </header>
         <SectorBoard
           size={state.size}
           shots={state.shots[viewer]}
@@ -50,12 +50,12 @@ export function StarBattleBoards({
           columns={columns}
           label={t("starbattle.sector.enemyAria")}
         />
-      </figure>
-      <figure className="star-figure is-own">
-        <figcaption>
-          <strong>{t("starbattle.sector.yours", { name: names[viewer] })}</strong>
-          <span className="muted">{t("starbattle.sector.intact", { count: total - state.destroyed[other] })}</span>
-        </figcaption>
+      </section>
+      <section className="arena-panel is-own" aria-label={t("starbattle.sector.ownAria")}>
+        <header className="arena-panel-head">
+          <h2>{t("starbattle.sector.yours", { name: names[viewer] })}</h2>
+          <Intact intact={total - state.destroyed[other]} total={total} tone="you" />
+        </header>
         <SectorBoard
           size={state.size}
           shots={state.shots[other]}
@@ -65,8 +65,20 @@ export function StarBattleBoards({
           columns={columns}
           label={t("starbattle.sector.ownAria")}
         />
-      </figure>
+      </section>
     </div>
+  );
+}
+
+function Intact({ intact, total, tone }: { intact: number; total: number; tone: "you" | "them" }) {
+  const { t } = useTranslation();
+  return (
+    <span className={`arena-intact is-${tone}`}>
+      <span>{t("starbattle.arena.intact", { count: intact, total })}</span>
+      <span className="arena-pips" aria-hidden="true">
+        {Array.from({ length: total }, (_, i) => <span key={i} className={`arena-pip${i < intact ? " is-lit" : ""}`} />)}
+      </span>
+    </span>
   );
 }
 

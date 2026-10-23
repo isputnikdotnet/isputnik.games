@@ -356,6 +356,36 @@ the old address under the new id.
   small menu; **New game** is a dialog (fleet, who fires first, level); **Exit
   game** is there from the first screen on and abandons the game after a
   confirmation; a finished game offers **New game** or **Main menu** (the lobby).
+- **The arena (2026-10-23, after a mock agreed with the owner).** A Star Battle
+  page wears a dark space theme on every app theme: while it is up the body
+  carries `data-arena="star"` (`shared/useArena`), which dresses the page below
+  the app bar — body, buttons, chips — and widens the main column to 1440px; the
+  app bar and the dialogs keep the app's theme. Layout: title and the summary
+  with a turn chip on the right (YOUR TURN / COMPUTER'S TURN / DEPLOYING / GAME
+  OVER, and "Turn n" counted as one more per miss); the two sectors as panels
+  with "n / total craft intact" and a row of pips; the Comms panel; a status bar
+  with the instruction, the last event and the actions. On a phone the enemy
+  sector comes first, then the own one smaller.
+- **Comms**, the one panel every game wears (`shared/Comms`, `shared/commsLines`):
+  a dark console with one line per move in the game's own words, the players'
+  messages in between, and a line from the game at the end (your move, X to
+  move, who won). Who is always the same two colours (you cyan, the other side
+  violet, the computer too); only a result is coloured — green for a hit or a
+  capture of yours, red for one against you, grey for a miss. The lines come
+  from a new optional `narrate(before, move, after)` on `GameDefinition`: plain
+  JSON events (Star Battle: `deploy` without squares, `fire` with the square and
+  the result; Dots: `dot` with the point, what it captured, whether it was lost
+  at once); the web app puts them into words. A local game narrates its move
+  list incrementally (`shared/useFeed`, a WeakMap from each move object to the
+  position and events reached after it); an online match gets `feed` with every
+  view from the server.
+- **Talk, online only.** A `match_messages` table (match, author, text, the
+  move count it was said after) and `POST /games/api/matches/:id/messages`
+  (120 characters, trimmed, only while playing or once finished, players only);
+  `messages` ride with every match view and the panel slots each one after the
+  move it was said after. The prompt sits under the log with four one-tap
+  phrases (good game, nice one, your move!, rematch?). Against the computer the
+  panel is a log only. No moderation beyond the length: it is a family.
 - **Home side**: the cards on For you name the game (`user:games.starbattle`);
   nothing else changed there.
 

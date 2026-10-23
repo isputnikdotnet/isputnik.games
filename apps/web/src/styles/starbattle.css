@@ -1,5 +1,7 @@
-/* Star Battle: two sectors of a star chart. The board is a dark field on every
-   theme — space is dark — so its colours are its own, not the theme's. */
+/* Star Battle: the arena. The page wears a dark space theme on every app
+   theme — space is dark — so while a Star Battle page is up the body carries
+   data-arena="star" (useArena) and everything below the app bar takes these
+   colours. The dialogs keep the app's. */
 :root {
   --star-space: #0b1026;
   --star-space-enemy: #160f2e;
@@ -12,47 +14,216 @@
   --star-miss: rgba(196, 210, 255, 0.65);
   --star-last: #ffd166;
   --star-aim: #7ee8fa;
+  --arena-bg: #060b1c;
+  --arena-ink: #e6ecff;
+  --arena-muted: #9db4e8;
+  --arena-line: rgba(140, 170, 255, 0.2);
+  --arena-panel: rgba(9, 16, 38, 0.82);
+  --arena-panel-enemy: rgba(22, 12, 46, 0.82);
+  --arena-accent: #22d3ee;
+  --arena-them: #b48cff;
+  --arena-danger: #ff4d5a;
 }
 
-.star-layout {
+body[data-arena="star"] {
+  color: var(--arena-ink);
+  background:
+    radial-gradient(ellipse 600px 420px at 8% 30%, rgba(56, 120, 255, 0.22), transparent 70%),
+    radial-gradient(ellipse 700px 500px at 92% 18%, rgba(120, 70, 220, 0.22), transparent 70%),
+    radial-gradient(ellipse 900px 300px at 50% 100%, rgba(30, 90, 200, 0.14), transparent 70%),
+    var(--arena-bg);
+}
+
+body[data-arena="star"] .app-main {
+  max-width: 1440px;
+}
+
+/* The app bar stays the app's: its own ink on its own surface. */
+body[data-arena="star"] .app-bar {
+  color: var(--ink);
+}
+
+body[data-arena="star"] h1,
+body[data-arena="star"] h2 {
+  color: #ffffff;
+}
+
+body[data-arena="star"] .muted,
+body[data-arena="star"] .text-link {
+  color: var(--arena-muted);
+}
+
+body[data-arena="star"] .text-link:hover {
+  color: #ffffff;
+}
+
+body[data-arena="star"] .secondary-button {
+  background: rgba(14, 24, 54, 0.9);
+  border-color: rgba(140, 170, 255, 0.35);
+  color: var(--arena-ink);
+}
+
+body[data-arena="star"] .secondary-button:hover:not(:disabled) {
+  background: rgba(24, 38, 80, 0.95);
+}
+
+body[data-arena="star"] .primary-button {
+  background: var(--arena-accent);
+  color: #06202a;
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.35);
+}
+
+body[data-arena="star"] .chip-button {
+  background: rgba(14, 24, 54, 0.9);
+  border-color: rgba(140, 170, 255, 0.3);
+  color: var(--arena-ink);
+}
+
+body[data-arena="star"] .chip-button.is-selected {
+  background: var(--arena-accent);
+  border-color: var(--arena-accent);
+  color: #06202a;
+}
+
+body[data-arena="star"] .setup-label {
+  color: var(--arena-muted);
+}
+
+.star-page {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-.star-boards {
+/* ── Head: title and the turn chip ─────────────────────────────────────── */
+
+.arena-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.arena-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arena-title h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 3.2vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.arena-title p {
+  margin: 0;
+}
+
+.arena-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  border: 1px solid var(--arena-line);
+  border-radius: 14px;
+  background: var(--arena-panel);
+  color: var(--arena-accent);
+  font-size: var(--text-md);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.arena-chip strong {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.arena-chip span {
+  color: #c9d6ff;
+}
+
+.arena-chip-sep {
+  width: 1px;
+  height: 22px;
+  background: rgba(140, 170, 255, 0.35);
+}
+
+/* ── The two sectors ───────────────────────────────────────────────────── */
+
+.arena-boards {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-5);
   align-items: start;
 }
 
-.star-figure {
-  margin: 0;
-  min-width: 0;
-}
-
-.star-figure figcaption {
+.arena-panel {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4) var(--space-4) var(--space-4);
+  border: 1px solid var(--arena-line);
+  border-radius: 16px;
+  background: var(--arena-panel);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.arena-panel.is-enemy {
+  background: var(--arena-panel-enemy);
+  border-color: rgba(190, 120, 255, 0.22);
+}
+
+/* The enemy sector is where the player acts: right on a desktop, first on a phone. */
+.arena-panel.is-enemy { order: 2; }
+.arena-panel.is-own { order: 1; }
+
+.arena-panel-head {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: baseline;
-  gap: var(--space-2);
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-sm);
+  gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
-.star-figure figcaption strong {
+.arena-panel-head h2 {
+  margin: 0;
   font-size: var(--text-md);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
-/* The enemy sector is where the player acts: first on a phone, right on a desktop. */
-.star-figure.is-enemy {
-  order: 2;
+.arena-intact {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--text-sm);
+  color: #c9d6ff;
 }
 
-.star-figure.is-own {
-  order: 1;
+.arena-pips {
+  display: inline-flex;
+  gap: 4px;
 }
+
+.arena-pip {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: rgba(140, 170, 255, 0.22);
+}
+
+.arena-intact.is-you .arena-pip.is-lit { background: var(--arena-accent); }
+.arena-intact.is-them .arena-pip.is-lit { background: var(--arena-danger); }
+
+.arena-panel .star-board {
+  width: 100%;
+}
+
+/* ── The board itself ──────────────────────────────────────────────────── */
 
 .star-board {
   display: block;
@@ -72,13 +243,6 @@
   fill: var(--star-space);
 }
 
-.star-grid line:first-child,
-.star-grid line:nth-child(11),
-.star-grid line:nth-child(12),
-.star-grid line:last-child {
-  stroke-width: 0.06;
-}
-
 .star-board.is-enemy .star-bg {
   fill: var(--star-space-enemy);
 }
@@ -90,6 +254,13 @@
 .star-grid line {
   stroke: var(--star-line);
   stroke-width: 0.03;
+}
+
+.star-grid line:first-child,
+.star-grid line:nth-child(11),
+.star-grid line:nth-child(12),
+.star-grid line:last-child {
+  stroke-width: 0.06;
 }
 
 .star-labels text {
@@ -168,35 +339,42 @@
   pointer-events: none;
 }
 
-/* ── Side panel ────────────────────────────────────────────────────────── */
+/* ── Status bar ────────────────────────────────────────────────────────── */
 
-.star-side {
+.arena-status {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3) var(--space-5);
+  gap: var(--space-4);
+  flex-wrap: wrap;
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface);
+  border: 1px solid var(--arena-line);
+  border-radius: 16px;
+  background: var(--arena-panel);
 }
 
-.star-status {
-  margin: 0;
-  font-weight: var(--weight-semibold);
+.arena-status-icon {
+  flex: 0 0 auto;
+  color: var(--arena-accent);
 }
 
-.star-status.is-finished {
+.arena-status-text {
+  flex: 1 1 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.arena-status-text strong {
   font-size: var(--text-lg);
+  color: #ffffff;
 }
 
-.star-last-line,
-.star-reason {
-  margin: 0;
+.arena-status-text span {
   font-size: var(--text-sm);
 }
 
-.star-actions {
+.arena-actions {
   display: flex;
   gap: var(--space-2);
   margin-left: auto;
@@ -226,7 +404,7 @@
 }
 
 .star-editor-board {
-  width: min(100%, calc(100dvh - 260px));
+  width: min(100%, calc(100dvh - 300px));
   margin: 0 auto;
 }
 
@@ -235,9 +413,9 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-4);
-  border: 1px solid var(--line);
+  border: 1px solid var(--arena-line);
   border-radius: 14px;
-  background: var(--surface);
+  background: var(--arena-panel);
 }
 
 .star-tray {
@@ -289,12 +467,13 @@
   align-items: center;
   gap: var(--space-3);
   max-width: 480px;
-  margin: var(--space-8) auto;
+  margin: var(--space-6) auto;
   padding: var(--space-6) var(--space-5);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface);
+  border: 1px solid var(--arena-line);
+  border-radius: 16px;
+  background: var(--arena-panel);
   text-align: center;
+  color: var(--arena-accent);
 }
 
 .star-menu h2,
@@ -318,23 +497,22 @@
   color: var(--ink);
 }
 
-@media (max-width: 820px) {
-  .star-boards {
+@media (max-width: 900px) {
+  .arena-boards {
     grid-template-columns: minmax(0, 1fr);
     justify-items: center;
   }
 
-  .star-figure {
+  .arena-panel {
     width: 100%;
   }
 
-  .star-figure.is-enemy {
-    order: 1;
-  }
+  .arena-panel.is-enemy { order: 1; }
+  .arena-panel.is-own { order: 2; }
 
-  .star-figure.is-own {
-    order: 2;
+  .arena-panel.is-own .star-board {
     width: 70%;
+    margin: 0 auto;
   }
 
   .star-editor-body {
@@ -355,18 +533,14 @@
     justify-content: center;
   }
 
-  .star-side {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .star-actions {
+  .arena-actions {
+    width: 100%;
     margin-left: 0;
     flex-wrap: wrap;
   }
 
-  .star-actions .primary-button,
-  .star-actions .secondary-button {
+  .arena-actions .primary-button,
+  .arena-actions .secondary-button {
     flex: 1 1 auto;
     justify-content: center;
   }

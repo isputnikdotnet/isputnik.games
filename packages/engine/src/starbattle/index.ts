@@ -1,4 +1,4 @@
-import type { GameDefinition } from "../game.js";
+import type { GameDefinition, GameEvent } from "../game.js";
 import { starBattleAi } from "./ai.js";
 import {
   DEFAULT_OPTIONS,
@@ -25,6 +25,13 @@ export const starbattle: GameDefinition<StarBattleOptions, StarBattleState, Star
   finish,
   viewFor,
   scoreOf: (state) => state.destroyed,
+  // Deploying says only that it happened; a shot says where and what it did.
+  narrate: (before, move, after): GameEvent | null => {
+    if (before.status.kind !== "playing") return null;
+    const by = before.status.turn;
+    if (move.kind === "place") return { by, kind: "deploy" };
+    return { by, kind: "fire", x: move.x, y: move.y, result: after.lastShot?.result ?? "miss" };
+  },
   ai: starBattleAi
 };
 

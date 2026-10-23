@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Flag, RotateCcw, Undo2 } from "lucide-react";
-import type { PlayerIndex } from "@isputnik/games-engine";
+import { dots, type DotsMove, type PlayerIndex } from "@isputnik/games-engine";
+import { Comms } from "../../shared/Comms";
+import { useFeed } from "../../shared/useFeed";
+import type { CommsLine } from "../../shared/commsLines";
+import { dotsLines } from "./comms";
 import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
 import { follow, href } from "../../router";
@@ -13,6 +17,8 @@ import type { DotsSetup } from "./storage";
 
 type Pending = "end" | "new" | null;
 
+const NO_MOVES: DotsMove[] = [];
+
 export function DotsPage() {
   const { t } = useTranslation();
   const controller = useDotsGame();
@@ -21,6 +27,7 @@ export function DotsPage() {
   // aside for that ending only (a new game's end shows it again).
   const [resultDismissed, setResultDismissed] = useState<string | null>(null);
   const { game } = controller;
+  const feed = useFeed(dots, { size: game?.state.size ?? 15, targetCaptures: game?.state.targetCaptures ?? null }, game?.state.moves ?? NO_MOVES);
 
   const seatName = (setup: DotsSetup, player: PlayerIndex) =>
     isComputerSeat(setup, player) ? t("dots.players.computer") : t(player === 0 ? "dots.players.blue" : "dots.players.red");
@@ -45,6 +52,17 @@ export function DotsPage() {
     statusLine = controller.thinking ? t("dots.thinking") : t("dots.turn", { player: seatName(setup, status.turn) });
   } else {
     statusLine = status.winner === null ? t("dots.end.draw") : t("dots.end.winner", { player: seatName(setup, status.winner) });
+  }
+
+  // Blue is "you" in the log: the person against the computer, or whoever
+  // took blue when two people share the screen.
+  const me: PlayerIndex = setup.mode === "computer" ? (setup.computerPlays === 0 ? 1 : 0) : 0;
+  const names: [string, string] = [seatName(setup, 0), seatName(setup, 1)];
+  const lines: CommsLine[] = dotsLines(feed, me, names, t);
+  if (status.kind === "finished") {
+    lines.push({ key: "end", kind: "system", text: status.winner === null ? t("comms.draw") : t("comms.winner", { name: names[status.winner] }) });
+  } else {
+    lines.push({ key: "turn", kind: "system", text: status.turn === me ? t("comms.yourMove") : t("comms.toMove", { name: names[status.turn] }) });
   }
 
   const reason = (() => {
@@ -93,6 +111,7 @@ export function DotsPage() {
               </>
             )}
           </div>
+          <Comms lines={lines} />
         </aside>
       </div>
 

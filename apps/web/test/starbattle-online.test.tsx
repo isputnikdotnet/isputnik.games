@@ -40,6 +40,8 @@ const detail = (state: StarBattleState, over: Partial<MatchDetail> = {}): MatchD
   updatedAt: "2026-10-23T00:00:00.000Z",
   finishedAt: null,
   state,
+  feed: [],
+  messages: [],
   ...over
 });
 

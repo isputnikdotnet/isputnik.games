@@ -219,3 +219,23 @@ describe("a view for one seat", () => {
     expect(forB.placed).toEqual([true, false]);
   });
 });
+
+describe("narrate", () => {
+  it("logs a deployment without its squares, and every shot with its result", async () => {
+    const { starbattle } = await import("../src/starbattle/index.js");
+    const { narrateMoves } = await import("../src/game.js");
+    const { events } = narrateMoves(starbattle, { fleet: "classic" }, [
+      { kind: "place", vessels: FLEET_A },
+      { kind: "place", vessels: FLEET_B },
+      { kind: "shoot", x: 9, y: 0 },
+      { kind: "shoot", x: 0, y: 6 }
+    ]);
+    expect(events).toEqual([
+      { by: 0, kind: "deploy" },
+      { by: 1, kind: "deploy" },
+      { by: 0, kind: "fire", x: 9, y: 0, result: "miss" },
+      { by: 1, kind: "fire", x: 0, y: 6, result: "destroyed" }
+    ]);
+    expect(JSON.stringify(events)).not.toContain("vessels");
+  });
+});
