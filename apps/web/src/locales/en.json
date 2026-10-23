@@ -124,6 +124,7 @@
     "undo": "Undo",
     "endGame": "End game",
     "newGame": "New game",
+    "exit": "Exit game",
     "end": {
       "winner": "{{player}} wins",
       "draw": "A draw",
@@ -134,7 +135,8 @@
       "reasonAgreed": "Ended by agreement.",
       "reasonResigned": "{{player}} resigned.",
       "again": "Play again",
-      "change": "Change settings"
+      "change": "Change settings",
+      "toLobby": "Back to games"
     },
     "confirmEnd": {
       "title": "End this game?",
@@ -146,6 +148,12 @@
       "title": "Start a new game?",
       "body": "The game in progress is abandoned.",
       "confirm": "New game",
+      "cancel": "Keep playing"
+    },
+    "confirmExit": {
+      "title": "Leave this game?",
+      "body": "The game in progress is abandoned, and you go back to the games.",
+      "confirm": "Exit game",
       "cancel": "Keep playing"
     },
     "boardAria": "Dots board, {{size}} by {{size}}",

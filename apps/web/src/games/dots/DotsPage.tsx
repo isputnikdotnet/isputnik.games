@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Flag, RotateCcw, Undo2 } from "lucide-react";
+import { ArrowLeft, Flag, LogOut, RotateCcw, Undo2 } from "lucide-react";
 import { dots, type DotsMove, type PlayerIndex } from "@isputnik/games-engine";
 import { Comms } from "../../shared/Comms";
 import { useFeed } from "../../shared/useFeed";
@@ -9,7 +9,7 @@ import type { CommsLine } from "../../shared/commsLines";
 import { dotsLines } from "./comms";
 import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
-import { follow, href } from "../../router";
+import { follow, href, navigate } from "../../router";
 import { PHONE, useMediaQuery } from "../../shared/useMediaQuery";
 import { DotsBoard } from "./DotsBoard";
 import { DotsScoreboard } from "./DotsScoreboard";
@@ -18,7 +18,7 @@ import { NewGameForm } from "./NewGameForm";
 import { isComputerSeat, useDotsGame } from "./useDotsGame";
 import type { DotsSetup } from "./storage";
 
-type Pending = "end" | "new" | null;
+type Pending = "end" | "new" | "exit" | null;
 
 const NO_MOVES: DotsMove[] = [];
 
@@ -82,6 +82,12 @@ export function DotsPage() {
     }
   })();
 
+  // Leaving puts the game down for good, as in Star Battle and Chess.
+  const exit = () => {
+    controller.abandon();
+    navigate(href());
+  };
+
   // The score and the status: beside the board on a desktop, above it on a phone.
   const scoreboard = (
     <DotsScoreboard
@@ -118,12 +124,18 @@ export function DotsPage() {
                 <Button variant="secondary" onClick={() => (state.moves.length === 0 ? controller.abandon() : setPending("new"))}>
                   <RotateCcw size={16} aria-hidden="true" /> {t("dots.newGame")}
                 </Button>
+                <Button variant="secondary" onClick={() => (state.moves.length === 0 ? exit() : setPending("exit"))}>
+                  <LogOut size={16} aria-hidden="true" /> {t("dots.exit")}
+                </Button>
               </>
             )}
             {finished && (
               <>
                 <Button variant="primary" onClick={() => controller.start(setup)}>{t("dots.end.again")}</Button>
                 <Button variant="secondary" onClick={controller.abandon}>{t("dots.end.change")}</Button>
+                <Button variant="secondary" onClick={exit}>
+                  <LogOut size={16} aria-hidden="true" /> {t("dots.end.toLobby")}
+                </Button>
               </>
             )}
           </div>
@@ -139,7 +151,7 @@ export function DotsPage() {
           })}
           reason={reason}
           primary={{ label: t("dots.end.again"), onClick: () => controller.start(setup) }}
-          secondary={{ label: t("dots.end.change"), onClick: controller.abandon }}
+          secondary={{ label: t("dots.end.toLobby"), onClick: exit }}
           onClose={() => setResultDismissed(endingKey)}
         />
       )}
@@ -152,6 +164,18 @@ export function DotsPage() {
           onClose={() => setPending(null)}
         >
           {t("dots.confirmEnd.body")}
+        </Dialog>
+      )}
+      {pending === "exit" && (
+        <Dialog
+          title={t("dots.confirmExit.title")}
+          confirmLabel={t("dots.confirmExit.confirm")}
+          cancelLabel={t("dots.confirmExit.cancel")}
+          danger
+          onConfirm={() => { setPending(null); exit(); }}
+          onClose={() => setPending(null)}
+        >
+          {t("dots.confirmExit.body")}
         </Dialog>
       )}
       {pending === "new" && (

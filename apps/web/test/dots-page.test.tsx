@@ -93,7 +93,7 @@ describe("DotsPage", () => {
     expect(loadDotsGame()?.state.moves).toEqual([]);
   });
 
-  it("the result dialog's Change settings goes back to the form", async () => {
+  it("the result dialog goes back to the games; the panel's Change settings to the form", async () => {
     const user = userEvent.setup();
     render(<DotsPage />);
     await user.click(screen.getByRole("button", { name: "Two players, one screen" }));
@@ -103,8 +103,25 @@ describe("DotsPage", () => {
     await user.click(screen.getByRole("button", { name: "End game" }));
     await user.click(within(screen.getByRole("dialog", { name: "End this game?" })).getByRole("button", { name: "End game" }));
 
-    await user.click(within(screen.getByRole("dialog", { name: "Game over" })).getByRole("button", { name: "Change settings" }));
+    expect(within(screen.getByRole("dialog", { name: "Game over" })).getByRole("button", { name: "Back to games" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Change settings" }));
     expect(screen.getByRole("heading", { name: "New game" })).toBeInTheDocument();
+    expect(loadDotsGame()).toBeNull();
+  });
+
+  it("exits to the lobby after asking, and leaves no game behind", async () => {
+    const user = userEvent.setup();
+    render(<DotsPage />);
+    await user.click(screen.getByRole("button", { name: "Two players, one screen" }));
+    await user.click(screen.getByRole("button", { name: "10 × 10" }));
+    await user.click(screen.getByRole("button", { name: "Start game" }));
+    placeAt(screen.getByRole("img", { name: "Dots board, 10 by 10" }), 10, 4, 4);
+
+    await user.click(screen.getByRole("button", { name: "Exit game" }));
+    const dialog = screen.getByRole("dialog", { name: "Leave this game?" });
+    await user.click(within(dialog).getByRole("button", { name: "Exit game" }));
+    expect(window.location.pathname).toBe("/games/");
     expect(loadDotsGame()).toBeNull();
   });
 });
