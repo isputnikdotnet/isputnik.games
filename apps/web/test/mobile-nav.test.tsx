@@ -43,7 +43,7 @@ describe("lobby foot", () => {
   it("names the games app's version and stage", async () => {
     vi.mocked(api.fetchMatches).mockResolvedValue([]);
     render(
-      <SessionContext.Provider value={{ status: "ready", user: me, version: "0.6.0", stage: "alpha" }}>
+      <SessionContext.Provider value={{ status: "ready", user: me, guests: true, version: "0.6.0", stage: "alpha" }}>
         <LobbyPage />
       </SessionContext.Provider>
     );

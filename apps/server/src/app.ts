@@ -9,6 +9,7 @@ import {
   devIdentity,
   forwardedRequestId,
   identityFrom,
+  isGuestId,
   rejectionReason,
   type Identity
 } from "./identity.js";
@@ -205,15 +206,39 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     if (reply.sent) return;
     if (request.identity!.role !== "admin") return reply.code(403).send({ error: "Admins only" });
   };
-  const me = (request: FastifyRequest): Member => ({ id: request.identity!.id, name: request.identity!.name });
   const matchId = (request: FastifyRequest) => (request.params as { id: string }).id;
+  // A member, or a guest in the one match their link is for (docs/plan.md →
+  // Guests). A guest asking after any other match is someone poking at the
+  // API with a guest cookie, and leaves an event behind.
+  const requirePlayer = async (request: FastifyRequest, reply: FastifyReply) => {
+    await requireIdentity(request, reply);
+    if (reply.sent) return;
+    const identity = request.identity!;
+    if (identity.role === "guest" && identity.guestMatch !== matchId(request)) {
+      note(request, "warn", "guest.refused", { matchId: matchId(request), detail: `${request.method} ${pathOf(request)}: a guest of match ${identity.guestMatch}` });
+      return reply.code(403).send({ error: "This link opens one match only" });
+    }
+  };
+  // Inviting is a member's act: a guest has no one to invite and no lobby to do it from.
+  const requireMember = async (request: FastifyRequest, reply: FastifyReply) => {
+    await requireIdentity(request, reply);
+    if (reply.sent) return;
+    if (request.identity!.role === "guest") return reply.code(403).send({ error: "Guests cannot invite" });
+  };
+  const me = (request: FastifyRequest): Member => ({ id: request.identity!.id, name: request.identity!.name });
   const opponentIn = (players: [Member, Member], userId: string) => players.find((player) => player.id !== userId) ?? players[1];
+  /** "Dad (dad)" — and "Alex (guest_…, a guest)" for someone let in by link. */
+  const who = (member: Member) => `${member.name} (${member.id}${isGuestId(member.id) ? ", a guest" : ""})`;
+  /** The one match a guest may see; everything, for a member. */
+  const scopeOf = (request: FastifyRequest) => (request.identity!.role === "guest" ? request.identity!.guestMatch : undefined);
 
   app.get(`${API}/health`, async () => ({ ok: true, version: options.version }));
 
   app.get(`${API}/me`, { preHandler: requireIdentity }, async (request) => ({
     user: request.identity,
     games: GAME_IDS,
+    // Guest links are minted by the home server: there are none without a gateway.
+    guests: Boolean(secret),
     version: options.version,
     stage: options.stage
   }));
@@ -226,47 +251,47 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
   // ── Online matches (docs/plan.md → Phase 2) ──────────────────────────────
   app.get(`${API}/matches`, { preHandler: requireIdentity }, async (request) => ({
-    matches: listMatches(db, request.identity!.id)
+    matches: listMatches(db, request.identity!.id, scopeOf(request))
   }));
 
   // What the home app shows on its own pages: invitations and "your move" counts.
   app.get(`${API}/summary`, { preHandler: requireIdentity }, async (request) =>
-    summaryFor(db, request.identity!.id)
+    summaryFor(db, request.identity!.id, scopeOf(request))
   );
 
-  app.post(`${API}/matches`, { preHandler: requireIdentity }, async (request, reply) => {
+  app.post(`${API}/matches`, { preHandler: requireMember }, async (request, reply) => {
     const input = createMatchSchema.parse(request.body ?? {});
     const match = createMatch(db, me(request), input);
-    note(request, "info", "match.created", { matchId: match.id, detail: `${match.game}: invited ${input.opponent.name} (${input.opponent.id}), plays ${input.seat === 0 ? "first" : "second"}` });
+    note(request, "info", "match.created", { matchId: match.id, detail: `${match.game}: invited ${who(input.opponent)}, plays ${input.seat === 0 ? "first" : "second"}` });
     return reply.code(201).send(match);
   });
 
-  app.get(`${API}/matches/:id`, { preHandler: requireIdentity }, async (request) =>
+  app.get(`${API}/matches/:id`, { preHandler: requirePlayer }, async (request) =>
     getMatch(db, request.identity!.id, matchId(request))
   );
 
-  app.post(`${API}/matches/:id/accept`, { preHandler: requireIdentity }, async (request) => {
+  app.post(`${API}/matches/:id/accept`, { preHandler: requirePlayer }, async (request) => {
     const match = answerInvitation(db, request.identity!.id, matchId(request), "accept");
     const from = opponentIn(match.players, request.identity!.id);
-    note(request, "info", "match.accepted", { matchId: match.id, detail: `${match.game}: accepted the invitation from ${from.name} (${from.id})` });
+    note(request, "info", "match.accepted", { matchId: match.id, detail: `${match.game}: accepted the invitation from ${who(from)}` });
     return match;
   });
 
-  app.post(`${API}/matches/:id/decline`, { preHandler: requireIdentity }, async (request) => {
+  app.post(`${API}/matches/:id/decline`, { preHandler: requirePlayer }, async (request) => {
     const match = answerInvitation(db, request.identity!.id, matchId(request), "decline");
     const from = opponentIn(match.players, request.identity!.id);
-    note(request, "info", "match.declined", { matchId: match.id, detail: `${match.game}: declined the invitation from ${from.name} (${from.id})` });
+    note(request, "info", "match.declined", { matchId: match.id, detail: `${match.game}: declined the invitation from ${who(from)}` });
     return match;
   });
 
-  app.post(`${API}/matches/:id/cancel`, { preHandler: requireIdentity }, async (request) => {
+  app.post(`${API}/matches/:id/cancel`, { preHandler: requirePlayer }, async (request) => {
     const match = cancelInvitation(db, request.identity!.id, matchId(request));
     const to = opponentIn(match.players, request.identity!.id);
-    note(request, "info", "match.cancelled", { matchId: match.id, detail: `${match.game}: withdrew the invitation to ${to.name} (${to.id})` });
+    note(request, "info", "match.cancelled", { matchId: match.id, detail: `${match.game}: withdrew the invitation to ${who(to)}` });
     return match;
   });
 
-  app.post(`${API}/matches/:id/moves`, { preHandler: requireIdentity }, async (request) => {
+  app.post(`${API}/matches/:id/moves`, { preHandler: requirePlayer }, async (request) => {
     const input = moveSchema.parse(request.body ?? {});
     const match = playMove(db, request.identity!.id, matchId(request), input.move, input.moveCount);
     if (match.status === "finished") {
@@ -277,15 +302,15 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     return match;
   });
 
-  app.post(`${API}/matches/:id/messages`, { preHandler: requireIdentity }, async (request, reply) => {
+  app.post(`${API}/matches/:id/messages`, { preHandler: requirePlayer }, async (request, reply) => {
     const input = messageSchema.parse(request.body ?? {});
     return reply.code(201).send(postMessage(db, request.identity!.id, matchId(request), input.text));
   });
 
-  app.post(`${API}/matches/:id/resign`, { preHandler: requireIdentity }, async (request) => {
+  app.post(`${API}/matches/:id/resign`, { preHandler: requirePlayer }, async (request) => {
     const match = resign(db, request.identity!.id, matchId(request));
     const to = opponentIn(match.players, request.identity!.id);
-    note(request, "info", "match.resigned", { matchId: match.id, detail: `${match.game}: resigned against ${to.name} (${to.id}) after ${match.moveCount} moves` });
+    note(request, "info", "match.resigned", { matchId: match.id, detail: `${match.game}: resigned against ${who(to)} after ${match.moveCount} moves` });
     return match;
   });
 

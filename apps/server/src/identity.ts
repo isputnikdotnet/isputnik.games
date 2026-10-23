@@ -15,13 +15,24 @@ export const USER_THEME_HEADER = "x-isputnik-user-theme";
 export const CLIENT_IP_HEADER = "x-isputnik-client-ip";
 /** The home server's id for the same request, so its log line and this one match up. */
 export const REQUEST_ID_HEADER = "x-isputnik-request-id";
+/** For a guest (docs/plan.md → Guests): the one match their link is good for. */
+export const GUEST_MATCH_HEADER = "x-isputnik-guest-match";
 
-export type Role = "admin" | "member";
+export type Role = "admin" | "member" | "guest";
+
+/** Guest ids are minted by the home server under this prefix; nothing else is one. */
+export const GUEST_ID_PREFIX = "guest_";
+
+export function isGuestId(id: string): boolean {
+  return id.startsWith(GUEST_ID_PREFIX);
+}
 
 export interface Identity {
   id: string;
   name: string;
   role: Role;
+  /** A guest's one match: every other match answers 403. Absent for members. */
+  guestMatch?: string;
   /** Interface language the member chose in the home app ("en", "ru"). */
   lang: string;
   /** Theme the member chose in the home app, so the games wear the same one. */
@@ -42,6 +53,7 @@ function decodeName(raw: string): string {
 
 const LANG = /^[a-z]{2}(-[A-Za-z]{2})?$/;
 const THEME = /^[a-z][a-z0-9-]{0,30}$/;
+const MATCH_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 /**
  * The identity the gateway forwarded, or null when the request is not from the
@@ -56,17 +68,28 @@ export function identityFrom(headers: IncomingHttpHeaders, secret: string | null
   const id = single(headers[USER_ID_HEADER])?.trim();
   if (!id || id.length > 64) return null;
   const role = single(headers[USER_ROLE_HEADER]);
-  if (role !== "admin" && role !== "member") return null;
+  if (role !== "admin" && role !== "member" && role !== "guest") return null;
   const name = decodeName(single(headers[USER_NAME_HEADER]) ?? "").trim().slice(0, 120) || id;
   const lang = single(headers[USER_LANG_HEADER])?.trim() ?? "";
   const theme = single(headers[USER_THEME_HEADER])?.trim() ?? "";
-  return {
+  const identity: Identity = {
     id,
     name,
     role,
     lang: LANG.test(lang) ? lang : "en",
     theme: THEME.test(theme) ? theme : "minimalist"
   };
+  // A guest is only ever a guest OF a match: a guest id under the home server's
+  // prefix and the match the link names, or the request is nobody. The prefix
+  // is the guests' alone — a member id under it is refused too.
+  if (role === "guest") {
+    const match = single(headers[GUEST_MATCH_HEADER])?.trim();
+    if (!isGuestId(id) || !match || !MATCH_ID.test(match)) return null;
+    identity.guestMatch = match;
+  } else if (isGuestId(id)) {
+    return null;
+  }
+  return identity;
 }
 
 /** Whether this request carries the gateway's secret — the one check behind

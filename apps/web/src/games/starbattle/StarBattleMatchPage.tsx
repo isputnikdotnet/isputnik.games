@@ -7,6 +7,7 @@ import { Button } from "../../shared/Button";
 import { Comms } from "../../shared/Comms";
 import { Dialog } from "../../shared/Dialog";
 import { GameOverDialog } from "../../shared/GameOverDialog";
+import { GuestLinkPanel } from "../../shared/GuestLinkPanel";
 import { MessageBox } from "../../shared/MessageBox";
 import { useArena } from "../../shared/useArena";
 import { withTalk, type CommsLine } from "../../shared/commsLines";
@@ -101,7 +102,8 @@ export function StarBattleMatchPage({ matchId }: { matchId: string }) {
 
   let statusLine: string;
   switch (match.status) {
-    case "invited": statusLine = t("match.invited", { name: them.name }); break;
+    // The sender waits; the one invited is told who asks.
+    case "invited": statusLine = match.createdBy === myId ? t("match.invited", { name: them.name }) : t("lobby.online.from", { name: them.name }); break;
     case "declined": statusLine = t("match.declined", { name: them.name }); break;
     case "cancelled": statusLine = t("match.cancelled"); break;
     case "playing":
@@ -204,6 +206,7 @@ export function StarBattleMatchPage({ matchId }: { matchId: string }) {
           <Button variant="primary" onClick={() => navigate(href())}>{t("app.allGames")}</Button>
         )}
       </ArenaStatus>
+      {them.guest && match.createdBy === myId && <GuestLinkPanel matchId={match.id} guestName={them.name} />}
 
       {finished && !resultDismissed && (
         <GameOverDialog

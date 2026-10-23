@@ -760,3 +760,84 @@
     flex: 1 1 auto;
   }
 }
+
+/* ── Guest links (docs/plan.md → Guests) ───────────────────────────────── */
+
+.text-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+}
+
+.text-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.copy-link {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.copy-link-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2, var(--surface));
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.copy-link .secondary-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.guest-link-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.guest-link-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.guest-link-panel p {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.guest-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.app-bar-back.is-placeholder {
+  visibility: hidden;
+}

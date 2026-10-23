@@ -15,6 +15,7 @@ import { PHONE, useMediaQuery } from "../../shared/useMediaQuery";
 import { DotsBoard } from "./DotsBoard";
 import { DotsScoreboard } from "./DotsScoreboard";
 import { GameOverDialog } from "../../shared/GameOverDialog";
+import { GuestLinkPanel } from "../../shared/GuestLinkPanel";
 import { useMatch } from "./useMatch";
 
 // An online match of Dots: the same board, the server's position, and the
@@ -98,7 +99,8 @@ export function DotsMatchPage({ matchId }: { matchId: string }) {
 
   let statusLine: string;
   switch (match.status) {
-    case "invited": statusLine = t("match.invited", { name: them.name }); break;
+    // The sender waits; the one invited is told who asks.
+    case "invited": statusLine = match.createdBy === myId ? t("match.invited", { name: them.name }) : t("lobby.online.from", { name: them.name }); break;
     case "declined": statusLine = t("match.declined", { name: them.name }); break;
     case "cancelled": statusLine = t("match.cancelled"); break;
     case "playing": statusLine = myMove ? t("match.yourMove") : t("match.theirMove", { name: them.name }); break;
@@ -175,6 +177,7 @@ export function DotsMatchPage({ matchId }: { matchId: string }) {
               <Button variant="primary" onClick={() => navigate(href())}>{t("app.allGames")}</Button>
             )}
           </div>
+          {them.guest && match.createdBy === myId && <GuestLinkPanel matchId={match.id} guestName={them.name} />}
           {talkable && (
             <Comms lines={lines} onSend={(text) => void say(text)} phrases={phrases} sendTo={them.name} busy={saying} error={sayError} />
           )}

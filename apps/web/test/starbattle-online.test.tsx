@@ -13,7 +13,7 @@ vi.mock("../src/api", async () => {
 import * as api from "../src/api";
 
 const me = { id: "mum", name: "Мама", role: "member" as const, lang: "en", theme: "minimalist" };
-const session = { status: "ready" as const, user: me, version: "test", stage: null };
+const session = { status: "ready" as const, user: me, guests: true, version: "test", stage: null };
 
 const fleet = (row: number): Vessel[] => [
   { x: 0, y: row, length: 3, horizontal: true },

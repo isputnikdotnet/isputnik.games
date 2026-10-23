@@ -8,14 +8,18 @@ export const API_BASE = "/games/api";
 export interface Me {
   id: string;
   name: string;
-  role: "admin" | "member";
+  role: "admin" | "member" | "guest";
   lang: string;
   theme: string;
+  /** A guest's one match (docs/plan.md → Guests); absent for members. */
+  guestMatch?: string;
 }
 
 export interface MeResponse {
   user: Me;
   games: string[];
+  /** Whether guest links can be made: only behind the home gateway. */
+  guests: boolean;
   version: string;
   stage: string | null;
 }
@@ -23,6 +27,8 @@ export interface MeResponse {
 export interface Member {
   id: string;
   name: string;
+  /** Someone let in by guest link, not a member of the household. */
+  guest?: boolean;
 }
 
 export type MatchStatus = "invited" | "playing" | "finished" | "declined" | "cancelled";
@@ -154,6 +160,61 @@ export function postMessage(id: string, text: string): Promise<MatchDetail> {
 
 export function resignMatch(id: string): Promise<MatchDetail> {
   return post<MatchDetail>(`/matches/${encodeURIComponent(id)}/resign`);
+}
+
+// ── Guest links (docs/plan.md → Guests) ──────────────────────────────────────
+// Minted, renewed and revoked by the home server, which owns identity; the
+// games front end calls it on the home origin, the way it asks for the members.
+
+export interface GuestInvite {
+  id: string;
+  guestId: string;
+  guestName: string;
+  game: string;
+  matchId: string | null;
+  createdBy: Member;
+  createdAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  openedCount: number;
+  firstOpenedAt: string | null;
+  lastSeenAt: string | null;
+  lastIp: string | null;
+  state: "live" | "expired" | "revoked" | "pending";
+}
+
+export interface CreateGuestInviteInput {
+  game: string;
+  options: unknown;
+  seat: PlayerIndex;
+  guestName: string;
+}
+
+export interface GuestInviteCreated {
+  invite: GuestInvite;
+  /** The link, shown once: only its hash is kept. */
+  url: string;
+  match: MatchSummary;
+}
+
+const home = <T>(path: string, init: RequestInit = {}) => request<T>(`/api/games/guest-invites${path}`, init);
+
+export function createGuestInvite(input: CreateGuestInviteInput): Promise<GuestInviteCreated> {
+  return home<GuestInviteCreated>("", { method: "POST", body: JSON.stringify(input) });
+}
+
+/** The link for one match — the inviter's own, or null when there is none. */
+export async function fetchGuestInvite(matchId: string): Promise<GuestInvite | null> {
+  const { invites } = await home<{ invites: GuestInvite[] }>(`?match=${encodeURIComponent(matchId)}`);
+  return invites[0] ?? null;
+}
+
+export function renewGuestInvite(id: string): Promise<{ invite: GuestInvite; url: string }> {
+  return home<{ invite: GuestInvite; url: string }>(`/${encodeURIComponent(id)}/renew`, { method: "POST" });
+}
+
+export function revokeGuestInvite(id: string): Promise<{ invite: GuestInvite }> {
+  return home<{ invite: GuestInvite }>(`/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 /**

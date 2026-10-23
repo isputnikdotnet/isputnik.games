@@ -8,7 +8,8 @@
     "unavailableTitle": "The games are not available",
     "unavailableBody": "The games server did not answer. Try again in a moment.",
     "notFound": "There is no such page.",
-    "allGames": "All games"
+    "allGames": "All games",
+    "guestUser": "{{name}} · guest"
   },
   "lobby": {
     "title": "Games",
@@ -45,7 +46,17 @@
     "cancel": "Cancel",
     "failed": "Unable to send the invitation",
     "game": "Game",
-    "them": "The other player"
+    "them": "The other player",
+    "guestChip": "Someone outside the family",
+    "guestName": "Their name",
+    "guestNamePlaceholder": "e.g. Alex",
+    "guestHint": "They get a link that opens this match only — no account needed. It works for 14 days; you can make a new link or revoke it from the match page.",
+    "makeLink": "Make the link",
+    "linkTitle": "Link for {{name}}",
+    "linkLead": "Send {{name}} this link. It opens this match only; it is shown here once.",
+    "linkExpires": "Works until {{date}}.",
+    "openMatch": "Go to the match",
+    "linkFailed": "Unable to make the link"
   },
   "match": {
     "you": "You",
@@ -266,5 +277,35 @@
     "matches": "Matches",
     "waiting_one": "{{count}} waiting on you",
     "waiting_other": "{{count}} waiting on you"
+  },
+  "copyLink": {
+    "aria": "Link",
+    "copy": "Copy link",
+    "copied": "Copied"
+  },
+  "guestLink": {
+    "title": "Guest link",
+    "notOpened": "Not opened yet",
+    "opened_one": "Opened {{count}} time, last {{date}}",
+    "opened_other": "Opened {{count}} times, last {{date}}",
+    "expires": "works until {{date}}",
+    "expired": "The link has expired",
+    "revoked": "The link was revoked",
+    "renew": "New link",
+    "revoke": "Revoke link",
+    "newLinkLead": "Send {{name}} this new link; the old one no longer works.",
+    "failed": "Unable to change the guest link",
+    "confirmRevoke": {
+      "title": "Revoke the guest link?",
+      "body": "{{name}} can no longer open this match. You can make a new link afterwards.",
+      "confirm": "Revoke link",
+      "cancel": "Keep link"
+    }
+  },
+  "guest": {
+    "title": "Your match",
+    "lead": "You are playing as {{name}}’s guest. Your link opens this match only.",
+    "leadAlone": "You are playing as a guest. Your link opens one match only.",
+    "empty": "There is no match for this link."
   }
 }

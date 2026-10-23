@@ -4,11 +4,11 @@ import { buildApp } from "../src/app.js";
 
 const SECRET = "s3cret-s3cret-s3cret";
 
-const as = (id: string, name: string) => ({
+const as = (id: string, name: string, role: "admin" | "member" = "member") => ({
   "x-isputnik-gateway": SECRET,
   "x-isputnik-user-id": id,
   "x-isputnik-user-name": encodeURIComponent(name),
-  "x-isputnik-user-role": "member"
+  "x-isputnik-user-role": role
 });
 const mum = as("mum", "Мама");
 const dad = as("dad", "Dad");
@@ -177,5 +177,77 @@ describe("matches API", () => {
     } finally {
       await dev.close();
     }
+  });
+});
+
+// A guest (docs/plan.md → Guests): the home gateway forwards role "guest", an
+// id under its guest prefix and the one match the link was for. Inside that
+// match a guest is a player like any other; outside it they are nobody.
+describe("guests", () => {
+  const guestOf = (match: string) => ({
+    "x-isputnik-gateway": SECRET,
+    "x-isputnik-user-id": "guest_abc123def456",
+    "x-isputnik-user-name": encodeURIComponent("Alex"),
+    "x-isputnik-user-role": "guest",
+    "x-isputnik-guest-match": match
+  });
+  const invite = async (opponent = { id: "guest_abc123def456", name: "Alex" }) =>
+    (await post("/games/api/matches", mum, { game: "dots", options: { size: 10, targetCaptures: null }, opponent, seat: 0 })).json().id as string;
+
+  it("plays the match the link is for, and sees nothing else", async () => {
+    const id = await invite();
+    const otherId = await invite({ id: "dad", name: "Dad" });
+    const guest = guestOf(id);
+
+    const me = await get("/games/api/me", guest);
+    expect(me.json().user).toEqual({ id: "guest_abc123def456", name: "Alex", role: "guest", guestMatch: id, lang: "en", theme: "minimalist" });
+    expect(me.json().guests).toBe(true);
+
+    // The list and the summary hold the one match; the opponent is marked as a guest for the member.
+    expect((await get("/games/api/matches", guest)).json().matches.map((m: { id: string }) => m.id)).toEqual([id]);
+    expect((await get("/games/api/summary", guest)).json().counts).toEqual({ invitations: 1, yourMove: 0 });
+    const mumList = (await get("/games/api/matches", mum)).json().matches as { id: string; players: { id: string; guest?: boolean }[] }[];
+    expect(mumList.find((m) => m.id === id)!.players[1]).toEqual({ id: "guest_abc123def456", name: "Alex", guest: true });
+    expect(mumList.find((m) => m.id === otherId)!.players[1]).toEqual({ id: "dad", name: "Dad" });
+
+    expect((await post(`/games/api/matches/${id}/accept`, guest)).json().status).toBe("playing");
+    const moved = await post(`/games/api/matches/${id}/moves`, mum, { move: { x: 1, y: 1 }, moveCount: 0 });
+    expect(moved.statusCode).toBe(200);
+    const reply = await post(`/games/api/matches/${id}/moves`, guest, { move: { x: 2, y: 2 }, moveCount: 1 });
+    expect(reply.statusCode).toBe(200);
+    expect(reply.json().turn).toBe(0);
+    expect((await post(`/games/api/matches/${id}/messages`, guest, { text: "good game" })).statusCode).toBe(201);
+    expect((await post(`/games/api/matches/${id}/resign`, guest)).json()).toMatchObject({ status: "finished", winner: 0 });
+  });
+
+  it("is refused outside that match, with an event, and cannot invite", async () => {
+    const id = await invite();
+    const otherId = await invite({ id: "dad", name: "Dad" });
+    const guest = guestOf(id);
+
+    expect((await get(`/games/api/matches/${otherId}`, guest)).statusCode).toBe(403);
+    expect((await post(`/games/api/matches/${otherId}/accept`, guest)).statusCode).toBe(403);
+    expect((await post(`/games/api/matches/${otherId}/moves`, guest, { move: { x: 1, y: 1 }, moveCount: 0 })).statusCode).toBe(403);
+    expect((await post("/games/api/matches", guest, { game: "dots", options: { size: 10, targetCaptures: null }, opponent: { id: "dad", name: "Dad" } })).statusCode).toBe(403);
+    expect((await get("/games/api/admin/events", guest)).statusCode).toBe(403);
+
+    const events = (await get("/games/api/admin/events?event=guest", as("admin", "Admin", "admin"))).json();
+    expect(events.events.map((e: { event: string; actorId: string; matchId: string }) => [e.event, e.actorId, e.matchId])).toEqual([
+      ["guest.refused", "guest_abc123def456", otherId],
+      ["guest.refused", "guest_abc123def456", otherId],
+      ["guest.refused", "guest_abc123def456", otherId]
+    ]);
+    // The member's events name the guest as one.
+    const created = (await get("/games/api/admin/events?event=match.created", as("admin", "Admin", "admin"))).json();
+    expect(created.events.map((e: { detail: string }) => e.detail)).toContain("dots: invited Alex (guest_abc123def456, a guest), plays first");
+  });
+
+  it("is nobody without the match header, and a member may not wear a guest id", async () => {
+    const id = await invite();
+    const { "x-isputnik-guest-match": _dropped, ...noMatch } = guestOf(id);
+    expect((await get("/games/api/me", noMatch)).statusCode).toBe(401);
+    expect((await get("/games/api/me", guestOf("not a match id!"))).statusCode).toBe(401);
+    expect((await get("/games/api/me", { ...guestOf(id), "x-isputnik-user-id": "mum" })).statusCode).toBe(401);
+    expect((await get("/games/api/me", { ...as("guest_abc123def456", "Alex"), "x-isputnik-user-role": "member" })).statusCode).toBe(401);
   });
 });

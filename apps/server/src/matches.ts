@@ -5,6 +5,7 @@
 import { nanoid } from "nanoid";
 import { getGame, otherPlayer, type AnyGame, type GameEvent, type GameStatus, type PlayerIndex } from "@isputnik/games-engine";
 import type { Db } from "./db.js";
+import { isGuestId } from "./identity.js";
 
 export type MatchStatus = "invited" | "playing" | "finished" | "declined" | "cancelled";
 
@@ -29,6 +30,8 @@ export interface MatchRow {
 export interface Member {
   id: string;
   name: string;
+  /** Someone the home server let in by guest link, not a member of the household. */
+  guest?: boolean;
 }
 
 /** What a list shows: enough to name the match and say whether it waits on you. */
@@ -106,7 +109,8 @@ function rememberIfUnknown(db: Db, member: Member): void {
 
 function memberOf(db: Db, id: string): Member {
   const row = db.prepare("SELECT id, name FROM members WHERE id = ?").get(id) as Member | undefined;
-  return row ?? { id, name: id };
+  const member = row ?? { id, name: id };
+  return isGuestId(id) ? { ...member, guest: true } : member;
 }
 
 function gameOf(row: MatchRow): AnyGame {
@@ -224,31 +228,35 @@ export function getMatch(db: Db, userId: string, id: string): MatchDetail {
   return detailFor(db, row, replay(row), seat);
 }
 
-export function listMatches(db: Db, userId: string): MatchSummary[] {
+/** `only` narrows the list to one match: a guest's world is the match their link named. */
+export function listMatches(db: Db, userId: string, only?: string): MatchSummary[] {
   expireInvitations(db);
   const rows = db.prepare(`
     SELECT * FROM matches
     WHERE (blue_id = ? OR red_id = ?) AND status IN ('invited', 'playing', 'finished')
+      AND (? IS NULL OR id = ?)
     ORDER BY updated_at DESC, rowid DESC
     LIMIT 100
-  `).all(userId, userId) as MatchRow[];
+  `).all(userId, userId, only ?? null, only ?? null) as MatchRow[];
   return rows.map((row) => summarize(db, row));
 }
 
 /** Invitations sent to the member and matches waiting on their move. */
-export function summaryFor(db: Db, userId: string): MatchActivity {
+export function summaryFor(db: Db, userId: string, only?: string): MatchActivity {
   expireInvitations(db);
   const other = (row: MatchRow) => memberOf(db, row.blue_id === userId ? row.red_id : row.blue_id);
   const invited = db.prepare(`
     SELECT * FROM matches
     WHERE (blue_id = ? OR red_id = ?) AND status = 'invited' AND created_by != ?
+      AND (? IS NULL OR id = ?)
     ORDER BY created_at DESC, rowid DESC
-  `).all(userId, userId, userId) as MatchRow[];
+  `).all(userId, userId, userId, only ?? null, only ?? null) as MatchRow[];
   const playing = db.prepare(`
     SELECT * FROM matches
     WHERE status = 'playing' AND ((blue_id = ? AND turn = 0) OR (red_id = ? AND turn = 1))
+      AND (? IS NULL OR id = ?)
     ORDER BY updated_at DESC, rowid DESC
-  `).all(userId, userId) as MatchRow[];
+  `).all(userId, userId, only ?? null, only ?? null) as MatchRow[];
   const invitations = invited.map((row) => ({ id: row.id, game: row.game, from: other(row), createdAt: row.created_at }));
   const yourMove = playing.map((row) => ({ id: row.id, game: row.game, opponent: other(row), updatedAt: row.updated_at }));
   return { invitations, yourMove, counts: { invitations: invitations.length, yourMove: yourMove.length } };
