@@ -130,6 +130,14 @@ describe("playing", () => {
     expect(() => applyMove(twice, { kind: "draw" })).toThrow(IllegalMoveError);
   });
 
+  it("keeps what each seat is known to lack", () => {
+    const stuck = table([[[0, 0], [1, 1]], [[3, 3], [2, 4]]], [[4, 4], [0, 5]], line, 0, { lacks: [[3], []] });
+    // A draw proves the hand holds no 2 and no 5 — and nothing more, since the drawn tile is unknown.
+    expect(applyMove(stuck, { kind: "draw" }).lacks).toEqual([[2, 5], []]);
+    const passing = table([[[0, 0], [1, 1]], [[3, 3], [2, 4]]], [], line, 0, { lacks: [[3], []] });
+    expect(applyMove(passing, { kind: "pass" }).lacks).toEqual([[2, 3, 5], []]);
+  });
+
   it("passes when stuck with the boneyard empty", () => {
     const state = table([[[0, 0], [1, 1]], [[2, 3], [4, 4]]], [], line, 0);
     expect(legalMoves(state)).toEqual([{ kind: "pass" }]);

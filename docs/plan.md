@@ -491,6 +491,14 @@ styles like Chess's can come later.
     Chess.
   - Measure the levels against each other over a few hundred hands before
     calling them done, as Star Battle did.
+  - **Built 2026-10-23** (`dominoes/ai.ts`). What a seat is known to lack is
+    public state (`lacks`): a pass on ends a and b adds them, a draw makes it
+    exactly {a, b} (the tile that finally fits is played at once, so what stays
+    holds neither). Hard plays 48 sampled worlds per candidate to the end of the
+    hand, with ±200 for a hand that would reach the target. Over 200 games to
+    101, seats alternating: normal beat easy 83% (64% of hands), hard beat
+    normal 76% (60%), hard beat easy 97% (71%). Hard's slowest move was 40 ms on
+    the desktop.
 - **Web.** The folder is `games/dominoes/`.
   - **`DominoTile`.** An SVG tile with pips, ivory on every theme. It comes
     face up, face down, or as the selected / playable / dimmed state.

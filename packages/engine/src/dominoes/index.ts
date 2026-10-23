@@ -1,4 +1,5 @@
 import type { GameDefinition, GameEvent } from "../game.js";
+import { dominoesAi } from "./ai.js";
 import {
   DEFAULT_OPTIONS,
   applyMove,
@@ -45,7 +46,9 @@ export const dominoes: GameDefinition<DominoesOptions, DominoesState, DominoesMo
       };
     }
     return event;
-  }
+  },
+  ai: dominoesAi
 };
 
 export * from "./rules.js";
+export { chooseMove as chooseDominoesMove, sampleWorld, scorePlay } from "./ai.js";

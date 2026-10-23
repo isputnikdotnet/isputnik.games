@@ -91,6 +91,12 @@ export interface DominoesState {
   mustLead: Tile | null;
   /** Who played last in this hand. */
   lastPlayer: PlayerIndex | null;
+  /** The numbers each seat is known to hold none of, this hand — public, as a
+   *  player at the table works it out. A pass on ends a and b adds them. A draw
+   *  on a and b makes it exactly {a, b}: the drawn tiles are unknown, but a draw
+   *  only follows a draw that did not fit, and the tile that finally fits is
+   *  played at once, so whatever stays in the hand still holds neither. */
+  lacks: [number[], number[]];
   totals: [number, number];
   history: HandResult[];
   moveCount: number;
@@ -225,6 +231,7 @@ function newHand(seed: number, hand: number, leader: PlayerIndex | null): Omit<D
     leadIndex: 0,
     mustLead: lead ? lead.tile : null,
     lastPlayer: null,
+    lacks: [[], []],
     turn: lead ? lead.seat : leader!
   };
 }
@@ -296,13 +303,19 @@ export function applyMove(state: DominoesState, move: DominoesMove): DominoesSta
     if (!legal.some((m) => m.kind === move.kind)) {
       throw new IllegalMoveError(move.kind === "draw" ? "You can play, or the boneyard is empty" : "You can play or draw");
     }
-    if (move.kind === "pass") return { ...state, moveCount, status: { kind: "playing", turn: otherPlayer(me) } };
+    const ends = endsOf(state)!;
+    const lacks: [number[], number[]] = [state.lacks[0], state.lacks[1]];
+    if (move.kind === "pass") {
+      lacks[me] = [...new Set([...lacks[me], ...ends])].sort((a, b) => a - b);
+      return { ...state, lacks, moveCount, status: { kind: "playing", turn: otherPlayer(me) } };
+    }
+    lacks[me] = [...new Set(ends)].sort((a, b) => a - b);
     const [drawn, ...boneyard] = state.boneyard;
     const hands: [Tile[], Tile[]] = [state.hands[0], state.hands[1]];
     hands[me] = [...hands[me], drawn];
     const handCounts: [number, number] = [state.handCounts[0], state.handCounts[1]];
     handCounts[me] += 1;
-    return { ...state, hands, handCounts, boneyard, boneyardCount: boneyard.length, moveCount };
+    return { ...state, hands, handCounts, boneyard, boneyardCount: boneyard.length, lacks, moveCount };
   }
 
   const tile = normalize(move.tile);
