@@ -9,6 +9,14 @@ import { Button } from "../shared/Button";
 import { MessageBox } from "../shared/MessageBox";
 import { CATALOG } from "../games/catalog";
 import { InviteDialog } from "./InviteDialog";
+import { MATCHES_ANCHOR } from "../shared/MobileNav";
+
+/** "alpha" / "beta" in the interface language; anything else as the server says it. */
+function stageLabel(stage: string, t: (key: "lobby.stageAlpha" | "lobby.stageBeta") => string): string {
+  if (stage === "alpha") return t("lobby.stageAlpha");
+  if (stage === "beta") return t("lobby.stageBeta");
+  return stage;
+}
 
 export function LobbyPage() {
   const { t } = useTranslation();
@@ -109,7 +117,7 @@ export function LobbyPage() {
         })}
       </div>
 
-      <section className="lobby-online">
+      <section className="lobby-online" id={MATCHES_ANCHOR}>
         <header className="lobby-online-head">
           <h2>{t("lobby.online.title")}</h2>
           <Button variant="primary" onClick={() => setInviting(true)}>
@@ -136,6 +144,11 @@ export function LobbyPage() {
         ))}
         {group(t("lobby.online.finished"), finished, (match) => row(match, resultOf(match)))}
       </section>
+
+      <footer className="lobby-foot muted">
+        {session.status === "ready" && t("lobby.version", { version: session.version })}
+        {session.status === "ready" && session.stage && ` · ${stageLabel(session.stage, t)}`}
+      </footer>
 
       {inviting && (
         <InviteDialog

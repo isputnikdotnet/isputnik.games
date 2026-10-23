@@ -9,7 +9,7 @@ export type SessionState =
   | { status: "loading" }
   | { status: "signed-out" }
   | { status: "unavailable" }
-  | { status: "ready"; user: Me; version: string };
+  | { status: "ready"; user: Me; version: string; stage: string | null };
 
 /** Exported for tests, which provide a ready session without a server. */
 export const SessionContext = createContext<SessionState>({ status: "loading" });
@@ -33,7 +33,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     fetchMe()
       .then((me) => {
         if (cancelled) return;
-        setSession({ status: "ready", user: me.user, version: me.version });
+        setSession({ status: "ready", user: me.user, version: me.version, stage: me.stage });
       })
       .catch((err: unknown) => {
         if (cancelled) return;

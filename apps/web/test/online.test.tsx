@@ -23,7 +23,7 @@ vi.mock("../src/api", async () => {
 import * as api from "../src/api";
 
 const me = { id: "mum", name: "Мама", role: "member" as const, lang: "en", theme: "minimalist" };
-const session = { status: "ready" as const, user: me, version: "test" };
+const session = { status: "ready" as const, user: me, version: "test", stage: null };
 
 const summary = (over: Partial<MatchSummary> = {}): MatchSummary => ({
   id: "m1",

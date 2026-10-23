@@ -263,6 +263,107 @@
   margin: var(--space-2) 0 0;
 }
 
+/* ── Phone tab bar ─────────────────────────────────────────────────────── */
+/* Hidden above phone width; the top bar's links do the job there. The look
+   is the home app's four-tab bar (home.css .home-mobile-nav), so switching
+   between the two apps on a phone feels like one. */
+.mobile-nav {
+  display: none;
+}
+
+.lobby-foot {
+  margin-top: var(--space-8);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+@media (max-width: 740px) {
+  .app-bar-back {
+    display: none;
+  }
+
+  .app-bar {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .app-main {
+    padding-bottom: calc(var(--space-6) + 64px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-nav {
+    position: fixed;
+    z-index: var(--z-nav, 30);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    min-height: calc(58px + env(safe-area-inset-bottom));
+    padding: 6px max(8px, env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right));
+    border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+    box-shadow: 0 -4px 14px var(--shadow);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-nav-item {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 4px;
+    min-width: 0;
+    min-height: 46px;
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 0.66rem;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-nav-item:hover,
+  .mobile-nav-item:focus-visible {
+    color: var(--ink);
+    background: var(--hover);
+    outline: 0;
+  }
+
+  .mobile-nav-item.is-active {
+    color: var(--accent);
+    background: var(--active);
+  }
+
+  .mobile-nav-item > span:last-child {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-nav-icon {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .mobile-nav-badge {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 0.6rem;
+    line-height: 16px;
+    text-align: center;
+  }
+}
+
 /* ── Comms ─────────────────────────────────────────────────────────────── */
 /* The one console every game wears. Dark on every theme: a log of the game
    reads as a terminal, and who is always the same two colours. */

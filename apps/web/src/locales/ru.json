@@ -30,7 +30,10 @@
       "withdraw": "Отозвать",
       "vs": "против {{name}}",
       "loadFailed": "Не удалось загрузить партии"
-    }
+    },
+    "version": "iSputnik Игры {{version}}",
+    "stageAlpha": "альфа",
+    "stageBeta": "бета"
   },
   "invite": {
     "title": "Пригласить сыграть",
@@ -257,5 +260,15 @@
       "yourMove": "ваш ход!",
       "rematch": "реванш?"
     }
+  },
+  "nav": {
+    "aria": "Главные вкладки",
+    "home": "Домой",
+    "games": "Игры",
+    "matches": "Партии",
+    "waiting_one": "{{count}} ждёт вас",
+    "waiting_few": "{{count}} ждут вас",
+    "waiting_many": "{{count}} ждут вас",
+    "waiting_other": "{{count}} ждут вас"
   }
 }

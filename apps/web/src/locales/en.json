@@ -30,7 +30,10 @@
       "withdraw": "Withdraw",
       "vs": "vs {{name}}",
       "loadFailed": "Unable to load your matches"
-    }
+    },
+    "version": "iSputnik Games {{version}}",
+    "stageAlpha": "alpha",
+    "stageBeta": "beta"
   },
   "invite": {
     "title": "Invite to play",
@@ -251,5 +254,13 @@
       "yourMove": "your move!",
       "rematch": "rematch?"
     }
+  },
+  "nav": {
+    "aria": "Main tabs",
+    "home": "Home",
+    "games": "Games",
+    "matches": "Matches",
+    "waiting_one": "{{count}} waiting on you",
+    "waiting_other": "{{count}} waiting on you"
   }
 }

@@ -114,6 +114,17 @@ export async function fetchMatches(): Promise<MatchSummary[]> {
   return (await apiFetch<{ matches: MatchSummary[] }>("/matches")).matches;
 }
 
+export interface MatchActivity {
+  invitations: { id: string; game: string; from: Member; createdAt: string }[];
+  yourMove: { id: string; game: string; opponent: Member; updatedAt: string }[];
+  counts: { invitations: number; yourMove: number };
+}
+
+/** What waits on the signed-in member: the same answer the home app shows. */
+export function fetchSummary(): Promise<MatchActivity> {
+  return apiFetch<MatchActivity>("/summary");
+}
+
 export function fetchMatch(id: string): Promise<MatchDetail> {
   return apiFetch<MatchDetail>(`/matches/${encodeURIComponent(id)}`);
 }

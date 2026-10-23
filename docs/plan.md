@@ -389,6 +389,16 @@ the old address under the new id.
 - **Home side**: the cards on For you name the game (`user:games.starbattle`);
   nothing else changed there.
 
+## The phone tab bar and the version (2026-10-23)
+
+On a phone (≤740px) the games app has a bottom tab bar like the home app's,
+so switching between the two apps feels like one: **Home** (back to iSputnik,
+a full navigation), **Games** (the lobby; lit on the lobby and on a game's
+page) and **Matches** (the lobby's online section, lit on a match page, with a
+badge of invitations plus your-move matches from `/games/api/summary`,
+refreshed on load, on focus and once a minute). The top bar's back link hides
+at that width. The lobby's foot names the games app's version and stage.
+
 ## Open points
 
 - Whether local (same-device) results should be recorded at all, or only online

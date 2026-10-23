@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
 import { follow, href } from "../router";
 import { useSession } from "../session";
+import { MobileNav } from "./MobileNav";
 
 // The one frame every page sits in: the way back to the home app (a full
 // navigation — it is another app on the same origin), the brand, and who is
@@ -23,6 +24,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <span className="app-bar-user">{session.status === "ready" ? session.user.name : ""}</span>
       </header>
       <main className="app-main">{children}</main>
+      {session.status === "ready" && <MobileNav />}
     </div>
   );
 }
