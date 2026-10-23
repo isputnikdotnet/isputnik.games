@@ -4,6 +4,7 @@ import { ArrowLeft, Flag, RotateCcw, Undo2 } from "lucide-react";
 import { dots, type DotsMove, type PlayerIndex } from "@isputnik/games-engine";
 import { Comms } from "../../shared/Comms";
 import { useFeed } from "../../shared/useFeed";
+import { localSound, useGameSounds } from "../../shared/useGameSounds";
 import type { CommsLine } from "../../shared/commsLines";
 import { dotsLines } from "./comms";
 import { Button } from "../../shared/Button";
@@ -31,6 +32,8 @@ export function DotsPage() {
   const [resultDismissed, setResultDismissed] = useState<string | null>(null);
   const { game } = controller;
   const feed = useFeed(dots, { size: game?.state.size ?? 15, targetCaptures: game?.state.targetCaptures ?? null }, game?.state.moves ?? NO_MOVES);
+  // Against the computer the sounds take the human's side; two at one screen, neither.
+  useGameSounds(game && localSound("dots", feed, game.setup.mode === "computer" ? (game.setup.computerPlays === 0 ? 1 : 0) : null, game.state.status));
 
   const seatName = (setup: DotsSetup, player: PlayerIndex) =>
     isComputerSeat(setup, player) ? t("dots.players.computer") : t(player === 0 ? "dots.players.blue" : "dots.players.red");

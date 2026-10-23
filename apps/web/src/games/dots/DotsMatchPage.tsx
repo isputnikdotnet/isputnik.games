@@ -16,6 +16,7 @@ import { DotsBoard } from "./DotsBoard";
 import { DotsScoreboard } from "./DotsScoreboard";
 import { GameOverDialog } from "../../shared/GameOverDialog";
 import { GuestLinkPanel } from "../../shared/GuestLinkPanel";
+import { matchSound, useGameSounds } from "../../shared/useGameSounds";
 import { useMatch } from "./useMatch";
 
 // An online match of Dots: the same board, the server's position, and the
@@ -27,6 +28,7 @@ export function DotsMatchPage({ matchId }: { matchId: string }) {
   const phone = useMediaQuery(PHONE);
   const myId = session.status === "ready" ? session.user.id : "";
   const { match, error, refresh, adopt } = useMatch(matchId, myId);
+  useGameSounds(matchSound("dots", match, myId));
   const [sending, setSending] = useState(false);
   const [saying, setSaying] = useState(false);
   const [sayError, setSayError] = useState<string | null>(null);

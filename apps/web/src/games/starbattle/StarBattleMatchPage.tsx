@@ -10,6 +10,7 @@ import { GameOverDialog } from "../../shared/GameOverDialog";
 import { GuestLinkPanel } from "../../shared/GuestLinkPanel";
 import { MessageBox } from "../../shared/MessageBox";
 import { useArena } from "../../shared/useArena";
+import { matchSound, useGameSounds } from "../../shared/useGameSounds";
 import { withTalk, type CommsLine } from "../../shared/commsLines";
 import { href, navigate } from "../../router";
 import { useSession } from "../../session";
@@ -28,6 +29,7 @@ export function StarBattleMatchPage({ matchId }: { matchId: string }) {
   const session = useSession();
   const myId = session.status === "ready" ? session.user.id : "";
   const { match, error, refresh, adopt } = useMatch(matchId, myId);
+  useGameSounds(matchSound("starbattle", match, myId));
   const [sending, setSending] = useState(false);
   const [saying, setSaying] = useState(false);
   const [moveError, setMoveError] = useState<string | null>(null);

@@ -42,8 +42,25 @@
   letter-spacing: 0.01em;
 }
 
-.app-bar-user {
+.app-bar-end {
   justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.app-bar-sound {
+  flex: none;
+  color: var(--muted);
+}
+
+.app-bar-sound:hover {
+  color: var(--ink);
+}
+
+.app-bar-user {
+  min-width: 0;
   color: var(--muted);
   font-size: var(--text-sm);
   white-space: nowrap;
@@ -287,13 +304,10 @@
 }
 
 @media (max-width: 740px) {
+  /* The tab bar's Home replaces the back link; its place keeps the brand
+     centred between it and the sound switch. */
   .app-bar-back {
-    display: none;
-  }
-
-  .app-bar {
-    grid-template-columns: 1fr;
-    justify-items: center;
+    visibility: hidden;
   }
 
   .app-main {
@@ -726,10 +740,6 @@
 }
 
 @media (max-width: 600px) {
-  .app-bar {
-    grid-template-columns: auto 1fr;
-  }
-
   .app-bar-back span {
     display: none;
   }

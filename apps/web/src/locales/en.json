@@ -9,7 +9,9 @@
     "unavailableBody": "The games server did not answer. Try again in a moment.",
     "notFound": "There is no such page.",
     "allGames": "All games",
-    "guestUser": "{{name}} · guest"
+    "guestUser": "{{name}} · guest",
+    "soundOn": "Turn sounds on",
+    "soundOff": "Turn sounds off"
   },
   "lobby": {
     "title": "Games",

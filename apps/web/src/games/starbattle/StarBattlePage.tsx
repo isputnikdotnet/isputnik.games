@@ -8,6 +8,7 @@ import { Dialog } from "../../shared/Dialog";
 import { GameOverDialog } from "../../shared/GameOverDialog";
 import { useArena } from "../../shared/useArena";
 import { useFeed } from "../../shared/useFeed";
+import { localSound, useGameSounds } from "../../shared/useGameSounds";
 import type { CommsLine } from "../../shared/commsLines";
 import { href, navigate } from "../../router";
 import { ArenaHead, ArenaStatus, turnNumber } from "./ArenaFrame";
@@ -33,6 +34,7 @@ export function StarBattlePage() {
   const [confirmExit, setConfirmExit] = useState(false);
   const [resultDismissed, setResultDismissed] = useState<string | null>(null);
   const feed = useFeed(starbattle, { fleet: game?.setup.fleet ?? "classic" }, game?.moves ?? NO_MOVES);
+  useGameSounds(game && localSound("starbattle", feed, otherPlayer(game.setup.computerPlays), game.state.status));
 
   const begin = (setup: StarBattleSetup) => {
     setSettingUp(false);

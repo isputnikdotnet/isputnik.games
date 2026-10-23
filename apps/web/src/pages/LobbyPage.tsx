@@ -7,6 +7,7 @@ import { follow, href, matchHref, navigate } from "../router";
 import { useSession } from "../session";
 import { Button } from "../shared/Button";
 import { MessageBox } from "../shared/MessageBox";
+import { useNewcomerCue } from "../shared/useGameSounds";
 import { CATALOG } from "../games/catalog";
 import { InviteDialog } from "./InviteDialog";
 import { MATCHES_ANCHOR } from "../shared/MobileNav";
@@ -58,6 +59,8 @@ export function LobbyPage() {
   const received = list.filter((m) => m.status === "invited" && m.createdBy !== myId);
   const sent = list.filter((m) => m.status === "invited" && m.createdBy === myId);
   const mine = list.filter((m) => m.status === "playing" && m.turn === mySeat(m));
+  useNewcomerCue(matches && received.map((m) => m.id), "invite");
+  useNewcomerCue(matches && mine.map((m) => m.id), "yourMove");
   const theirs = list.filter((m) => m.status === "playing" && m.turn !== mySeat(m));
   const finished = list.filter((m) => m.status === "finished").slice(0, 10);
 

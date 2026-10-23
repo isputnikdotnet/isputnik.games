@@ -9,7 +9,9 @@
     "unavailableBody": "Сервер игр не ответил. Попробуйте ещё раз через минуту.",
     "notFound": "Такой страницы нет.",
     "allGames": "Все игры",
-    "guestUser": "{{name}} · гость"
+    "guestUser": "{{name}} · гость",
+    "soundOn": "Включить звук",
+    "soundOff": "Выключить звук"
   },
   "lobby": {
     "title": "Игры",
