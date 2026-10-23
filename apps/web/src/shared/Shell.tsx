@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Volume2, VolumeX } from "lucide-react";
 import { follow, href } from "../router";
@@ -18,6 +18,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const session = useSession();
   const guest = session.status === "ready" && session.user.role === "guest";
   const sound = useSoundEnabled();
+  const bar = useBarHeight();
   const toggleSound = () => {
     setSoundEnabled(!sound);
     // Turning it on answers with a blip, so the player hears that it worked.
@@ -25,7 +26,7 @@ export function Shell({ children }: { children: ReactNode }) {
   };
   return (
     <div className="app-shell">
-      <header className="app-bar">
+      <header className="app-bar" ref={bar}>
         {guest ? (
           <span className="app-bar-back is-placeholder" aria-hidden="true" />
         ) : (
@@ -56,4 +57,22 @@ export function Shell({ children }: { children: ReactNode }) {
       {session.status === "ready" && !guest && <MobileNav />}
     </div>
   );
+}
+
+/** Publishes the app bar's height as --app-bar-h on the document, so a game
+ *  stage can size its board to the rest of the window exactly. */
+function useBarHeight() {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const root = document.documentElement.style;
+    const observer = new ResizeObserver(() => root.setProperty("--app-bar-h", `${node.offsetHeight}px`));
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      root.removeProperty("--app-bar-h");
+    };
+  }, []);
+  return ref;
 }

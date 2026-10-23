@@ -140,23 +140,11 @@ body[data-arena="star"] .setup-label {
   text-transform: uppercase;
 }
 
-.arena-chip span {
-  color: #c9d6ff;
-}
-
-.arena-chip-sep {
-  width: 1px;
-  height: 22px;
-  background: rgba(140, 170, 255, 0.35);
-}
-
 /* ── The two sectors ───────────────────────────────────────────────────── */
 
 .arena-boards {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-5);
-  align-items: start;
+  gap: var(--space-3);
 }
 
 .arena-panel {
@@ -175,10 +163,6 @@ body[data-arena="star"] .setup-label {
   background: var(--arena-panel-enemy);
   border-color: rgba(190, 120, 255, 0.22);
 }
-
-/* The enemy sector is where the player acts: right on a desktop, first on a phone. */
-.arena-panel.is-enemy { order: 2; }
-.arena-panel.is-own { order: 1; }
 
 .arena-panel-head {
   display: flex;
@@ -224,10 +208,6 @@ body[data-arena="star"] .setup-label {
 }
 
 /* ── The phone's battle strip: one board at a time ─────────────────────── */
-
-.arena-boards.is-phone {
-  grid-template-columns: minmax(0, 1fr);
-}
 
 .arena-strip {
   display: grid;
@@ -298,8 +278,94 @@ body[data-arena="star"] .setup-label {
 }
 
 .arena-boards.is-phone .arena-panel {
-  order: 0;
   padding: var(--space-3);
+}
+
+/* ── On the game stage ────────────────────────────────────────────────── */
+/* The enemy sector is the board, as wide as the stage makes it, its head
+   above the square (--stage-extra). The side panel wears the arena; the
+   player's own fleet sits small in it, never so tall it squeezes the log. */
+
+.star-stage {
+  /* The panel's head and its gap, and the board's label margin against
+     the panel padding: measured, 31px over the square. */
+  --stage-extra: 31px;
+}
+
+body[data-arena="star"] .game-stage-panel {
+  border-color: var(--arena-line);
+  background: var(--arena-panel);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+body[data-arena="star"] .game-stage-head {
+  border-bottom-color: var(--arena-line);
+}
+
+.arena-panel.is-compact {
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.arena-panel.is-compact .arena-panel-head h2 {
+  font-size: var(--text-xs);
+}
+
+.arena-panel.is-compact .arena-intact {
+  gap: 6px;
+  font-size: var(--text-xs);
+}
+
+.arena-panel.is-compact .arena-pip {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.arena-panel.is-compact .star-board {
+  width: min(100%, 34dvh);
+  margin: 0 auto;
+}
+
+.arena-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-3);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 12px;
+  background: rgba(34, 211, 238, 0.08);
+  text-align: center;
+}
+
+.arena-state p {
+  margin: 0;
+}
+
+.arena-state-line {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  color: var(--arena-accent);
+}
+
+.arena-state-turn {
+  color: #c9d6ff;
+  font-size: var(--text-sm);
+}
+
+.arena-state-turn::before {
+  content: "· ";
+}
+
+.arena-state-detail {
+  color: var(--arena-muted);
+  font-size: var(--text-sm);
 }
 
 /* ── The board itself ──────────────────────────────────────────────────── */
@@ -650,10 +716,6 @@ body[data-arena="star"] .setup-label {
 
   .arena-chip svg {
     width: 16px;
-    height: 16px;
-  }
-
-  .arena-chip-sep {
     height: 16px;
   }
 

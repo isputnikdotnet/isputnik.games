@@ -387,6 +387,139 @@
   }
 }
 
+/* ── Game stage ────────────────────────────────────────────────────────── */
+/* A game in play (shared/GameStage): the board as tall as the window, the
+   panel beside it exactly as tall, the pair centred. The board's side is
+   worked out from the window, not from its column, so the two stay together
+   on a wide screen instead of drifting to its edges. */
+.app-main:has(> .game-stage:not(.is-phone)) {
+  max-width: none;
+  padding: var(--space-4);
+}
+
+.game-stage {
+  /* The app bar (measured by Shell) and the page padding above and below. */
+  --stage-chrome: calc(var(--app-bar-h, 70px) + 2 * var(--space-4));
+  --stage-panel: clamp(320px, 26vw, 420px);
+  /* What a game stacks over and under its board (Chess: the two players). */
+  --stage-extra: 0px;
+  --stage-board: max(480px, min(100dvh - var(--stage-chrome) - var(--stage-extra), 100vw - var(--stage-panel) - 3 * var(--space-4) - 16px));
+  display: grid;
+  grid-template-columns: var(--stage-board) var(--stage-panel);
+  grid-template-rows: calc(var(--stage-board) + var(--stage-extra));
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+.game-stage-board {
+  min-width: 0;
+}
+
+.game-stage-board > * {
+  width: 100%;
+}
+
+.game-stage-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.game-stage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.game-stage-title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  line-height: var(--leading-none);
+}
+
+/* The log takes what height the panel has left; it scrolls inside. */
+.game-stage-log {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.game-stage-log .comms {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.game-stage-log .comms-lines {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none;
+}
+
+.game-stage-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+/* An odd action out (Resign alone, or the third after a game) takes the whole row. */
+.game-stage-actions > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.game-stage-actions:empty {
+  display: none;
+}
+
+.game-stage-actions .primary-button,
+.game-stage-actions .secondary-button {
+  justify-content: center;
+  min-width: 0;
+}
+
+/* Too narrow for the two side by side: the board on top, the panel under it
+   at its own height. */
+@media (max-width: 960px) {
+  .game-stage {
+    --stage-board: min(100vw - 2 * var(--space-4) - 16px, 100dvh - var(--stage-chrome) - var(--stage-extra) - 120px);
+    grid-template-columns: var(--stage-board);
+    grid-template-rows: auto auto;
+  }
+
+  .game-stage-log .comms,
+  .game-stage-log .comms-lines {
+    flex: none;
+  }
+
+  .game-stage-log .comms-lines {
+    height: 240px;
+  }
+}
+
+/* A phone: one column, the screen the board's (GameStage renders it so). */
+.game-stage.is-phone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.game-stage.is-phone .game-stage-title {
+  font-size: var(--text-xl);
+}
+
+.game-stage.is-phone .comms-lines {
+  height: 240px;
+  max-height: none;
+}
+
 /* ── Comms ─────────────────────────────────────────────────────────────── */
 /* The one console every game wears. Dark on every theme: a log of the game
    reads as a terminal, and who is always the same two colours. */

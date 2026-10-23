@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StarBattle, type Vessel } from "@isputnik/games-engine";
-import { StarBattleBoards } from "../src/games/starbattle/StarBattleBoards";
+import { SectorPanel, StarBattleBoards } from "../src/games/starbattle/StarBattleBoards";
 import { PHONE_ARENA } from "../src/shared/useMediaQuery";
 
 const fleet = (row: number): Vessel[] => [
@@ -71,9 +71,15 @@ describe("the battle strip on a phone", () => {
   });
 });
 
-describe("the two panels on a desktop", () => {
-  it("shows both sectors side by side with their counts", () => {
-    render(<StarBattleBoards state={battle()} viewer={0} names={["You", "Computer"]} canFire onFire={() => {}} />);
+describe("the sectors on the game stage", () => {
+  it("draws the enemy sector and your own, each with its count", () => {
+    const props = { state: battle(), viewer: 0 as const, names: ["You", "Computer"] as [string, string], canFire: true, onFire: () => {} };
+    render(
+      <>
+        <SectorPanel side="enemy" {...props} />
+        <SectorPanel side="own" compact {...props} />
+      </>
+    );
     expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Enemy sector, 10 by 10" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Your sector, 10 by 10" })).toBeInTheDocument();

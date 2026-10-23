@@ -10,6 +10,7 @@ import type { CommsLine } from "../../shared/commsLines";
 import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
 import { GameOverDialog } from "../../shared/GameOverDialog";
+import { GameStage } from "../../shared/GameStage";
 import { follow, href, navigate } from "../../router";
 import { chessLines } from "./comms";
 import { chessReason } from "./ending";
@@ -90,62 +91,68 @@ export function ChessPage() {
   };
 
   return (
-    <section className="chess-page">
-      <PageHead title={t("games.chess.name")} />
-      <ChessTable state={state} orientation={orientation} movable={controller.humanToMove} onMove={controller.move} names={names}>
-        <div className="chess-status">
-          <p className={`chess-status-line${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
-          {reason && <p className="muted chess-reason">{reason}</p>}
-        </div>
-        {setup.mode === "computer" && !finished && (
-          <Choice<AiLevel>
-            label={t("chess.setup.level")}
-            value={setup.level}
-            options={[
-              { value: "easy", label: t("chess.setup.levelEasy") },
-              { value: "normal", label: t("chess.setup.levelNormal") },
-              { value: "hard", label: t("chess.setup.levelHard") }
-            ]}
-            onChange={controller.setLevel}
-          />
-        )}
-        <div className="chess-actions">
-          {!finished && (
-            <>
-              <Button variant="secondary" onClick={controller.undo} disabled={state.moves.length === 0 || controller.thinking}>
-                <Undo2 size={16} aria-hidden="true" /> {t("chess.undo")}
-              </Button>
-              <Button variant="secondary" onClick={() => setFlipped((f) => !f)}>
-                <Repeat2 size={16} aria-hidden="true" /> {t("chess.flip")}
-              </Button>
-              {setup.mode === "local" && (
-                <Button variant="secondary" onClick={() => setPending("draw")} disabled={state.moves.length === 0}>
-                  <Handshake size={16} aria-hidden="true" /> {t("chess.offerDraw")}
+    <>
+      <GameStage
+        className="chess-stage"
+        title={t("games.chess.name")}
+        board={<ChessTable state={state} orientation={orientation} movable={controller.humanToMove} onMove={controller.move} names={names} />}
+        score={
+          <div className="chess-status">
+            <p className={`chess-status-line${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
+            {reason && <p className="muted chess-reason">{reason}</p>}
+            {setup.mode === "computer" && !finished && (
+              <Choice<AiLevel>
+                label={t("chess.setup.level")}
+                value={setup.level}
+                options={[
+                  { value: "easy", label: t("chess.setup.levelEasy") },
+                  { value: "normal", label: t("chess.setup.levelNormal") },
+                  { value: "hard", label: t("chess.setup.levelHard") }
+                ]}
+                onChange={controller.setLevel}
+              />
+            )}
+          </div>
+        }
+        log={<Comms lines={lines} />}
+        actions={
+          <>
+            {!finished && (
+              <>
+                <Button variant="secondary" onClick={controller.undo} disabled={state.moves.length === 0 || controller.thinking}>
+                  <Undo2 size={16} aria-hidden="true" /> {t("chess.undo")}
                 </Button>
-              )}
-              <Button variant="secondary" onClick={() => setPending("resign")} disabled={state.moves.length === 0}>
-                <Flag size={16} aria-hidden="true" /> {t("chess.resign")}
-              </Button>
-              <Button variant="secondary" onClick={() => (state.moves.length === 0 ? controller.abandon() : setPending("new"))}>
-                <RotateCcw size={16} aria-hidden="true" /> {t("chess.newGame")}
-              </Button>
-              <Button variant="secondary" onClick={() => (state.moves.length === 0 ? exit() : setPending("exit"))}>
-                <LogOut size={16} aria-hidden="true" /> {t("chess.exit")}
-              </Button>
-            </>
-          )}
-          {finished && (
-            <>
-              <Button variant="primary" onClick={again}>{t("chess.end.again")}</Button>
-              <Button variant="secondary" onClick={controller.abandon}>{t("chess.end.change")}</Button>
-              <Button variant="secondary" onClick={exit}>
-                <LogOut size={16} aria-hidden="true" /> {t("chess.end.toLobby")}
-              </Button>
-            </>
-          )}
-        </div>
-        <Comms lines={lines} />
-      </ChessTable>
+                <Button variant="secondary" onClick={() => setFlipped((f) => !f)}>
+                  <Repeat2 size={16} aria-hidden="true" /> {t("chess.flip")}
+                </Button>
+                {setup.mode === "local" && (
+                  <Button variant="secondary" onClick={() => setPending("draw")} disabled={state.moves.length === 0}>
+                    <Handshake size={16} aria-hidden="true" /> {t("chess.offerDraw")}
+                  </Button>
+                )}
+                <Button variant="secondary" onClick={() => setPending("resign")} disabled={state.moves.length === 0}>
+                  <Flag size={16} aria-hidden="true" /> {t("chess.resign")}
+                </Button>
+                <Button variant="secondary" onClick={() => (state.moves.length === 0 ? controller.abandon() : setPending("new"))}>
+                  <RotateCcw size={16} aria-hidden="true" /> {t("chess.newGame")}
+                </Button>
+                <Button variant="secondary" onClick={() => (state.moves.length === 0 ? exit() : setPending("exit"))}>
+                  <LogOut size={16} aria-hidden="true" /> {t("chess.exit")}
+                </Button>
+              </>
+            )}
+            {finished && (
+              <>
+                <Button variant="primary" onClick={again}>{t("chess.end.again")}</Button>
+                <Button variant="secondary" onClick={controller.abandon}>{t("chess.end.change")}</Button>
+                <Button variant="secondary" onClick={exit}>
+                  <LogOut size={16} aria-hidden="true" /> {t("chess.end.toLobby")}
+                </Button>
+              </>
+            )}
+          </>
+        }
+      />
 
       {showResult && (
         <GameOverDialog
@@ -204,7 +211,7 @@ export function ChessPage() {
           {t("chess.confirmNew.body")}
         </Dialog>
       )}
-    </section>
+    </>
   );
 }
 

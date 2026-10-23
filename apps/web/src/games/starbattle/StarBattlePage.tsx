@@ -6,15 +6,17 @@ import { Button } from "../../shared/Button";
 import { Comms } from "../../shared/Comms";
 import { Dialog } from "../../shared/Dialog";
 import { GameOverDialog } from "../../shared/GameOverDialog";
+import { GameStage } from "../../shared/GameStage";
 import { useArena } from "../../shared/useArena";
 import { useFeed } from "../../shared/useFeed";
 import { localSound, useGameSounds } from "../../shared/useGameSounds";
 import type { CommsLine } from "../../shared/commsLines";
+import { PHONE_ARENA, useMediaQuery } from "../../shared/useMediaQuery";
 import { href, navigate } from "../../router";
-import { ArenaHead, ArenaStatus, turnNumber } from "./ArenaFrame";
+import { ArenaHead, ArenaState, ArenaStatus, turnNumber } from "./ArenaFrame";
 import { FleetEditor } from "./FleetEditor";
 import { NewGameDialog } from "./NewGameDialog";
-import { StarBattleBoards, lastShotLine } from "./StarBattleBoards";
+import { SectorPanel, StarBattleBoards, lastShotLine } from "./StarBattleBoards";
 import { starBattleLines } from "./comms";
 import { useStarBattleGame } from "./useStarBattleGame";
 import type { StarBattleSetup } from "./storage";
@@ -29,6 +31,7 @@ export function StarBattlePage() {
   const { t } = useTranslation();
   useArena("star");
   const controller = useStarBattleGame();
+  const narrow = useMediaQuery(PHONE_ARENA);
   const { game } = controller;
   const [settingUp, setSettingUp] = useState(() => controller.game === null);
   const [confirmExit, setConfirmExit] = useState(false);
@@ -137,52 +140,69 @@ export function StarBattlePage() {
     </Button>
   );
 
-  return (
-    <section className="star-page">
-      <ArenaHead chip={chip} turn={phase === "battle" || finished ? turnNumber(feed) : null} />
-      {phase === "placing" && controller.humanToMove && actor !== null ? (
-        <FleetEditor
-          fleet={state.fleet}
-          size={state.size}
-          title={t("starbattle.place.title", { player: names[actor] })}
-          readyLabel={t("starbattle.place.ready")}
-          onReady={(vessels) => controller.play({ kind: "place", vessels })}
-        />
-      ) : phase === "placing" ? (
-        <p className="app-status muted">{statusLine}</p>
-      ) : (
-        <>
-          <StarBattleBoards
-            state={state}
-            viewer={me}
-            names={names}
-            canFire={controller.humanToMove && actor === me}
-            onFire={(x, y) => controller.play({ kind: "shoot", x, y })}
-            revealEnemy={finished}
+  const result = showResult && (
+    <GameOverDialog
+      headline={statusLine}
+      scoreLine={scoreLine}
+      reason={reason}
+      primary={{ label: t("starbattle.newGame"), onClick: () => setSettingUp(true) }}
+      secondary={{ label: t("starbattle.mainMenu"), onClick: toLobby }}
+      onClose={() => setResultDismissed(endingKey)}
+    />
+  );
+  const actions = finished ? (
+    <>
+      <Button variant="primary" onClick={() => setSettingUp(true)}>{t("starbattle.newGame")}</Button>
+      <Button variant="secondary" onClick={toLobby}>{t("starbattle.mainMenu")}</Button>
+    </>
+  ) : exitButton;
+
+  // Laying the fleet keeps the arena's own frame: the editor needs the width.
+  if (phase === "placing") {
+    return (
+      <section className="star-page">
+        <ArenaHead chip={chip} />
+        {controller.humanToMove && actor !== null ? (
+          <FleetEditor
+            fleet={state.fleet}
+            size={state.size}
+            title={t("starbattle.place.title", { player: names[actor] })}
+            readyLabel={t("starbattle.place.ready")}
+            onReady={(vessels) => controller.play({ kind: "place", vessels })}
           />
-          <Comms lines={lines} />
-        </>
-      )}
-      <ArenaStatus line={statusLine} detail={phase === "placing" ? null : reason ?? lastLine}>
-        {!finished && exitButton}
-        {finished && (
-          <>
-            <Button variant="primary" onClick={() => setSettingUp(true)}>{t("starbattle.newGame")}</Button>
-            <Button variant="secondary" onClick={toLobby}>{t("starbattle.mainMenu")}</Button>
-          </>
+        ) : (
+          <p className="app-status muted">{statusLine}</p>
         )}
-      </ArenaStatus>
-      {showResult && (
-        <GameOverDialog
-          headline={statusLine}
-          scoreLine={scoreLine}
-          reason={reason}
-          primary={{ label: t("starbattle.newGame"), onClick: () => setSettingUp(true) }}
-          secondary={{ label: t("starbattle.mainMenu"), onClick: toLobby }}
-          onClose={() => setResultDismissed(endingKey)}
-        />
-      )}
+        <ArenaStatus line={statusLine}>{actions}</ArenaStatus>
+        {dialogs}
+      </section>
+    );
+  }
+
+  // The battle on the game stage: the sector the player fires at is the
+  // board; their own fleet sits small in the panel (on a narrow screen, the
+  // battle strip shows one at a time instead).
+  const sectors = {
+    state,
+    viewer: me,
+    names,
+    canFire: controller.humanToMove && actor === me,
+    onFire: (x: number, y: number) => controller.play({ kind: "shoot", x, y }),
+    revealEnemy: finished
+  };
+  return (
+    <>
+      <GameStage
+        className="star-stage"
+        title={t("games.starbattle.name")}
+        board={narrow ? <StarBattleBoards {...sectors} /> : <SectorPanel side="enemy" {...sectors} />}
+        score={<ArenaState line={statusLine} turn={turnNumber(feed)} detail={reason ?? lastLine} />}
+        notices={!narrow && <SectorPanel side="own" compact {...sectors} />}
+        log={<Comms lines={lines} />}
+        actions={actions}
+      />
+      {result}
       {dialogs}
-    </section>
+    </>
   );
 }

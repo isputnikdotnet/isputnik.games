@@ -15,22 +15,17 @@
   --chess-black-detail: #d8cfbf;
 }
 
-.chess-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: var(--space-5);
-  align-items: start;
+/* On the game stage the board and its two players are one column; the
+   stage sizes the square from the window, less the two strips. */
+.chess-stage {
+  --stage-extra: calc(2 * 36px + 2 * 6px);
 }
 
-/* The board and the two players: square, as large as the viewport allows
-   without pushing the bottom player off it. */
 .chess-main {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: min(100%, calc(100dvh - 300px));
-  min-width: 260px;
-  margin: 0 auto;
+  min-width: 0;
 }
 
 .chess-board {
@@ -261,21 +256,28 @@
   font-weight: var(--weight-semibold);
 }
 
-/* ── Side panel ────────────────────────────────────────────────────────── */
+/* ── Status ────────────────────────────────────────────────────────── */
+/* At the head of the panel: whose move as a pill, why it ended, and against
+   the computer its level as one segmented row. */
 
-.chess-side {
+.chess-status {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface);
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: 12px;
+  background: var(--surface-2);
 }
 
 .chess-status-line {
   margin: 0;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: var(--text-md);
   font-weight: var(--weight-semibold);
+  text-align: center;
 }
 
 .chess-status-line.is-finished {
@@ -283,40 +285,33 @@
 }
 
 .chess-reason {
-  margin: var(--space-1) 0 0;
+  margin: 0;
   font-size: var(--text-sm);
+  text-align: center;
 }
 
-.chess-actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+.chess-status .setup-row {
+  width: 100%;
+  margin: 0;
 }
 
-.chess-actions .primary-button,
-.chess-actions .secondary-button {
-  justify-content: flex-start;
+.chess-status .setup-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
-/* Comms fills the panel down to the board's foot, so the talk has room. */
-.chess-side {
-  align-self: stretch;
+.chess-status .chip-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-1);
 }
 
-.chess-side .comms {
-  flex: 1 1 0;
-  min-height: 260px;
-}
-
-.chess-side .comms-lines {
-  flex: 1 1 0;
-  min-height: 120px;
-  max-height: none;
-  font-size: 13px;
-}
-
-.chess-side .comms-line {
-  column-gap: 8px;
+.chess-status .chip-button {
+  justify-content: center;
 }
 
 /* ── Promotion ─────────────────────────────────────────────────────────── */
@@ -348,41 +343,6 @@
   height: 84%;
 }
 
-@media (max-width: 900px) {
-  .chess-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  /* Under the board there is no foot to reach: Comms gets a height of its own. */
-  .chess-side .comms,
-  .chess-side .comms-lines {
-    flex: none;
-  }
-
-  .chess-side .comms-lines {
-    height: 240px;
-  }
-
-  .chess-main {
-    width: min(100%, calc(100dvh - 240px));
-  }
-
-  .chess-side {
-    padding: var(--space-3);
-  }
-
-  .chess-actions {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .chess-actions .primary-button,
-  .chess-actions .secondary-button {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
-}
-
 /* ── A phone ───────────────────────────────────────────────────────────── */
 /* The screen is the board's: the title alone above it (the tab bar is the
    way back) and the board the full width. */
@@ -397,15 +357,6 @@
 
   .chess-page .page-head h1 {
     font-size: var(--text-xl);
-  }
-
-  .chess-layout {
-    gap: var(--space-3);
-  }
-
-  .chess-main {
-    width: 100%;
-    min-width: 0;
   }
 
   .chess-player {

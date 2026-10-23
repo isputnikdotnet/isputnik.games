@@ -8,6 +8,7 @@ import { withTalk, type CommsLine } from "../../shared/commsLines";
 import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
 import { GameOverDialog } from "../../shared/GameOverDialog";
+import { GameStage } from "../../shared/GameStage";
 import { GuestLinkPanel } from "../../shared/GuestLinkPanel";
 import { MessageBox } from "../../shared/MessageBox";
 import { matchSound, useGameSounds } from "../../shared/useGameSounds";
@@ -125,49 +126,59 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
   const phrases = [t("comms.phrases.gg"), t("comms.phrases.nice"), t("comms.phrases.yourMove"), t("comms.phrases.rematch")];
 
   return (
-    <section className="chess-page">
-      <Head />
-      <ChessTable
-        state={state}
-        orientation={orientation}
-        movable={myMove && !sending ? mySeat : null}
-        onMove={(played) => void move(played)}
-        names={names}
-      >
-        <div className="chess-status">
-          <p className={`chess-status-line${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
-          {reason && <p className="muted chess-reason">{reason}</p>}
-        </div>
-        {moveError && <MessageBox tone="error" title={t("match.moveFailed")}>{moveError}</MessageBox>}
-        <div className="chess-actions">
-          {match.status === "playing" && (
-            <>
-              <Button variant="secondary" onClick={() => setFlipped((f) => !f)}>
-                <Repeat2 size={16} aria-hidden="true" /> {t("chess.flip")}
-              </Button>
-              <Button variant="secondary" onClick={() => setConfirmResign(true)}>
-                <Flag size={16} aria-hidden="true" /> {t("match.resign")}
-              </Button>
-            </>
-          )}
-          {match.status === "invited" && match.createdBy === myId && (
-            <Button variant="secondary" onClick={() => void withdraw()}>{t("lobby.online.withdraw")}</Button>
-          )}
-          {match.status === "invited" && match.createdBy !== myId && (
-            <>
-              <Button variant="primary" onClick={() => answerMatch(match.id, "accept").then(() => refresh())}>{t("lobby.online.accept")}</Button>
-              <Button variant="secondary" onClick={() => answerMatch(match.id, "decline").then(() => navigate(href()))}>{t("lobby.online.decline")}</Button>
-            </>
-          )}
-          {(finished || match.status === "declined" || match.status === "cancelled") && (
-            <Button variant="primary" onClick={() => navigate(href())}>{t("app.allGames")}</Button>
-          )}
-        </div>
-        {them.guest && match.createdBy === myId && <GuestLinkPanel matchId={match.id} guestName={them.name} />}
-        {talkable && (
-          <Comms lines={lines} onSend={(text) => void say(text)} phrases={phrases} sendTo={them.name} busy={saying} error={sayError} />
-        )}
-      </ChessTable>
+    <>
+      <GameStage
+        className="chess-stage"
+        title={t("games.chess.name")}
+        board={
+          <ChessTable
+            state={state}
+            orientation={orientation}
+            movable={myMove && !sending ? mySeat : null}
+            onMove={(played) => void move(played)}
+            names={names}
+          />
+        }
+        score={
+          <div className="chess-status">
+            <p className={`chess-status-line${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
+            {reason && <p className="muted chess-reason">{reason}</p>}
+          </div>
+        }
+        notices={
+          <>
+            {moveError && <MessageBox tone="error" title={t("match.moveFailed")}>{moveError}</MessageBox>}
+            {them.guest && match.createdBy === myId && <GuestLinkPanel matchId={match.id} guestName={them.name} />}
+          </>
+        }
+        log={talkable && <Comms lines={lines} onSend={(text) => void say(text)} phrases={phrases} sendTo={them.name} busy={saying} error={sayError} />}
+        actions={
+          <>
+            {match.status === "playing" && (
+              <>
+                <Button variant="secondary" onClick={() => setFlipped((f) => !f)}>
+                  <Repeat2 size={16} aria-hidden="true" /> {t("chess.flip")}
+                </Button>
+                <Button variant="secondary" onClick={() => setConfirmResign(true)}>
+                  <Flag size={16} aria-hidden="true" /> {t("match.resign")}
+                </Button>
+              </>
+            )}
+            {match.status === "invited" && match.createdBy === myId && (
+              <Button variant="secondary" onClick={() => void withdraw()}>{t("lobby.online.withdraw")}</Button>
+            )}
+            {match.status === "invited" && match.createdBy !== myId && (
+              <>
+                <Button variant="primary" onClick={() => answerMatch(match.id, "accept").then(() => refresh())}>{t("lobby.online.accept")}</Button>
+                <Button variant="secondary" onClick={() => answerMatch(match.id, "decline").then(() => navigate(href()))}>{t("lobby.online.decline")}</Button>
+              </>
+            )}
+            {(finished || match.status === "declined" || match.status === "cancelled") && (
+              <Button variant="primary" onClick={() => navigate(href())}>{t("app.allGames")}</Button>
+            )}
+          </>
+        }
+      />
 
       {finished && !resultDismissed && (
         <GameOverDialog
@@ -190,7 +201,7 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
           {t("match.confirmResign.body", { name: them.name })}
         </Dialog>
       )}
-    </section>
+    </>
   );
 }
 

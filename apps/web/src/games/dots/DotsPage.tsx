@@ -11,6 +11,7 @@ import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
 import { follow, href, navigate } from "../../router";
 import { PHONE, useMediaQuery } from "../../shared/useMediaQuery";
+import { GameStage } from "../../shared/GameStage";
 import { DotsBoard } from "./DotsBoard";
 import { DotsScoreboard } from "./DotsScoreboard";
 import { GameOverDialog } from "../../shared/GameOverDialog";
@@ -88,7 +89,7 @@ export function DotsPage() {
     navigate(href());
   };
 
-  // The score and the status: beside the board on a desktop, above it on a phone.
+  // The score and the status: at the head of the panel on a desktop, above the board on a phone.
   const scoreboard = (
     <DotsScoreboard
       sides={[
@@ -103,16 +104,15 @@ export function DotsPage() {
   );
 
   return (
-    <section className="dots-page">
-      <PageHead title={t("games.dots.name")} />
-      <div className="dots-layout">
-        {phone && scoreboard}
-        <div className="dots-board-wrap">
-          <DotsBoard state={state} onPlace={controller.place} disabled={!controller.humanToMove} />
-        </div>
-        <aside className="dots-side">
-          {!phone && scoreboard}
-          <div className="dots-actions">
+    <>
+      <GameStage
+        className="dots-stage"
+        title={t("games.dots.name")}
+        board={<DotsBoard state={state} onPlace={controller.place} disabled={!controller.humanToMove} />}
+        score={scoreboard}
+        log={<Comms lines={lines} />}
+        actions={
+          <>
             {!finished && (
               <>
                 <Button variant="secondary" onClick={controller.undo} disabled={state.moves.length === 0 || controller.thinking}>
@@ -138,10 +138,9 @@ export function DotsPage() {
                 </Button>
               </>
             )}
-          </div>
-          <Comms lines={lines} />
-        </aside>
-      </div>
+          </>
+        }
+      />
 
       {showResult && (
         <GameOverDialog
@@ -190,7 +189,7 @@ export function DotsPage() {
           {t("dots.confirmNew.body")}
         </Dialog>
       )}
-    </section>
+    </>
   );
 }
 

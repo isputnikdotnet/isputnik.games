@@ -12,6 +12,7 @@ import { MessageBox } from "../../shared/MessageBox";
 import { follow, href, navigate } from "../../router";
 import { useSession } from "../../session";
 import { PHONE, useMediaQuery } from "../../shared/useMediaQuery";
+import { GameStage } from "../../shared/GameStage";
 import { DotsBoard } from "./DotsBoard";
 import { DotsScoreboard } from "./DotsScoreboard";
 import { GameOverDialog } from "../../shared/GameOverDialog";
@@ -135,7 +136,7 @@ export function DotsMatchPage({ matchId }: { matchId: string }) {
   const talkable = match.status === "playing" || finished;
   const phrases = [t("comms.phrases.gg"), t("comms.phrases.nice"), t("comms.phrases.yourMove"), t("comms.phrases.rematch")];
 
-  // The score and the status: beside the board on a desktop, above it on a phone.
+  // The score and the status: at the head of the panel on a desktop, above the board on a phone.
   const scoreboard = (
     <DotsScoreboard
       sides={[
@@ -150,17 +151,21 @@ export function DotsMatchPage({ matchId }: { matchId: string }) {
   );
 
   return (
-    <section className="dots-page">
-      <Head />
-      <div className="dots-layout">
-        {phone && scoreboard}
-        <div className="dots-board-wrap">
-          <DotsBoard state={state} onPlace={(move) => void place(move)} disabled={!myMove || sending} />
-        </div>
-        <aside className="dots-side">
-          {!phone && scoreboard}
-          {moveError && <MessageBox tone="error" title={t("match.moveFailed")}>{moveError}</MessageBox>}
-          <div className="dots-actions">
+    <>
+      <GameStage
+        className="dots-stage"
+        title={t("games.dots.name")}
+        board={<DotsBoard state={state} onPlace={(move) => void place(move)} disabled={!myMove || sending} />}
+        score={scoreboard}
+        notices={
+          <>
+            {moveError && <MessageBox tone="error" title={t("match.moveFailed")}>{moveError}</MessageBox>}
+            {them.guest && match.createdBy === myId && <GuestLinkPanel matchId={match.id} guestName={them.name} />}
+          </>
+        }
+        log={talkable && <Comms lines={lines} onSend={(text) => void say(text)} phrases={phrases} sendTo={them.name} busy={saying} error={sayError} />}
+        actions={
+          <>
             {match.status === "playing" && (
               <Button variant="secondary" onClick={() => setConfirmResign(true)}>
                 <Flag size={16} aria-hidden="true" /> {t("match.resign")}
@@ -178,13 +183,9 @@ export function DotsMatchPage({ matchId }: { matchId: string }) {
             {(finished || match.status === "declined" || match.status === "cancelled") && (
               <Button variant="primary" onClick={() => navigate(href())}>{t("app.allGames")}</Button>
             )}
-          </div>
-          {them.guest && match.createdBy === myId && <GuestLinkPanel matchId={match.id} guestName={them.name} />}
-          {talkable && (
-            <Comms lines={lines} onSend={(text) => void say(text)} phrases={phrases} sendTo={them.name} busy={saying} error={sayError} />
-          )}
-        </aside>
-      </div>
+          </>
+        }
+      />
 
       {finished && !resultDismissed && (
         <GameOverDialog
@@ -207,7 +208,7 @@ export function DotsMatchPage({ matchId }: { matchId: string }) {
           {t("match.confirmResign.body", { name: them.name })}
         </Dialog>
       )}
-    </section>
+    </>
   );
 }
 

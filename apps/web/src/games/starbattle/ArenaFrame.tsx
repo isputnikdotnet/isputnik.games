@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 import { ArrowLeft, Crosshair } from "lucide-react";
 import { follow, href } from "../../router";
 
-// The frame of a Star Battle page: the title with the way back, the turn chip
-// on the right, and at the bottom the status bar — what to do now, the last
-// thing that happened, and the actions. The boards, the editor or the menu go
-// in between.
-export function ArenaHead({ chip, turn }: { chip: string; turn?: number | null }) {
+// The frame of a Star Battle page before the battle (the menu, laying the
+// fleet, an invitation): the title with the way back, the state chip on the
+// right, and at the bottom the status bar — what to do now and the actions.
+// The battle itself is on the game stage, with ArenaState at its panel's head.
+export function ArenaHead({ chip }: { chip: string }) {
   const { t } = useTranslation();
   return (
     <header className="arena-head">
@@ -21,12 +21,6 @@ export function ArenaHead({ chip, turn }: { chip: string; turn?: number | null }
       <div className="arena-chip">
         <Crosshair size={22} aria-hidden="true" />
         <strong>{chip}</strong>
-        {turn != null && (
-          <>
-            <span className="arena-chip-sep" aria-hidden="true" />
-            <span>{t("starbattle.arena.turn", { count: turn })}</span>
-          </>
-        )}
       </div>
     </header>
   );
@@ -48,4 +42,21 @@ export function ArenaStatus({ line, detail, children }: { line: string; detail?:
 /** Turns so far in the battle: a new one begins with every miss. */
 export function turnNumber(feed: readonly { kind: string; result?: unknown }[]): number {
   return 1 + feed.filter((event) => event.kind === "fire" && event.result === "miss").length;
+}
+
+/** The battle's status at the head of the game stage's panel: what to do now
+ *  with the turn count beside it, and under it the last thing that happened
+ *  (or, after the end, why it ended). */
+export function ArenaState({ line, turn, detail }: { line: string; turn?: number | null; detail?: string | null }) {
+  const { t } = useTranslation();
+  return (
+    <div className="arena-state">
+      <p className="arena-state-line">
+        <Crosshair size={18} aria-hidden="true" />
+        <strong role="status">{line}</strong>
+        {turn != null && <span className="arena-state-turn">{t("starbattle.arena.turn", { count: turn })}</span>}
+      </p>
+      {detail && <p className="arena-state-detail">{detail}</p>}
+    </div>
+  );
 }

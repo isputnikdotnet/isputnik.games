@@ -1,28 +1,24 @@
-import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Chess, type ChessMove, type ChessState, type PlayerIndex } from "@isputnik/games-engine";
 import { ChessBoard } from "./ChessBoard";
 import { ChessPiece } from "./pieces";
 
-// The table both chess pages lay out: the board between the two players —
-// the one at the bottom is the side the board faces — and beside it (below it
-// on a narrow screen) the page's own panel: the status, the buttons, Comms.
-// Each player's strip lights while it is their move and shows what they have
+// The table both chess pages put on the game stage: the board between the
+// two players — the one at the bottom is the side the board faces. Each
+// player's strip lights while it is their move and shows what they have
 // taken, with the material lead in pawns.
 export function ChessTable({
   state,
   orientation,
   movable,
   onMove,
-  names,
-  children
+  names
 }: {
   state: ChessState;
   orientation: PlayerIndex;
   movable: PlayerIndex | null;
   onMove: (move: ChessMove) => void;
   names: [string, string];
-  children: ReactNode;
 }) {
   const { taken, points } = Chess.material(state);
   const turn = state.status.kind === "playing" ? state.status.turn : null;
@@ -36,15 +32,12 @@ export function ChessTable({
     />
   );
   return (
-    <div className="chess-layout">
-      <div className="chess-main">
-        {strip(orientation === 0 ? 1 : 0)}
-        <div className="chess-board-wrap">
-          <ChessBoard state={state} orientation={orientation} movable={movable} onMove={onMove} />
-        </div>
-        {strip(orientation)}
+    <div className="chess-main">
+      {strip(orientation === 0 ? 1 : 0)}
+      <div className="chess-board-wrap">
+        <ChessBoard state={state} orientation={orientation} movable={movable} onMove={onMove} />
       </div>
-      <aside className="chess-side">{children}</aside>
+      {strip(orientation)}
     </div>
   );
 }
