@@ -279,6 +279,25 @@ body[data-arena="star"] .setup-label {
 
 .arena-boards.is-phone .arena-panel {
   padding: var(--space-3);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* The two boards side by side, one screen wide each: a swipe moves a whole
+   board and settles on it; the strip above slides it the same way. */
+.arena-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  gap: var(--space-3);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.arena-track::-webkit-scrollbar {
+  display: none;
 }
 
 /* ── On the game stage ────────────────────────────────────────────────── */

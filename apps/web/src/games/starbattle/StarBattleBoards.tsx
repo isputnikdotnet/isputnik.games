@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StarBattle, otherPlayer, type PlayerIndex, type StarBattleState, type ShotResult } from "@isputnik/games-engine";
 import { Button } from "../../shared/Button";
@@ -89,19 +89,51 @@ export function SectorPanel({ side, compact = false, ...props }: SectorsProps & 
 }
 
 // A phone shows one board at a time under a battle strip — YOUR FLEET vs ENEMY
-// SECTOR, with the same counts — and the shown board follows the turn: the
-// enemy sector when it is the player's shot, their own fleet while the other
-// side fires. A tap on the strip overrides that until the turn changes again.
+// SECTOR, with the same counts. The two boards sit side by side in a track the
+// player swipes between, or slides with a tap on the strip; the board stays
+// where they put it whoever's turn it is (following the turn was tried and
+// was confusing: the map changed under the player's thumb). It opens on the
+// enemy sector, where the player acts. The board out of view is inert, so it
+// is neither read out nor tabbed into.
 export function StarBattleBoards(props: SectorsProps) {
   const { t } = useTranslation();
-  const { state, viewer } = props;
   const { total, myIntact, theirIntact, enemyBoard, ownBoard } = useSectors(props);
+  const [shown, setShown] = useState<Side>("enemy");
+  const track = useRef<HTMLDivElement>(null);
 
-  // Whose turn it is, as a key: an override on the strip lasts one turn.
-  const turnKey = state.status.kind === "playing" ? `turn-${state.status.turn}` : "over";
-  const auto: Side = state.status.kind === "playing" && state.status.turn !== viewer ? "own" : "enemy";
-  const [override, setOverride] = useState<{ side: Side; turnKey: string } | null>(null);
-  const shown: Side = override && override.turnKey === turnKey ? override.side : auto;
+  // Open on the enemy sector without a slide.
+  useLayoutEffect(() => {
+    const node = track.current;
+    if (node) node.scrollLeft = node.scrollWidth;
+  }, []);
+
+  /** The board under the track's scroll position: the left one or the right. */
+  const onScroll = () => {
+    const node = track.current;
+    if (!node || node.scrollWidth <= node.clientWidth) return;
+    const side: Side = node.scrollLeft > (node.scrollWidth - node.clientWidth) / 2 ? "enemy" : "own";
+    if (side !== shown) setShown(side);
+  };
+
+  const show = (side: Side) => {
+    setShown(side);
+    const node = track.current;
+    node?.scrollTo?.({ left: side === "enemy" ? node.scrollWidth : 0, behavior: "smooth" });
+  };
+
+  const panel = (side: Side) => {
+    const off = shown !== side;
+    return (
+      <section
+        className={`arena-panel is-${side === "enemy" ? "enemy" : "own"}`}
+        aria-label={side === "enemy" ? t("starbattle.sector.enemyAria") : t("starbattle.sector.ownAria")}
+        aria-hidden={off || undefined}
+        inert={off || undefined}
+      >
+        {side === "enemy" ? enemyBoard : ownBoard}
+      </section>
+    );
+  };
 
   return (
     <div className="arena-boards is-phone">
@@ -111,7 +143,7 @@ export function StarBattleBoards(props: SectorsProps) {
           role="tab"
           aria-selected={shown === "own"}
           className={`arena-strip-half is-you${shown === "own" ? " is-on" : ""}`}
-          onClick={() => setOverride({ side: "own", turnKey })}
+          onClick={() => show("own")}
         >
           <span className="arena-strip-name">{t("starbattle.arena.stripYou")}</span>
           <span className="arena-strip-count">{myIntact} / {total}</span>
@@ -123,16 +155,17 @@ export function StarBattleBoards(props: SectorsProps) {
           role="tab"
           aria-selected={shown === "enemy"}
           className={`arena-strip-half is-them${shown === "enemy" ? " is-on" : ""}`}
-          onClick={() => setOverride({ side: "enemy", turnKey })}
+          onClick={() => show("enemy")}
         >
           <span className="arena-strip-name">{t("starbattle.arena.stripThem")}</span>
           <span className="arena-strip-count">{theirIntact} / {total}</span>
           <Pips lit={theirIntact} total={total} />
         </Button>
       </div>
-      <section className={`arena-panel is-${shown === "enemy" ? "enemy" : "own"}`} aria-label={shown === "enemy" ? t("starbattle.sector.enemyAria") : t("starbattle.sector.ownAria")}>
-        {shown === "enemy" ? enemyBoard : ownBoard}
-      </section>
+      <div className="arena-track" ref={track} onScroll={onScroll}>
+        {panel("own")}
+        {panel("enemy")}
+      </div>
     </div>
   );
 }

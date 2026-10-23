@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StarBattle, type Vessel } from "@isputnik/games-engine";
 import { SectorPanel, StarBattleBoards } from "../src/games/starbattle/StarBattleBoards";
@@ -42,7 +42,7 @@ describe("the battle strip on a phone", () => {
     window.matchMedia = realMatchMedia;
   });
 
-  it("shows one board at a time, the enemy sector on your shot, and switches on a tap", async () => {
+  it("shows one board at a time, opens on the enemy sector, and switches on a tap", async () => {
     const user = userEvent.setup();
     const state = battle();
     render(<StarBattleBoards state={state} viewer={0} names={["You", "Computer"]} canFire onFire={() => {}} />);
@@ -59,15 +59,55 @@ describe("the battle strip on a phone", () => {
     expect(screen.queryByRole("img", { name: "Enemy sector, 10 by 10" })).not.toBeInTheDocument();
   });
 
-  it("shows your own fleet while the other side fires, and counts what is intact", () => {
-    // Seat 0 misses: the turn passes to seat 1, so seat 0 watches their own sector.
+  it("stays on the board you chose whoever's turn it is, and counts what is intact", async () => {
+    const user = userEvent.setup();
+    const props = { viewer: 0 as const, names: ["You", "Computer"] as [string, string], onFire: () => {} };
+    const { rerender } = render(<StarBattleBoards state={battle()} canFire {...props} />);
+    // Seat 0 misses: the turn passes to seat 1, which sinks seat 0's single at (0, 2).
     let state = StarBattle.applyMove(battle(), { kind: "shoot", x: 9, y: 9 });
-    // Seat 1 sinks seat 0's single at (0, 2).
     state = StarBattle.applyMove(state, { kind: "shoot", x: 0, y: 2 });
-    render(<StarBattleBoards state={state} viewer={0} names={["You", "Computer"]} canFire={false} onFire={() => {}} />);
-    expect(screen.getByRole("tab", { name: /Your fleet/ })).toHaveAttribute("aria-selected", "true");
+    rerender(<StarBattleBoards state={state} canFire={false} {...props} />);
+    expect(screen.getByRole("tab", { name: /Enemy sector/ })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: /Your fleet/ })).toHaveTextContent("5 / 6");
+
+    await user.click(screen.getByRole("tab", { name: /Your fleet/ }));
+    // Seat 1 misses: back to seat 0's shot, and the board stays on their fleet.
+    state = StarBattle.applyMove(state, { kind: "shoot", x: 9, y: 9 });
+    rerender(<StarBattleBoards state={state} canFire {...props} />);
+    expect(screen.getByRole("tab", { name: /Your fleet/ })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("img", { name: "Your sector, 10 by 10" })).toBeInTheDocument();
+  });
+});
+
+describe("a finger on the enemy sector", () => {
+  const board = (onFire: (x: number, y: number) => void) => {
+    render(<SectorPanel side="enemy" state={battle()} viewer={0} names={["You", "Computer"]} canFire onFire={onFire} />);
+    const svg = screen.getByRole("img", { name: "Enemy sector, 10 by 10" });
+    // jsdom lays nothing out: an 11-unit board 110px wide, B3 at (25, 35).
+    svg.getBoundingClientRect = () => ({ left: 0, top: 0, width: 110, height: 110, right: 110, bottom: 110, x: 0, y: 0, toJSON: () => ({}) });
+    return svg;
+  };
+  const finger = { pointerType: "touch", pointerId: 7, button: 0 };
+
+  it("fires when a tap lifts, not when it lands", () => {
+    const onFire = vi.fn();
+    const svg = board(onFire);
+    fireEvent.pointerDown(svg, { ...finger, clientX: 25, clientY: 35 });
+    expect(onFire).not.toHaveBeenCalled();
+    fireEvent.pointerUp(svg, { ...finger, clientX: 26, clientY: 35 });
+    expect(onFire).toHaveBeenCalledWith(1, 2);
+  });
+
+  it("fires nothing when the finger swipes to the other board, or the browser takes the gesture", () => {
+    const onFire = vi.fn();
+    const svg = board(onFire);
+    fireEvent.pointerDown(svg, { ...finger, clientX: 80, clientY: 35 });
+    fireEvent.pointerMove(svg, { ...finger, clientX: 40, clientY: 37 });
+    fireEvent.pointerUp(svg, { ...finger, clientX: 20, clientY: 37 });
+    fireEvent.pointerDown(svg, { ...finger, clientX: 25, clientY: 35 });
+    fireEvent.pointerCancel(svg, finger);
+    fireEvent.pointerUp(svg, { ...finger, clientX: 25, clientY: 35 });
+    expect(onFire).not.toHaveBeenCalled();
   });
 });
 

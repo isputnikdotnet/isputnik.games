@@ -1,4 +1,4 @@
-import { useMemo, useState, type PointerEvent } from "react";
+import { useMemo, useRef, useState, type PointerEvent } from "react";
 import { StarBattle, seededRandom, type Vessel } from "@isputnik/games-engine";
 
 // One sector of the star chart as an SVG: a dark field with a scatter of stars
@@ -39,6 +39,9 @@ function burst(cx: number, cy: number, outer: number, inner: number): string {
   return points.join(" ");
 }
 
+/** How far a finger may drift (px) and still be a tap, not a swipe. */
+const TAP_SLOP = 10;
+
 export function SectorBoard({
   size,
   shots,
@@ -72,6 +75,9 @@ export function SectorBoard({
   label: string;
 }) {
   const [hover, setHover] = useState<Cell | null>(null);
+  // A finger down on the board, until it lifts: a tap if it stayed put, the
+  // start of a swipe between the boards if it travelled.
+  const touch = useRef<{ id: number; x: number; y: number } | null>(null);
   const span = size + 1;
   const stars = useMemo(() => starfield(size), [size]);
 
@@ -119,7 +125,11 @@ export function SectorBoard({
       role="img"
       aria-label={label}
       onPointerMove={(event) => {
-        if (event.pointerType === "touch") return;
+        if (event.pointerType === "touch") {
+          const down = touch.current;
+          if (down && down.id === event.pointerId && Math.hypot(event.clientX - down.x, event.clientY - down.y) > TAP_SLOP) touch.current = null;
+          return;
+        }
         const cell = cellFrom(event);
         setHover(targetable(cell) ? cell : null);
         onHover?.(cell);
@@ -129,13 +139,29 @@ export function SectorBoard({
         onHover?.(null);
       }}
       onPointerDown={(event) => {
-        // Pointer down, not click: a tap on a phone should land at once.
         if (event.button !== 0 || !onCell) return;
+        // A finger lands on lift, so a swipe to the other board fires nothing.
+        if (event.pointerType === "touch") {
+          touch.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+          return;
+        }
+        // A mouse or a pen: pointer down, not click, so the shot lands at once.
         const cell = cellFrom(event);
         if (cell) {
           setHover(null);
           onCell(cell.x, cell.y);
         }
+      }}
+      onPointerUp={(event) => {
+        const down = touch.current;
+        touch.current = null;
+        if (!down || down.id !== event.pointerId || !onCell) return;
+        const cell = cellFrom(event);
+        if (cell) onCell(cell.x, cell.y);
+      }}
+      onPointerCancel={() => {
+        // The browser took the gesture for a scroll.
+        touch.current = null;
       }}
     >
       {/* The field covers the labels too, so they read on a light page. */}
