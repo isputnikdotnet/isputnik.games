@@ -38,7 +38,7 @@ This container has no sign-in and no web address of its own. The isputnik.home c
 
   <TemplateURL>https://raw.githubusercontent.com/isputnikdotnet/isputnik.games/main/isputnik-games.xml</TemplateURL>
 
-  <Icon>https://raw.githubusercontent.com/isputnikdotnet/isputnik.games/main/Assets/icon.svg</Icon>
+  <Icon>https://raw.githubusercontent.com/isputnikdotnet/isputnik.games/main/Assets/icon.png</Icon>
 
   <!-- Application Data -->
 
