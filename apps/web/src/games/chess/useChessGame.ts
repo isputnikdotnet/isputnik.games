@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Chess, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
-import { clearChessGame, loadChessGame, saveChessGame, saveChessSetup, type ChessSetup, type LoadedChessGame } from "./storage";
+import { Chess, type AiLevel, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
+import { clearChessGame, loadChessGame, loadChessSetup, saveChessGame, saveChessSetup, type ChessSetup, type LoadedChessGame } from "./storage";
 
 // One local game of chess: the position, the setup it was started with, and
 // the moves on it. Every change goes through the engine and is saved at once;
@@ -18,6 +18,9 @@ export interface ChessGameController {
   agreeDraw(): void;
   /** The person at the screen gives up; with two, the side to move does. */
   resign(): void;
+  /** Changes how well the computer plays, from its next move on; the next
+   *  new game starts at this level too. */
+  setLevel(level: AiLevel): void;
   abandon(): void;
   /** The seat a person at this screen may move now, or null. */
   humanToMove: PlayerIndex | null;
@@ -92,6 +95,11 @@ export function useChessGame(): ChessGameController {
     });
   }, [change]);
 
+  const setLevel = useCallback((level: AiLevel) => {
+    saveChessSetup({ ...loadChessSetup(), level });
+    change((current) => (current.setup.level === level ? null : { setup: { ...current.setup, level }, state: current.state }));
+  }, [change]);
+
   const abandon = useCallback(() => {
     clearChessGame();
     setGame(null);
@@ -124,6 +132,7 @@ export function useChessGame(): ChessGameController {
     undo,
     agreeDraw,
     resign,
+    setLevel,
     abandon,
     humanToMove: game && status?.kind === "playing" && !computerTurn ? status.turn : null
   };

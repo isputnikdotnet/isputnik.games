@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Flag, Handshake, Repeat2, RotateCcw, Undo2 } from "lucide-react";
-import { chess, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
+import { ArrowLeft, Flag, Handshake, LogOut, Repeat2, RotateCcw, Undo2 } from "lucide-react";
+import { chess, type AiLevel, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
+import { Choice } from "../../shared/Choice";
 import { Comms } from "../../shared/Comms";
 import { useFeed } from "../../shared/useFeed";
 import { localSound, useGameSounds } from "../../shared/useGameSounds";
@@ -9,7 +10,7 @@ import type { CommsLine } from "../../shared/commsLines";
 import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
 import { GameOverDialog } from "../../shared/GameOverDialog";
-import { follow, href } from "../../router";
+import { follow, href, navigate } from "../../router";
 import { chessLines } from "./comms";
 import { chessReason } from "./ending";
 import { ChessNewGameForm } from "./NewGameForm";
@@ -17,7 +18,7 @@ import { ChessTable } from "./ChessTable";
 import { humanSeat, isComputerSeat, useChessGame } from "./useChessGame";
 import type { ChessSetup } from "./storage";
 
-type Pending = "draw" | "resign" | "new" | null;
+type Pending = "draw" | "resign" | "new" | "exit" | null;
 
 const NO_MOVES: ChessMove[] = [];
 
@@ -82,6 +83,12 @@ export function ChessPage() {
     controller.start(setup);
   };
 
+  // Leaving puts the game down for good, as in Star Battle: the lobby offers a new one.
+  const exit = () => {
+    controller.abandon();
+    navigate(href());
+  };
+
   return (
     <section className="chess-page">
       <PageHead title={t("games.chess.name")} />
@@ -90,6 +97,18 @@ export function ChessPage() {
           <p className={`chess-status-line${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
           {reason && <p className="muted chess-reason">{reason}</p>}
         </div>
+        {setup.mode === "computer" && !finished && (
+          <Choice<AiLevel>
+            label={t("chess.setup.level")}
+            value={setup.level}
+            options={[
+              { value: "easy", label: t("chess.setup.levelEasy") },
+              { value: "normal", label: t("chess.setup.levelNormal") },
+              { value: "hard", label: t("chess.setup.levelHard") }
+            ]}
+            onChange={controller.setLevel}
+          />
+        )}
         <div className="chess-actions">
           {!finished && (
             <>
@@ -110,12 +129,18 @@ export function ChessPage() {
               <Button variant="secondary" onClick={() => (state.moves.length === 0 ? controller.abandon() : setPending("new"))}>
                 <RotateCcw size={16} aria-hidden="true" /> {t("chess.newGame")}
               </Button>
+              <Button variant="secondary" onClick={() => (state.moves.length === 0 ? exit() : setPending("exit"))}>
+                <LogOut size={16} aria-hidden="true" /> {t("chess.exit")}
+              </Button>
             </>
           )}
           {finished && (
             <>
               <Button variant="primary" onClick={again}>{t("chess.end.again")}</Button>
               <Button variant="secondary" onClick={controller.abandon}>{t("chess.end.change")}</Button>
+              <Button variant="secondary" onClick={exit}>
+                <LogOut size={16} aria-hidden="true" /> {t("chess.end.toLobby")}
+              </Button>
             </>
           )}
         </div>
@@ -128,7 +153,7 @@ export function ChessPage() {
           scoreLine={t("chess.end.moves", { count: Math.ceil(state.moves.length / 2) })}
           reason={reason}
           primary={{ label: t("chess.end.again"), onClick: again }}
-          secondary={{ label: t("chess.end.change"), onClick: controller.abandon }}
+          secondary={{ label: t("chess.end.toLobby"), onClick: exit }}
           onClose={() => setResultDismissed(endingKey)}
         />
       )}
@@ -153,6 +178,18 @@ export function ChessPage() {
           onClose={() => setPending(null)}
         >
           {t("chess.confirmResign.body", { player: names[(me ?? status.turn) === 0 ? 1 : 0] })}
+        </Dialog>
+      )}
+      {pending === "exit" && (
+        <Dialog
+          title={t("chess.confirmExit.title")}
+          confirmLabel={t("chess.confirmExit.confirm")}
+          cancelLabel={t("chess.confirmExit.cancel")}
+          danger
+          onConfirm={() => { setPending(null); exit(); }}
+          onClose={() => setPending(null)}
+        >
+          {t("chess.confirmExit.body")}
         </Dialog>
       )}
       {pending === "new" && (

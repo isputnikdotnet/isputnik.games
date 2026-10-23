@@ -83,6 +83,43 @@ describe("ChessPage", () => {
     expect(loadChessGame()?.state.moves).toHaveLength(0);
   });
 
+  it("changes the computer's level during the game", async () => {
+    saved(["e2e4", "e7e5"], "computer");
+    const user = userEvent.setup();
+    render(<ChessPage />);
+    const level = screen.getByRole("group", { name: "Level" });
+    expect(within(level).getByRole("button", { name: "Easy" })).toHaveAttribute("aria-pressed", "true");
+    await user.click(within(level).getByRole("button", { name: "Hard" }));
+    expect(within(level).getByRole("button", { name: "Hard" })).toHaveAttribute("aria-pressed", "true");
+    expect(loadChessGame()?.setup.level).toBe("hard");
+    // The moves stay; the next new game starts at Hard too.
+    expect(loadChessGame()?.state.moves).toHaveLength(2);
+    expect(JSON.parse(localStorage.getItem("isputnik-games.chess.setup")!).level).toBe("hard");
+  });
+
+  it("exits to the lobby after asking, and leaves no game behind", async () => {
+    saved(["e2e4", "e7e5"]);
+    const user = userEvent.setup();
+    render(<ChessPage />);
+    await user.click(screen.getByRole("button", { name: "Exit game" }));
+    const dialog = screen.getByRole("dialog", { name: "Leave this game?" });
+    await user.click(within(dialog).getByRole("button", { name: "Exit game" }));
+    expect(window.location.pathname).toBe("/games/");
+    expect(loadChessGame()).toBeNull();
+  });
+
+  it("offers the way back to the games once a game is over", async () => {
+    saved(["e2e4", "e7e5"], "computer");
+    const user = userEvent.setup();
+    render(<ChessPage />);
+    await user.click(screen.getByRole("button", { name: "Resign" }));
+    await user.click(within(screen.getByRole("dialog", { name: "Resign this game?" })).getByRole("button", { name: "Resign" }));
+    const result = screen.getByRole("dialog", { name: "Game over" });
+    expect(result).toHaveTextContent("Computer wins");
+    await user.click(within(result).getByRole("button", { name: "Back to games" }));
+    expect(window.location.pathname).toBe("/games/");
+  });
+
   it("asks what a pawn becomes", async () => {
     saved(["h2h4", "g7g5", "h4g5", "g8f6", "g5f6", "h8g8", "f6e7", "a7a6"]);
     const user = userEvent.setup();

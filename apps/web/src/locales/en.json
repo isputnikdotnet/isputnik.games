@@ -284,6 +284,7 @@
     "offerDraw": "Agree a draw",
     "resign": "Resign",
     "newGame": "New game",
+    "exit": "Exit game",
     "taken": "Pieces taken",
     "end": {
       "winner": "{{player}} wins",
@@ -298,7 +299,8 @@
       "reasonAgreed": "Drawn by agreement.",
       "reasonResigned": "{{player}} resigned.",
       "again": "Play again",
-      "change": "Change settings"
+      "change": "Change settings",
+      "toLobby": "Back to games"
     },
     "confirmDraw": {
       "title": "Call it a draw?",
@@ -316,6 +318,12 @@
       "title": "Start a new game?",
       "body": "The game in progress is abandoned.",
       "confirm": "New game",
+      "cancel": "Keep playing"
+    },
+    "confirmExit": {
+      "title": "Leave this game?",
+      "body": "The game in progress is abandoned, and you go back to the games.",
+      "confirm": "Exit game",
       "cancel": "Keep playing"
     },
     "promote": {
