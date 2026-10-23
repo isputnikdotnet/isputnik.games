@@ -402,6 +402,150 @@ the old address under the new id.
 - **Home side**: the cards on For you name the game (`user:games.starbattle`);
   nothing else changed there.
 
+### Dominoes («Козёл») — planned 2026-10-23
+
+The courtyard game, for two: «Козёл» played from a boneyard. Game id
+`dominoes`. Owner decisions (2026-10-23): the «Козёл» draw game, not
+Western points or All Fives; against the computer and online only (hands
+are hidden, so no two-at-one-screen mode, as in Star Battle); classic ivory
+tiles on a felt table that follows the app theme, with no arena. Board
+styles like Chess's can come later.
+
+- **Rules (the variant to implement).**
+  - **Tiles and deal.** A double-six set, 28 tiles. Each player gets 7; the
+    other 14 are the boneyard («базар»).
+  - **First hand.** The player holding the lowest double leads it: 1:1, then
+    2:2 … 6:6, then 0:0 last, since it is worth nothing. If neither player
+    holds a double, the lowest tile leads. In each later hand, the winner of
+    the hand before leads with any tile.
+  - **A turn.** Play a tile that matches either open end. A double lies
+    crosswise and does not branch, since there is no spinner. A player who
+    cannot play draws one tile at a time until they can. With the boneyard
+    empty, a stuck player passes.
+  - **End of a hand.** A player who empties their hand wins it, and the other
+    player adds their pips to their running total. When no tile anywhere (either
+    hand or the boneyard) can match the line, the line is closed («рыба»): the
+    hand ends at once, the boneyard does not count, the lower pip count wins and
+    the higher hand's pips go to its holder. A lone 0:0 counts 25 when it is the last tile left in a hand.
+    A «рыба» with equal pips scores nothing, and the player who made the
+    last play leads the next hand.
+  - **End of the game.** Whoever reaches 101 is «козёл» and loses. The other
+    player wins.
+  - **Options.** Target 101 (default) or 51 for a quick game. This is the one
+    option, so both players share it.
+  - **House rules settled (owner, 2026-10-23):** an equal-pip «рыба» scores
+    nothing, the boneyard can be drawn to the last tile, and a lone 6:6
+    counts its 12 pips like any other tile.
+- **Moves.** `{kind: "play", tile, end: "left" | "right"}`, `{kind: "draw"}`
+  and `{kind: "pass"}`.
+  - A draw carries no tile: the next tile comes off the dealt order in the
+    state. Stored move lists therefore never reveal what was drawn.
+  - Drawing keeps the turn. The match's turn column and the home app's "your
+    move" count work unchanged.
+  - The end of a hand deals the next one inside the same `applyMove`.
+    Nothing waits on an "OK", and the web app shows a hand summary between
+    hands.
+- **Randomness, the one engine change.** Up to now every game's
+  `createGame(options)` was deterministic. Dominoes needs a shuffled deal
+  that the other player must not be able to work out.
+  - The plan: `createGame(options, seed?)`. Dominoes keeps the seed in its
+    state and deals hand *n* from `seededRandom(mix(seed, n))`, so
+    `applyMove` stays pure and a replay from options + moves (how
+    `matches.ts` rebuilds every match) yields the same deals. The other
+    games ignore the argument.
+  - The seed must never travel in `options`, because the server returns
+    those to both players. The server keeps it in a new
+    `match_secrets(match_id, seed)` table, a `CREATE TABLE IF NOT EXISTS` in
+    `schema.sql` with no column migration on `matches`. It draws the seed
+    with `crypto.randomInt` when the match is created and passes it to every
+    replay.
+  - A local game keeps the seed in its save on the device.
+- **Hidden information.** `viewFor(state, seat)` drops the seed and the
+  boneyard order, and reduces the other hand to a count.
+  - Finished hands are public: their revealed tiles and the pip count go into
+    a `hands` history in the state, as at a real table.
+  - `narrate` events are shared by both seats (the feed is built once per
+    match), so they carry nothing secret: `play` (tile, end), `draw` (no
+    tile), `pass`, and `hand` (winner, points, both pip counts, whether it
+    was a «рыба», the totals).
+  - A test plays a few hundred random games and checks that no view, event or
+    stored move names a tile the seat cannot see.
+- **Score.** `scoreOf` is the running penalty totals. They are the reverse of
+  every other game's score: lower is better.
+  - The lists outside the game (lobby cards, home's For you rows) show a bare
+    "12 – 54" today, which would read as the leader losing. They need an
+    optional `scoreSense: "penalty"` on `GameDefinition`, shown as
+    "12 / 54 of 101" or with the leader marked.
+  - To decide while building: the lobby only, or home's rows too.
+- **Computer opponent** (in the browser, local games only). It sees what a
+  player sees: its hand, the line, the counts, and which numbers the other
+  player was seen to lack. A draw or a pass on ends *a* and *b* proves the
+  other hand holds neither number.
+  - **Easy**: any legal tile, heaviest first now and then.
+  - **Normal**: a heuristic. Shed pips (doubles and heavy tiles early), keep
+    a spread of numbers in hand, and prefer ends the other player is known
+    to lack.
+  - **Hard**: sampling. Deal the unseen tiles into hands consistent with
+    what was learned, play each candidate out a few plies with the normal
+    policy, and keep the best average. The budget is about 150 ms, like
+    Chess.
+  - Measure the levels against each other over a few hundred hands before
+    calling them done, as Star Battle did.
+- **Web.** The folder is `games/dominoes/`.
+  - **`DominoTile`.** An SVG tile with pips, ivory on every theme. It comes
+    face up, face down, or as the selected / playable / dimmed state.
+  - **`DominoLine`.** The line of play, laid out from the lead tile and
+    snaking at the table's edges, with doubles crosswise. The layout is a
+    pure function from the tile list and the board size to positions, so it
+    has its own unit tests. It scales down as the line grows; 28 tiles is
+    the most it ever holds.
+  - **`DominoesTable`.** Shared by the local page and the match page, on
+    `GameStage`. The felt board shows the other hand face down along the top,
+    the boneyard pile with its count, and the player's hand along the bottom.
+  - **Playing a tile.** A tap selects a tile and lights the ends it fits. If
+    it fits only one end it plays at once; if it fits both, a tap on the
+    lit end plays it.
+  - **Draw and Pass** appear only when they are the legal moves. Drag and drop
+    can come later, as in Chess.
+  - **The panel.** The two totals as bars towards 101 (the «козёл» meter),
+    then the hand number, Comms and actions.
+  - **Hand summary dialog.** Both hands revealed, the pips, who collects
+    them, and the new totals. «Рыба» gets its own line.
+  - **Phone.** The hand becomes a horizontally scrolling row under the
+    board.
+  - **Shell.** The page opens on a menu with **New game** as a dialog
+    (target, who leads, level), and **Exit game** is there throughout, as in
+    Star Battle.
+  - **Comms lines**: "You played 6:4 on the right", "Computer drew 3" (runs
+    of draws fold into one line), "Fish! 23 v 31", "Hand 3: you went out,
+    Computer collects 17 (54)". A tile-click cue goes into `shared/sound.ts`.
+  - **Catalog.** An entry with modes `computer` and `online`, `newUntil`, and
+    a lobby preview in `games/previews.tsx`. Lucide has no domino icon, so
+    either use `RectangleVertical` or let `CatalogEntry.icon` take a small
+    custom SVG.
+  - **Locales.** A `dominoes.*` section in en and ru. In Russian the game is
+    «Домино (Козёл)», and «рыба» and «базар» stay as they are.
+- **Server.** Register the game, add `match_secrets`, and pass the seed
+  through `createGame` everywhere `matches.ts` replays.
+  - Computer results and the family leaderboard need nothing new: the game
+    `key` and `useComputerResult` are shared.
+  - Guest links work for any online game.
+- **Home side.** `gameName()` in `GameRows.tsx` and `user:games.dominoes` (en and
+  ru), plus the penalty-score display if it reaches home's rows.
+- **Order of work.**
+  1. Engine: rules and the seed argument, with tests for the deal, the
+     leads, the draws, «рыба», scoring, `viewFor` leaks and replay
+     determinism. **Built 2026-10-23**: `packages/engine/src/dominoes/`,
+     `createGame(options, seed?)` and `scoreSense` on `GameDefinition`, the game in
+     the registry (creating an online match answers 400 until the server passes a
+     seed), `test/dominoes-rules.test.ts`.
+  2. AI: easy, normal, hard, with measurements.
+  3. Web against the computer, after a mock of the table on canvas agreed
+     with the owner (as for Star Battle and the game stage).
+  4. Online: `match_secrets`, the match page, the score display.
+  5. Home: name and score.
+  6. Release: games minor and home patch.
+
 ## Guests — playing by link (built 2026-10-23)
 
 A member can invite someone with no account here — a friend, a cousin abroad —

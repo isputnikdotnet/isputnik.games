@@ -11,3 +11,6 @@ export * as Chess from "./chess/index.js";
 export { chess } from "./chess/index.js";
 export type { ChessMove, ChessOptions, ChessState, ChessMoveNote, Promotion } from "./chess/rules.js";
 export type { ChessPuzzle, PuzzleLevel, PuzzleAnswer } from "./chess/puzzles.js";
+export * as Dominoes from "./dominoes/index.js";
+export { dominoes } from "./dominoes/index.js";
+export type { DominoesMove, DominoesOptions, DominoesState, Tile, LaidTile, HandResult, End, Target as DominoesTarget } from "./dominoes/rules.js";

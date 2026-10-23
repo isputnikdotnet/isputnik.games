@@ -5,11 +5,12 @@ import type { GameDefinition, GameStatus } from "./game.js";
 import { dots } from "./dots/index.js";
 import { starbattle } from "./starbattle/index.js";
 import { chess } from "./chess/index.js";
+import { dominoes } from "./dominoes/index.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- each game has its own option/state/move shapes
 export type AnyGame = GameDefinition<any, { status: GameStatus }, any>;
 
-export const GAMES: readonly AnyGame[] = [dots, starbattle, chess];
+export const GAMES: readonly AnyGame[] = [dots, starbattle, chess, dominoes];
 
 export const GAME_IDS = GAMES.map((game) => game.id);
 

@@ -66,8 +66,11 @@ export interface GameDefinition<O, S extends { status: GameStatus }, M> {
   /** The same for a move. Throws on a malformed one; whether it is legal in the
    *  position is applyMove's question. */
   parseMove(input: unknown): M;
-  /** Throws on options outside what the game allows. */
-  createGame(options: O): S;
+  /** Throws on options outside what the game allows. A game that deals at
+   *  random (Dominoes) needs `seed` and keeps it in its state, so a replay of
+   *  options + moves deals the same tiles; the seed is a secret its viewFor
+   *  drops, and never part of the options. Other games ignore it. */
+  createGame(options: O, seed?: number): S;
   legalMoves(state: S): M[];
   /** Returns the next state; throws IllegalMoveError. Never mutates `state`. */
   applyMove(state: S, move: M): S;
@@ -76,6 +79,9 @@ export interface GameDefinition<O, S extends { status: GameStatus }, M> {
   /** The running score per seat, for match lists that know nothing of the game
    *  (captures in Dots). Omitted when the game keeps no score. */
   scoreOf?(state: S): [number, number];
+  /** "penalty" when a lower score is better (Dominoes collects points towards
+   *  losing); omitted means a higher score is better. */
+  scoreSense?: "points" | "penalty";
   /** The state as one seat may see it, for games with hidden information (a
    *  fleet in Star Battle). The server sends each player their view and never
    *  the whole state; a game without secrets omits it. */
@@ -90,9 +96,10 @@ export interface GameDefinition<O, S extends { status: GameStatus }, M> {
 export function narrateMoves<O, S extends { status: GameStatus }, M>(
   game: GameDefinition<O, S, M>,
   options: O,
-  moves: readonly M[]
+  moves: readonly M[],
+  seed?: number
 ): { state: S; events: GameEvent[] } {
-  let state = game.createGame(options);
+  let state = game.createGame(options, seed);
   const events: GameEvent[] = [];
   for (const move of moves) {
     const next = game.applyMove(state, move);
