@@ -44,6 +44,13 @@ describe("ChessPage", () => {
     await user.click(screen.getByRole("button", { name: "Two players, one screen" }));
     await user.click(screen.getByRole("button", { name: "Start game" }));
     expect(screen.getByRole("status")).toHaveTextContent("White to move");
+    // Light on the right: a1 and h8 dark, h1 and a8 light; each queen on her own colour.
+    expect(square("a1")).toHaveClass("is-dark");
+    expect(square("h1")).toHaveClass("is-light");
+    expect(square("a8")).toHaveClass("is-light");
+    expect(square("h8")).toHaveClass("is-dark");
+    expect(square("d1")).toHaveClass("is-light");
+    expect(square("d8")).toHaveClass("is-dark");
 
     await user.click(square("e2"));
     expect(square("e2")).toHaveAttribute("aria-pressed", "true");

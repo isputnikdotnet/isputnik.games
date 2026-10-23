@@ -66,7 +66,9 @@ export function ChessBoard({
           files.map((file, column) => {
             const square = `${file}${rank}`;
             const piece = Chess.pieceAt(state, square);
-            const light = (FILES.indexOf(file) + rank) % 2 === 1;
+            // a1 is dark, h1 light ("light on the right"): with a = 0 and rank 1,
+            // an odd sum is a dark square.
+            const light = (FILES.indexOf(file) + rank) % 2 === 0;
             const target = targets.includes(square);
             const classes = [
               "chess-square",

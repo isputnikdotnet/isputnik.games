@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!--
+  Unraid Community Applications repository profile — read by CA from the repo
+  root alongside isputnik-games.xml. A DEPLOYMENT artifact, not source. DO NOT DELETE.
+-->
+<CommunityApplications>
+  <Profile>
+isputnik.games adds family games to isputnik.home: Dots, Star Battle and Chess, played two on one screen, against the computer, or online between family members. It is a companion container with no sign-in of its own; it runs beside the isputnik container on a shared Docker network and the games open inside isputnik.home. Report problems and ask questions on GitHub issues.
+  </Profile>
+  <Icon>https://raw.githubusercontent.com/isputnikdotnet/isputnik.games/main/Assets/icon.png</Icon>
+  <WebPage>https://github.com/isputnikdotnet/isputnik.games</WebPage>
+</CommunityApplications>
