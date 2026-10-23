@@ -66,7 +66,21 @@
       "you": "{{name}} (you)",
       "emptyMonth": "No online games finished this month yet.",
       "empty": "No online games finished yet.",
-      "note": "Online games between members. Games against the computer, and with guests, don’t count."
+      "note": "Online games between members. Games against the computer, and with guests, don’t count.",
+      "whose": "Whose games",
+      "tabEach": "Each other",
+      "tabComputer": "vs Computer",
+      "score": "Score",
+      "wonOf": "{{won}} / {{played}}",
+      "best": "Beat {{level}} in {{game}}",
+      "levels": {
+        "easy": "Easy",
+        "normal": "Normal",
+        "hard": "Hard"
+      },
+      "computerEmptyMonth": "No games against the computer finished this month yet.",
+      "computerEmpty": "No games against the computer finished yet.",
+      "computerNote": "A win on Easy scores 1, on Normal 2, on Hard 3. Games against the computer on any device; two at one screen doesn’t count."
     },
     "month": {
       "title": "Your month",

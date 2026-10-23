@@ -1,4 +1,5 @@
 import { StarBattle, type AiLevel, type FleetKind, type PlayerIndex, type StarBattleMove, type StarBattleState } from "@isputnik/games-engine";
+import { newGameKey } from "../../shared/gameKey";
 
 // The game in progress on this device, so a refresh or a locked phone does not
 // lose it. Only the setup and the move list are stored (the fleets are the
@@ -16,12 +17,15 @@ export interface StarBattleSetup {
 
 export interface SavedStarBattleGame {
   setup: StarBattleSetup;
+  /** The game's own id (shared/gameKey); a save from before 0.12.0 has none. */
+  key?: string;
   moves: StarBattleMove[];
   finished: null | { reason: "agreed" | "resigned"; resigning?: PlayerIndex };
 }
 
 export interface LoadedStarBattleGame {
   setup: StarBattleSetup;
+  key: string;
   moves: StarBattleMove[];
   state: StarBattleState;
 }
@@ -40,6 +44,11 @@ function isSetup(value: unknown): value is StarBattleSetup {
     && (s.level === "easy" || s.level === "normal" || s.level === "hard");
 }
 
+/** A save's key, or a new one for a save from before games had keys. */
+function savedKey(key: unknown): string {
+  return typeof key === "string" && key.length >= 8 ? key : newGameKey();
+}
+
 export function loadStarBattleGame(): LoadedStarBattleGame | null {
   try {
     const raw = localStorage.getItem(KEY);
@@ -49,7 +58,7 @@ export function loadStarBattleGame(): LoadedStarBattleGame | null {
     const moves = saved.moves.map((move) => StarBattle.parseMove(move));
     let state = StarBattle.replay({ fleet: saved.setup.fleet }, moves);
     if (saved.finished) state = StarBattle.finish(state, saved.finished.reason, saved.finished.resigning);
-    return { setup: saved.setup, moves, state };
+    return { setup: saved.setup, key: savedKey(saved.key), moves, state };
   } catch {
     return null;
   }
@@ -59,7 +68,7 @@ export function saveStarBattleGame(game: LoadedStarBattleGame): void {
   const finished = game.state.status.kind === "finished" && (game.state.status.reason === "agreed" || game.state.status.reason === "resigned")
     ? { reason: game.state.status.reason, resigning: game.state.status.winner === null ? undefined : (game.state.status.winner === 0 ? 1 : 0) as PlayerIndex }
     : null;
-  const saved: SavedStarBattleGame = { setup: game.setup, moves: game.moves, finished };
+  const saved: SavedStarBattleGame = { setup: game.setup, key: game.key, moves: game.moves, finished };
   try {
     localStorage.setItem(KEY, JSON.stringify(saved));
   } catch {

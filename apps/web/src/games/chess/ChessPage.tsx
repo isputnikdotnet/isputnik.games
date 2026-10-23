@@ -6,6 +6,7 @@ import { Choice } from "../../shared/Choice";
 import { Comms } from "../../shared/Comms";
 import { useFeed } from "../../shared/useFeed";
 import { localSound, useGameSounds } from "../../shared/useGameSounds";
+import { useComputerResult } from "../../shared/useComputerResult";
 import type { CommsLine } from "../../shared/commsLines";
 import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
@@ -37,6 +38,9 @@ export function ChessPage() {
   const feed = useFeed(chess, {}, game?.state.moves ?? NO_MOVES);
   const me = game ? humanSeat(game.setup) : null;
   useGameSounds(game && localSound("chess", feed, me, game.state.status));
+  useComputerResult(game && me !== null && game.state.status.kind === "finished"
+    ? { game: "chess", key: game.key, level: game.setup.level, human: me, winner: game.state.status.winner }
+    : null);
 
   const seatName = (setup: ChessSetup, seat: PlayerIndex) =>
     isComputerSeat(setup, seat) ? t("chess.players.computer") : t(seat === 0 ? "chess.players.white" : "chess.players.black");

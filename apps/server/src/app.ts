@@ -1,7 +1,7 @@
 import fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest, type FastifyServerOptions } from "fastify";
 import staticFiles from "@fastify/static";
 import { z } from "zod";
-import { GAME_IDS } from "@isputnik/games-engine";
+import { AI_LEVELS, GAME_IDS, type AiLevel } from "@isputnik/games-engine";
 import { BASE_PATH } from "./config.js";
 import { openDatabase } from "./db.js";
 import {
@@ -30,7 +30,7 @@ import {
   summaryFor,
   type Member
 } from "./matches.js";
-import { familyStats } from "./stats.js";
+import { familyStats, recordComputerResult } from "./stats.js";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -84,6 +84,15 @@ const statsQuerySchema = z.object({
     .refine((value) => !Number.isNaN(Date.parse(value)), "since must be a date")
     .transform((value) => new Date(value).toISOString())
     .optional()
+});
+
+// A game against the computer, finished in the browser. The key is the
+// browser's own id for that game, so reporting it again changes nothing.
+const computerResultSchema = z.object({
+  game: z.string().refine((game) => GAME_IDS.includes(game), "unknown game"),
+  level: z.enum(AI_LEVELS as [AiLevel, ...AiLevel[]]),
+  result: z.enum(["won", "lost", "drawn"]),
+  key: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/)
 });
 
 const messageSchema = z.object({
@@ -275,6 +284,15 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     if (request.identity!.role === "guest") return reply.code(403).send({ error: "Guests have no family results" });
     const { since } = statsQuerySchema.parse(request.query ?? {});
     return familyStats(db, request.identity!.id, since);
+  });
+
+  // A finished game against the computer, for the leaderboard's vs Computer
+  // tab. A guest's games are not the family's results.
+  app.post(`${API}/computer-results`, { preHandler: requireIdentity }, async (request, reply) => {
+    if (request.identity!.role === "guest") return reply.code(403).send({ error: "Guests have no family results" });
+    const input = computerResultSchema.parse(request.body ?? {});
+    const recorded = recordComputerResult(db, request.identity!.id, input);
+    return reply.code(recorded ? 201 : 200).send({ recorded });
   });
 
   app.post(`${API}/matches`, { preHandler: requireMember }, async (request, reply) => {

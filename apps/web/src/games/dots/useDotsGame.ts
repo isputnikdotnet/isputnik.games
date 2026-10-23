@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { newGameKey } from "../../shared/gameKey";
 import { Dots, type DotsMove, type PlayerIndex } from "@isputnik/games-engine";
 import { clearDotsGame, loadDotsGame, saveDotsGame, saveDotsSetup, type DotsSetup, type LoadedDotsGame } from "./storage";
 
@@ -37,14 +38,14 @@ export function useDotsGame(): DotsGameController {
 
   const start = useCallback((setup: DotsSetup) => {
     saveDotsSetup(setup);
-    update({ setup, state: Dots.createGame({ size: setup.size, targetCaptures: setup.targetCaptures }) });
+    update({ setup, key: newGameKey(), state: Dots.createGame({ size: setup.size, targetCaptures: setup.targetCaptures }) });
   }, [update]);
 
   const place = useCallback((move: DotsMove) => {
     setGame((current) => {
       if (!current || current.state.status.kind !== "playing") return current;
       if (!Dots.isPlayable(current.state, move.x, move.y)) return current;
-      const next = { setup: current.setup, state: Dots.applyMove(current.state, move) };
+      const next = { ...current, state: Dots.applyMove(current.state, move) };
       saveDotsGame(next);
       return next;
     });
@@ -60,7 +61,7 @@ export function useDotsGame(): DotsGameController {
         && isComputerSeat(current.setup, state.status.turn) && state.moves.length > 0) {
         state = Dots.undoMove(state);
       }
-      const next = { setup: current.setup, state };
+      const next = { ...current, state };
       saveDotsGame(next);
       return next;
     });
@@ -69,7 +70,7 @@ export function useDotsGame(): DotsGameController {
   const end = useCallback(() => {
     setGame((current) => {
       if (!current || current.state.status.kind !== "playing") return current;
-      const next = { setup: current.setup, state: Dots.finish(current.state, "agreed") };
+      const next = { ...current, state: Dots.finish(current.state, "agreed") };
       saveDotsGame(next);
       return next;
     });

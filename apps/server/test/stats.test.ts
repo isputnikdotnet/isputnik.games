@@ -3,7 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { buildApp } from "../src/app.js";
 import { openDatabase, type Db } from "../src/db.js";
 import { answerInvitation, createMatch, playMove, rememberMember, resign } from "../src/matches.js";
-import { familyStats, monthStart } from "../src/stats.js";
+import { familyStats, monthStart, recordComputerResult } from "../src/stats.js";
 
 const mum = { id: "mum", name: "Мама" };
 const dad = { id: "dad", name: "Dad" };
@@ -83,6 +83,43 @@ describe("family stats", () => {
   });
 });
 
+describe("results against the computer", () => {
+  let n = 0;
+  const vsComputer = (id: string, game: string, level: "easy" | "normal" | "hard", result: "won" | "lost" | "drawn", at?: string) => {
+    const key = `game-key-${++n}`;
+    recordComputerResult(db, id, { game, level, result, key });
+    if (at) db.prepare("UPDATE computer_results SET finished_at = ? WHERE game_key = ?").run(at, key);
+    return key;
+  };
+
+  it("scores a win by its level and keeps the hardest level beaten", () => {
+    vsComputer("kid", "chess", "hard", "won");
+    vsComputer("kid", "chess", "easy", "won");
+    vsComputer("kid", "chess", "normal", "lost");
+    vsComputer("kid", "chess", "normal", "drawn");
+    vsComputer("mum", "dots", "normal", "won");
+    const stats = familyStats(db, "mum");
+    expect(row(stats.computer.all, "kid", "chess")).toMatchObject({ name: "Kid", played: 4, won: 2, drawn: 1, score: 4, best: "hard" });
+    expect(row(stats.computer.all, "mum", "dots")).toMatchObject({ played: 1, won: 1, score: 2, best: "normal" });
+    // Games against the computer are not on the Each other board.
+    expect(stats.all).toEqual([]);
+  });
+
+  it("counts a game from before the month for all time only", () => {
+    vsComputer("dad", "starbattle", "easy", "won", "2026-01-15T12:00:00.000Z");
+    vsComputer("dad", "starbattle", "easy", "lost");
+    const stats = familyStats(db, "dad", monthStart());
+    expect(row(stats.computer.month, "dad", "starbattle")).toMatchObject({ played: 1, won: 0, score: 0, best: null });
+    expect(row(stats.computer.all, "dad", "starbattle")).toMatchObject({ played: 2, won: 1, score: 1, best: "easy" });
+  });
+
+  it("keeps one result per game key and member", () => {
+    expect(recordComputerResult(db, "mum", { game: "dots", level: "hard", result: "won", key: "same-key-1" })).toBe(true);
+    expect(recordComputerResult(db, "mum", { game: "dots", level: "hard", result: "won", key: "same-key-1" })).toBe(false);
+    expect(row(familyStats(db, "mum").computer.all, "mum", "dots")).toMatchObject({ played: 1, score: 3 });
+  });
+});
+
 describe("stats API", () => {
   const SECRET = "s3cret-s3cret-s3cret";
   const as = (id: string, name: string, role = "member", extra: Record<string, string> = {}) => ({
@@ -103,7 +140,7 @@ describe("stats API", () => {
   it("answers a member, from the month start they send", async () => {
     const reply = await app.inject({ method: "GET", url: "/games/api/stats?since=2026-10-01T05:00:00.000Z", headers: as("mum", "Мама") });
     expect(reply.statusCode).toBe(200);
-    expect(reply.json()).toEqual({ since: "2026-10-01T05:00:00.000Z", month: [], all: [], streak: 0 });
+    expect(reply.json()).toEqual({ since: "2026-10-01T05:00:00.000Z", month: [], all: [], streak: 0, computer: { month: [], all: [] } });
   });
 
   it("refuses a bad date, a guest, and nobody at all", async () => {
@@ -111,5 +148,26 @@ describe("stats API", () => {
     const asGuest = as("guest_abc123def456", "Alex", "guest", { "x-isputnik-guest-match": "m1234567890abcde" });
     expect((await app.inject({ method: "GET", url: "/games/api/stats", headers: asGuest })).statusCode).toBe(403);
     expect((await app.inject({ method: "GET", url: "/games/api/stats" })).statusCode).toBe(401);
+  });
+
+  it("takes a member's game against the computer once, and it shows on the vs Computer board", async () => {
+    const body = { game: "chess", level: "hard", result: "won", key: "k-12345678" };
+    const first = await app.inject({ method: "POST", url: "/games/api/computer-results", headers: as("kid", "Kid"), payload: body });
+    expect(first.statusCode).toBe(201);
+    const again = await app.inject({ method: "POST", url: "/games/api/computer-results", headers: as("kid", "Kid"), payload: body });
+    expect(again.statusCode).toBe(200);
+    expect(again.json()).toEqual({ recorded: false });
+    const stats = (await app.inject({ method: "GET", url: "/games/api/stats", headers: as("mum", "Мама") })).json();
+    expect(stats.computer.all).toEqual([{ id: "kid", name: "Kid", game: "chess", played: 1, won: 1, drawn: 0, score: 3, best: "hard" }]);
+  });
+
+  it("refuses an unknown game or level, a bad key, and a guest", async () => {
+    const post = (payload: object, headers = as("kid", "Kid")) =>
+      app.inject({ method: "POST", url: "/games/api/computer-results", headers, payload });
+    expect((await post({ game: "poker", level: "hard", result: "won", key: "k-12345678" })).statusCode).toBe(400);
+    expect((await post({ game: "dots", level: "insane", result: "won", key: "k-12345678" })).statusCode).toBe(400);
+    expect((await post({ game: "dots", level: "easy", result: "won", key: "x" })).statusCode).toBe(400);
+    const asGuest = as("guest_abc123def456", "Alex", "guest", { "x-isputnik-guest-match": "m1234567890abcde" });
+    expect((await post({ game: "dots", level: "easy", result: "won", key: "k-12345678" }, asGuest)).statusCode).toBe(403);
   });
 });

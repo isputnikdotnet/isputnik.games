@@ -66,3 +66,20 @@ CREATE TABLE IF NOT EXISTS events (
 
 CREATE INDEX IF NOT EXISTS events_at ON events (at DESC);
 CREATE INDEX IF NOT EXISTS events_event ON events (event, at DESC);
+
+-- A game against the computer, played in a member's browser and reported here
+-- when it ends, for the family leaderboard's vs Computer tab. The game itself
+-- never reaches the server; game_key is the browser's id for it, so a result
+-- reported twice (a reload of the finished game) is kept once.
+CREATE TABLE IF NOT EXISTS computer_results (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  member_id   TEXT NOT NULL,
+  game        TEXT NOT NULL,
+  level       TEXT NOT NULL CHECK (level IN ('easy', 'normal', 'hard')),
+  result      TEXT NOT NULL CHECK (result IN ('won', 'lost', 'drawn')),
+  game_key    TEXT NOT NULL,
+  finished_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  UNIQUE (member_id, game_key)
+);
+
+CREATE INDEX IF NOT EXISTS computer_results_at ON computer_results (finished_at DESC);

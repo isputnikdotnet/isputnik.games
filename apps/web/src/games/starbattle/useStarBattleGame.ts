@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { newGameKey } from "../../shared/gameKey";
 import { StarBattle, type PlayerIndex, type StarBattleMove } from "@isputnik/games-engine";
 import {
   clearStarBattleGame,
@@ -44,7 +45,7 @@ export function useStarBattleGame(): StarBattleGameController {
 
   const start = useCallback((setup: StarBattleSetup) => {
     saveStarBattleSetup(setup);
-    update({ setup, moves: [], state: StarBattle.createGame({ fleet: setup.fleet }) });
+    update({ setup, key: newGameKey(), moves: [], state: StarBattle.createGame({ fleet: setup.fleet }) });
   }, [update]);
 
   const play = useCallback((move: StarBattleMove) => {
@@ -56,7 +57,7 @@ export function useStarBattleGame(): StarBattleGameController {
       } catch {
         return current;
       }
-      const next = { setup: current.setup, moves: [...current.moves, move], state };
+      const next = { ...current, moves: [...current.moves, move], state };
       saveStarBattleGame(next);
       return next;
     });

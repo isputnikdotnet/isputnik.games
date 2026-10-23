@@ -1,4 +1,5 @@
 import { Dots, type AiLevel, type DotsMove, type DotsState, type PlayerIndex } from "@isputnik/games-engine";
+import { newGameKey } from "../../shared/gameKey";
 
 // The game in progress on this device, so a refresh or a locked phone does not
 // lose it. Only the setup and the move list are stored; the position is replayed
@@ -18,12 +19,15 @@ export interface DotsSetup {
 
 export interface SavedDotsGame {
   setup: DotsSetup;
+  /** The game's own id (shared/gameKey); a save from before 0.12.0 has none. */
+  key?: string;
   moves: DotsMove[];
   finished: null | { reason: "agreed" | "resigned"; resigning?: PlayerIndex };
 }
 
 export interface LoadedDotsGame {
   setup: DotsSetup;
+  key: string;
   state: DotsState;
 }
 
@@ -45,6 +49,11 @@ function isSetup(value: unknown): value is DotsSetup {
     && (s.level === "easy" || s.level === "normal" || s.level === "hard");
 }
 
+/** A save's key, or a new one for a save from before games had keys. */
+function savedKey(key: unknown): string {
+  return typeof key === "string" && key.length >= 8 ? key : newGameKey();
+}
+
 export function loadDotsGame(): LoadedDotsGame | null {
   try {
     const raw = localStorage.getItem(KEY);
@@ -53,7 +62,7 @@ export function loadDotsGame(): LoadedDotsGame | null {
     if (!isSetup(saved.setup) || !Array.isArray(saved.moves)) return null;
     let state = Dots.replay({ size: saved.setup.size, targetCaptures: saved.setup.targetCaptures }, saved.moves as DotsMove[]);
     if (saved.finished) state = Dots.finish(state, saved.finished.reason, saved.finished.resigning);
-    return { setup: saved.setup, state };
+    return { setup: saved.setup, key: savedKey(saved.key), state };
   } catch {
     return null;
   }
@@ -63,7 +72,7 @@ export function saveDotsGame(game: LoadedDotsGame): void {
   const finished = game.state.status.kind === "finished" && (game.state.status.reason === "agreed" || game.state.status.reason === "resigned")
     ? { reason: game.state.status.reason }
     : null;
-  const saved: SavedDotsGame = { setup: game.setup, moves: game.state.moves, finished };
+  const saved: SavedDotsGame = { setup: game.setup, key: game.key, moves: game.state.moves, finished };
   try {
     localStorage.setItem(KEY, JSON.stringify(saved));
   } catch {

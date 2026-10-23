@@ -1,7 +1,7 @@
 // The games API, under the same /games prefix the pages live at. The home gateway
 // authenticates every call; this module only needs to echo its CSRF token on
 // state-changing requests, the way the home SPA does.
-import type { GameEvent, GameStatus, PlayerIndex } from "@isputnik/games-engine";
+import type { AiLevel, GameEvent, GameStatus, PlayerIndex } from "@isputnik/games-engine";
 
 export const API_BASE = "/games/api";
 
@@ -132,11 +132,34 @@ export interface FamilyStats {
   all: StatsRow[];
   /** The asking member's current run of wins. */
   streak: number;
+  /** Games against the computer, the same two periods (the leaderboard's vs Computer tab). */
+  computer: { month: ComputerRow[]; all: ComputerRow[] };
+}
+
+/** One member's games against the computer in one game. */
+export interface ComputerRow extends StatsRow {
+  /** Points for wins: Easy 1, Normal 2, Hard 3. */
+  score: number;
+  /** The hardest level beaten, if any. */
+  best: AiLevel | null;
 }
 
 /** `since` is where "this month" begins for this reader: their own midnight on the 1st. */
 export async function fetchStats(since: string): Promise<FamilyStats> {
   return apiFetch<FamilyStats>(`/stats?since=${encodeURIComponent(since)}`);
+}
+
+export interface ComputerResult {
+  game: string;
+  level: AiLevel;
+  result: "won" | "lost" | "drawn";
+  /** The local game's own id: the server keeps one result per key. */
+  key: string;
+}
+
+/** A game against the computer has ended on this device. */
+export function reportComputerResult(result: ComputerResult): Promise<{ recorded: boolean }> {
+  return post<{ recorded: boolean }>("/computer-results", result);
 }
 
 // ── Online matches ───────────────────────────────────────────────────────────

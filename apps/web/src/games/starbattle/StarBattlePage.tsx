@@ -10,6 +10,7 @@ import { GameStage } from "../../shared/GameStage";
 import { useArena } from "../../shared/useArena";
 import { useFeed } from "../../shared/useFeed";
 import { localSound, useGameSounds } from "../../shared/useGameSounds";
+import { useComputerResult } from "../../shared/useComputerResult";
 import type { CommsLine } from "../../shared/commsLines";
 import { PHONE_ARENA, useMediaQuery } from "../../shared/useMediaQuery";
 import { href, navigate } from "../../router";
@@ -38,6 +39,10 @@ export function StarBattlePage() {
   const [resultDismissed, setResultDismissed] = useState<string | null>(null);
   const feed = useFeed(starbattle, { fleet: game?.setup.fleet ?? "classic" }, game?.moves ?? NO_MOVES);
   useGameSounds(game && localSound("starbattle", feed, otherPlayer(game.setup.computerPlays), game.state.status));
+  // Star Battle here is always against the computer.
+  useComputerResult(game && game.state.status.kind === "finished"
+    ? { game: "starbattle", key: game.key, level: game.setup.level, human: otherPlayer(game.setup.computerPlays), winner: game.state.status.winner }
+    : null);
 
   const begin = (setup: StarBattleSetup) => {
     setSettingUp(false);

@@ -1,4 +1,5 @@
 import { Chess, type AiLevel, type ChessMove, type ChessState, type PlayerIndex } from "@isputnik/games-engine";
+import { newGameKey } from "../../shared/gameKey";
 
 // The game in progress on this device, so a refresh or a locked phone does not
 // lose it. Only the setup and the move list are stored; the position is replayed
@@ -17,12 +18,15 @@ export interface ChessSetup {
 
 export interface SavedChessGame {
   setup: ChessSetup;
+  /** The game's own id (shared/gameKey); a save from before 0.12.0 has none. */
+  key?: string;
   moves: ChessMove[];
   finished: null | { reason: "agreed" | "resigned"; resigning?: PlayerIndex };
 }
 
 export interface LoadedChessGame {
   setup: ChessSetup;
+  key: string;
   state: ChessState;
 }
 
@@ -36,6 +40,11 @@ function isSetup(value: unknown): value is ChessSetup {
     && (s.level === "easy" || s.level === "normal" || s.level === "hard");
 }
 
+/** A save's key, or a new one for a save from before games had keys. */
+function savedKey(key: unknown): string {
+  return typeof key === "string" && key.length >= 8 ? key : newGameKey();
+}
+
 export function loadChessGame(): LoadedChessGame | null {
   try {
     const raw = localStorage.getItem(KEY);
@@ -44,7 +53,7 @@ export function loadChessGame(): LoadedChessGame | null {
     if (!isSetup(saved.setup) || !Array.isArray(saved.moves)) return null;
     let state = Chess.replay(saved.moves.map((move) => Chess.parseMove(move)));
     if (saved.finished) state = Chess.finish(state, saved.finished.reason, saved.finished.resigning);
-    return { setup: saved.setup, state };
+    return { setup: saved.setup, key: savedKey(saved.key), state };
   } catch {
     return null;
   }
@@ -55,7 +64,7 @@ export function saveChessGame(game: LoadedChessGame): void {
   const finished = status.kind === "finished" && (status.reason === "agreed" || status.reason === "resigned")
     ? { reason: status.reason, resigning: status.winner === null ? undefined : (status.winner === 0 ? 1 : 0) as PlayerIndex }
     : null;
-  const saved: SavedChessGame = { setup: game.setup, moves: game.state.moves, finished };
+  const saved: SavedChessGame = { setup: game.setup, key: game.key, moves: game.state.moves, finished };
   try {
     localStorage.setItem(KEY, JSON.stringify(saved));
   } catch {

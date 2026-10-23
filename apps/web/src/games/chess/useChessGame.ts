@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { newGameKey } from "../../shared/gameKey";
 import { Chess, type AiLevel, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
 import { clearChessGame, loadChessGame, loadChessSetup, saveChessGame, saveChessSetup, type ChessSetup, type LoadedChessGame } from "./storage";
 
@@ -50,7 +51,7 @@ export function useChessGame(): ChessGameController {
 
   const start = useCallback((setup: ChessSetup) => {
     saveChessSetup(setup);
-    const next = { setup, state: Chess.createGame() };
+    const next = { setup, key: newGameKey(), state: Chess.createGame() };
     saveChessGame(next);
     setGame(next);
   }, []);
@@ -59,7 +60,7 @@ export function useChessGame(): ChessGameController {
     change((current) => {
       if (current.state.status.kind !== "playing") return null;
       try {
-        return { setup: current.setup, state: Chess.applyMove(current.state, played) };
+        return { ...current, state: Chess.applyMove(current.state, played) };
       } catch {
         return null;
       }
@@ -76,13 +77,13 @@ export function useChessGame(): ChessGameController {
         && isComputerSeat(current.setup, state.status.turn) && state.moves.length > 0) {
         state = Chess.undoMove(state);
       }
-      return { setup: current.setup, state };
+      return { ...current, state };
     });
   }, [change]);
 
   const agreeDraw = useCallback(() => {
     change((current) => (current.state.status.kind === "playing"
-      ? { setup: current.setup, state: Chess.finish(current.state, "agreed") }
+      ? { ...current, state: Chess.finish(current.state, "agreed") }
       : null));
   }, [change]);
 
@@ -91,13 +92,13 @@ export function useChessGame(): ChessGameController {
       const status = current.state.status;
       if (status.kind !== "playing") return null;
       const loser = humanSeat(current.setup) ?? status.turn;
-      return { setup: current.setup, state: Chess.finish(current.state, "resigned", loser) };
+      return { ...current, state: Chess.finish(current.state, "resigned", loser) };
     });
   }, [change]);
 
   const setLevel = useCallback((level: AiLevel) => {
     saveChessSetup({ ...loadChessSetup(), level });
-    change((current) => (current.setup.level === level ? null : { setup: { ...current.setup, level }, state: current.state }));
+    change((current) => (current.setup.level === level ? null : { ...current, setup: { ...current.setup, level } }));
   }, [change]);
 
   const abandon = useCallback(() => {
