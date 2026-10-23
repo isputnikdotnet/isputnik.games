@@ -15,3 +15,8 @@ export function useMediaQuery(query: string): boolean {
 
 /** The arena's phone layout: the breakpoint at which the two sectors stop fitting side by side. */
 export const PHONE_ARENA = "(max-width: 900px)";
+
+/** A phone: the width at which the tab bar shows (app.css .mobile-nav) and the
+ *  game pages trade their chrome for room — no way back above the title, no
+ *  description, a smaller scoreboard. */
+export const PHONE = "(max-width: 740px)";

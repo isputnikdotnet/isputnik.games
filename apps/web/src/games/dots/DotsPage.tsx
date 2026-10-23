@@ -9,7 +9,9 @@ import { dotsLines } from "./comms";
 import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
 import { follow, href } from "../../router";
+import { PHONE, useMediaQuery } from "../../shared/useMediaQuery";
 import { DotsBoard } from "./DotsBoard";
+import { DotsScoreboard } from "./DotsScoreboard";
 import { GameOverDialog } from "../../shared/GameOverDialog";
 import { NewGameForm } from "./NewGameForm";
 import { isComputerSeat, useDotsGame } from "./useDotsGame";
@@ -22,6 +24,7 @@ const NO_MOVES: DotsMove[] = [];
 export function DotsPage() {
   const { t } = useTranslation();
   const controller = useDotsGame();
+  const phone = useMediaQuery(PHONE);
   const [pending, setPending] = useState<Pending>(null);
   // The result dialog can be put aside to look at the final board; it stays
   // aside for that ending only (a new game's end shows it again).
@@ -75,21 +78,30 @@ export function DotsPage() {
     }
   })();
 
+  // The score and the status: beside the board on a desktop, above it on a phone.
+  const scoreboard = (
+    <DotsScoreboard
+      sides={[
+        { name: names[0], captures: state.captures[0], active: status.kind === "playing" && status.turn === 0 },
+        { name: names[1], captures: state.captures[1], active: status.kind === "playing" && status.turn === 1 }
+      ]}
+      statusLine={statusLine}
+      finished={finished}
+      reason={reason}
+      top={phone}
+    />
+  );
+
   return (
     <section className="dots-page">
       <PageHead title={t("games.dots.name")} />
       <div className="dots-layout">
+        {phone && scoreboard}
         <div className="dots-board-wrap">
           <DotsBoard state={state} onPlace={controller.place} disabled={!controller.humanToMove} />
         </div>
         <aside className="dots-side">
-          <div className="dots-score" aria-label={t("dots.captures")}>
-            <ScoreCell player={0} name={seatName(setup, 0)} captures={state.captures[0]} active={status.kind === "playing" && status.turn === 0} />
-            <span className="dots-score-colon">:</span>
-            <ScoreCell player={1} name={seatName(setup, 1)} captures={state.captures[1]} active={status.kind === "playing" && status.turn === 1} />
-          </div>
-          <p className={`dots-status${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
-          {reason && <p className="muted dots-reason">{reason}</p>}
+          {!phone && scoreboard}
           <div className="dots-actions">
             {!finished && (
               <>
@@ -163,15 +175,5 @@ function PageHead({ title }: { title: string }) {
       </a>
       <h1>{title}</h1>
     </header>
-  );
-}
-
-function ScoreCell({ player, name, captures, active }: { player: PlayerIndex; name: string; captures: number; active: boolean }) {
-  return (
-    <div className={`dots-score-cell is-p${player + 1}${active ? " is-active" : ""}`}>
-      <span className="dots-score-dot" aria-hidden="true" />
-      <span className="dots-score-name">{name}</span>
-      <strong className="dots-score-count">{captures}</strong>
-    </div>
   );
 }

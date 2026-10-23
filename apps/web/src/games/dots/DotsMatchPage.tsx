@@ -11,7 +11,9 @@ import { Dialog } from "../../shared/Dialog";
 import { MessageBox } from "../../shared/MessageBox";
 import { follow, href, navigate } from "../../router";
 import { useSession } from "../../session";
+import { PHONE, useMediaQuery } from "../../shared/useMediaQuery";
 import { DotsBoard } from "./DotsBoard";
+import { DotsScoreboard } from "./DotsScoreboard";
 import { GameOverDialog } from "../../shared/GameOverDialog";
 import { useMatch } from "./useMatch";
 
@@ -21,6 +23,7 @@ import { useMatch } from "./useMatch";
 export function DotsMatchPage({ matchId }: { matchId: string }) {
   const { t } = useTranslation();
   const session = useSession();
+  const phone = useMediaQuery(PHONE);
   const myId = session.status === "ready" ? session.user.id : "";
   const { match, error, refresh, adopt } = useMatch(matchId, myId);
   const [sending, setSending] = useState(false);
@@ -128,21 +131,30 @@ export function DotsMatchPage({ matchId }: { matchId: string }) {
   const talkable = match.status === "playing" || finished;
   const phrases = [t("comms.phrases.gg"), t("comms.phrases.nice"), t("comms.phrases.yourMove"), t("comms.phrases.rematch")];
 
+  // The score and the status: beside the board on a desktop, above it on a phone.
+  const scoreboard = (
+    <DotsScoreboard
+      sides={[
+        { name: match.players[0].name, captures: score[0], active: match.status === "playing" && match.turn === 0 },
+        { name: match.players[1].name, captures: score[1], active: match.status === "playing" && match.turn === 1 }
+      ]}
+      statusLine={statusLine}
+      finished={finished}
+      reason={reason}
+      top={phone}
+    />
+  );
+
   return (
     <section className="dots-page">
       <Head />
       <div className="dots-layout">
+        {phone && scoreboard}
         <div className="dots-board-wrap">
           <DotsBoard state={state} onPlace={(move) => void place(move)} disabled={!myMove || sending} />
         </div>
         <aside className="dots-side">
-          <div className="dots-score" aria-label={t("dots.captures")}>
-            <ScoreCell player={0} name={match.players[0].name} captures={score[0]} active={match.status === "playing" && match.turn === 0} />
-            <span className="dots-score-colon">:</span>
-            <ScoreCell player={1} name={match.players[1].name} captures={score[1]} active={match.status === "playing" && match.turn === 1} />
-          </div>
-          <p className={`dots-status${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
-          {reason && <p className="muted dots-reason">{reason}</p>}
+          {!phone && scoreboard}
           {moveError && <MessageBox tone="error" title={t("match.moveFailed")}>{moveError}</MessageBox>}
           <div className="dots-actions">
             {match.status === "playing" && (
@@ -203,16 +215,6 @@ function Head() {
       </a>
       <h1>{t("games.dots.name")}</h1>
     </header>
-  );
-}
-
-function ScoreCell({ player, name, captures, active }: { player: PlayerIndex; name: string; captures: number; active: boolean }) {
-  return (
-    <div className={`dots-score-cell is-p${player + 1}${active ? " is-active" : ""}`}>
-      <span className="dots-score-dot" aria-hidden="true" />
-      <span className="dots-score-name">{name}</span>
-      <strong className="dots-score-count">{captures}</strong>
-    </div>
   );
 }
 

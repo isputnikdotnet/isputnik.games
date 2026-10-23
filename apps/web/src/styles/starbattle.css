@@ -616,3 +616,85 @@ body[data-arena="star"] .setup-label {
     justify-content: center;
   }
 }
+
+/* ── A phone ───────────────────────────────────────────────────────────── */
+/* The screen is the board's: the title and the turn chip share one row (the
+   tab bar is the way back, the lobby card has the description), the chip and
+   the battle strip shrink to a line each. */
+@media (max-width: 740px) {
+  .star-page {
+    gap: var(--space-3);
+  }
+
+  .arena-head {
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .arena-title .text-link,
+  .arena-title p {
+    display: none;
+  }
+
+  .arena-title h1 {
+    font-size: var(--text-xl);
+  }
+
+  .arena-chip {
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-size: var(--text-sm);
+    box-shadow: none;
+  }
+
+  .arena-chip svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .arena-chip-sep {
+    height: 16px;
+  }
+
+  .arena-strip {
+    padding: 3px;
+  }
+
+  .arena-strip-half {
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: center;
+    align-items: center;
+    column-gap: 6px;
+    row-gap: 2px;
+    min-height: 0;
+    padding: 5px 4px;
+    border-radius: 9px;
+  }
+
+  .arena-strip-name {
+    grid-column: 1 / -1;
+    justify-self: center;
+    font-size: 10px;
+  }
+
+  .arena-strip-count {
+    font-size: var(--text-xs);
+    white-space: nowrap;
+  }
+
+  .arena-strip .arena-pips {
+    gap: 2px;
+  }
+
+  .arena-strip .arena-pip {
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+  }
+
+  .arena-boards.is-phone {
+    gap: var(--space-3);
+  }
+}
