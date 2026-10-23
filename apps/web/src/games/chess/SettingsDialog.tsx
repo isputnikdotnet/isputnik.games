@@ -1,5 +1,4 @@
 import { useTranslation } from "react-i18next";
-import type { AiLevel } from "@isputnik/games-engine";
 import { Button } from "../../shared/Button";
 import { Choice } from "../../shared/Choice";
 import { Dialog } from "../../shared/Dialog";
@@ -7,17 +6,23 @@ import { ChessPiece } from "./pieces";
 import { CHESS_THEMES, setChessTheme, useChessTheme, type ChessTheme } from "./theme";
 
 // The game's settings, one window off the stage so the panel keeps to the
-// game: against the computer its level, and always the board style — each
+// game: a level when there is one (the computer's, the puzzles'), and always
+// the board style — each
 // theme as a corner of its own board with a White and a Black piece, chosen
 // by looking rather than by name. Every change shows on the board at once.
-export function ChessSettingsDialog({
+export interface LevelChoice<T extends string> {
+  label: string;
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (value: T) => void;
+}
+
+export function ChessSettingsDialog<T extends string>({
   level,
-  onLevel,
   onClose
 }: {
-  /** Against the computer only; an online or one-screen game has no level. */
-  level?: AiLevel;
-  onLevel?: (level: AiLevel) => void;
+  /** Against the computer or in puzzles; an online or one-screen game has none. */
+  level?: LevelChoice<T>;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -25,18 +30,7 @@ export function ChessSettingsDialog({
   return (
     <Dialog title={t("chess.settings.title")} cancelLabel={t("chess.settings.done")} onClose={onClose}>
       <div className="chess-settings">
-        {level && onLevel && (
-          <Choice<AiLevel>
-            label={t("chess.setup.level")}
-            value={level}
-            options={[
-              { value: "easy", label: t("chess.setup.levelEasy") },
-              { value: "normal", label: t("chess.setup.levelNormal") },
-              { value: "hard", label: t("chess.setup.levelHard") }
-            ]}
-            onChange={onLevel}
-          />
-        )}
+        {level && <Choice<T> label={level.label} value={level.value} options={level.options} onChange={level.onChange} />}
         <div className="setup-row">
           <span className="setup-label" id="chess-theme-label">{t("chess.theme.title")}</span>
           <div className="chess-themes" role="radiogroup" aria-labelledby="chess-theme-label">

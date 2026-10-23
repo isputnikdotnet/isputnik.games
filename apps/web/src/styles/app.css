@@ -1153,7 +1153,7 @@
 /* Each other │ vs Computer: one segmented row over the board's switches. */
 .board-tabs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 2px;
   padding: 3px;
   border-radius: 10px;
@@ -1389,6 +1389,12 @@
   .game-card-body > p,
   .game-card-actions .secondary-button {
     display: none;
+  }
+
+  /* A way in of its own (Chess puzzles) stays: there is no other door to it. */
+  .game-card-actions .game-card-extra {
+    display: inline-flex;
+    min-height: 36px;
   }
 
   .game-card-actions {

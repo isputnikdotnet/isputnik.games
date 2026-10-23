@@ -83,3 +83,18 @@ CREATE TABLE IF NOT EXISTS computer_results (
 );
 
 CREATE INDEX IF NOT EXISTS computer_results_at ON computer_results (finished_at DESC);
+
+-- Chess puzzles: a member's first try at each puzzle, with their puzzle
+-- rating before and after it (their rating is their latest row's). A second
+-- try is practice and is not kept. hints: 0 none, 1 the piece, 2 the move.
+CREATE TABLE IF NOT EXISTS puzzle_attempts (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  member_id     TEXT NOT NULL,
+  puzzle_id     TEXT NOT NULL,
+  solved        INTEGER NOT NULL CHECK (solved IN (0, 1)),
+  hints         INTEGER NOT NULL CHECK (hints BETWEEN 0 AND 2),
+  rating_before INTEGER NOT NULL,
+  rating_after  INTEGER NOT NULL,
+  finished_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  UNIQUE (member_id, puzzle_id)
+);

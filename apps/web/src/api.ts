@@ -1,7 +1,7 @@
 // The games API, under the same /games prefix the pages live at. The home gateway
 // authenticates every call; this module only needs to echo its CSRF token on
 // state-changing requests, the way the home SPA does.
-import type { AiLevel, GameEvent, GameStatus, PlayerIndex } from "@isputnik/games-engine";
+import type { AiLevel, ChessPuzzle, GameEvent, GameStatus, PlayerIndex, PuzzleLevel } from "@isputnik/games-engine";
 
 export const API_BASE = "/games/api";
 
@@ -134,6 +134,18 @@ export interface FamilyStats {
   streak: number;
   /** Games against the computer, the same two periods (the leaderboard's vs Computer tab). */
   computer: { month: ComputerRow[]; all: ComputerRow[] };
+  /** Chess puzzles: each member's rating and solves (the leaderboard's Puzzles tab). */
+  puzzles: PuzzleRow[];
+}
+
+export interface PuzzleRow {
+  id: string;
+  name: string;
+  rating: number;
+  played: number;
+  solved: number;
+  /** Solved this month. */
+  solvedSince: number;
 }
 
 /** One member's games against the computer in one game. */
@@ -160,6 +172,39 @@ export interface ComputerResult {
 /** A game against the computer has ended on this device. */
 export function reportComputerResult(result: ComputerResult): Promise<{ recorded: boolean }> {
   return post<{ recorded: boolean }>("/computer-results", result);
+}
+
+// ── Chess puzzles ───────────────────────────────────────────────────────────
+
+export interface PuzzleMe {
+  rating: number;
+  played: number;
+  solved: number;
+  streak: number;
+}
+
+export interface PuzzleOffer {
+  puzzle: ChessPuzzle & { level: PuzzleLevel };
+  /** Every puzzle in reach was tried already: practice, the rating stays. */
+  repeat: boolean;
+  me: PuzzleMe;
+}
+
+export interface PuzzleResult {
+  recorded: boolean;
+  before: number;
+  after: number;
+  me: PuzzleMe;
+}
+
+/** The next puzzle: near your rating ("auto") or at a level you chose. */
+export function fetchNextPuzzle(level: PuzzleLevel | "auto"): Promise<PuzzleOffer> {
+  return apiFetch<PuzzleOffer>(`/puzzles/next?level=${level}`);
+}
+
+/** How a first try went; a second try is practice and moves nothing. */
+export function reportPuzzleResult(id: string, result: { solved: boolean; hints: number }): Promise<PuzzleResult> {
+  return post<PuzzleResult>(`/puzzles/${encodeURIComponent(id)}/result`, result);
 }
 
 // ── Online matches ───────────────────────────────────────────────────────────

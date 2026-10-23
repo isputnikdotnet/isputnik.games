@@ -37,3 +37,4 @@ export const chess: GameDefinition<ChessOptions, ChessState, ChessMove> = {
 export * from "./rules.js";
 export { chooseMove as chooseChessMove, evaluate, LEVELS as CHESS_LEVELS } from "./ai.js";
 export { Position, START_FEN, perft } from "./board.js";
+export * from "./puzzles.js";

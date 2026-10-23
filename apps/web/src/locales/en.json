@@ -80,7 +80,13 @@
       },
       "computerEmptyMonth": "No games against the computer finished this month yet.",
       "computerEmpty": "No games against the computer finished yet.",
-      "computerNote": "A win on Easy scores 1, on Normal 2, on Hard 3. Games against the computer on any device; two at one screen doesn’t count."
+      "computerNote": "A win on Easy scores 1, on Normal 2, on Hard 3. Games against the computer on any device; two at one screen doesn’t count.",
+      "tabPuzzles": "Puzzles",
+      "rating": "Rating",
+      "solved": "Solved",
+      "puzzlesEmptyMonth": "No puzzles solved this month yet.",
+      "puzzlesEmpty": "No puzzles tried yet.",
+      "puzzlesNote": "Chess puzzle ratings. This month ranks by puzzles solved; a puzzle solved with the move shown doesn’t count."
     },
     "month": {
       "title": "Your month",
@@ -106,7 +112,8 @@
     },
     "version": "iSputnik Games {{version}}",
     "stageAlpha": "alpha",
-    "stageBeta": "beta"
+    "stageBeta": "beta",
+    "puzzles": "Puzzles"
   },
   "invite": {
     "title": "Invite to play",
@@ -457,6 +464,45 @@
     "comms": {
       "check": "check",
       "mate": "mate"
+    },
+    "puzzle": {
+      "title": "Chess puzzles",
+      "loading": "Setting up a puzzle…",
+      "errorTitle": "Unable to load a puzzle",
+      "saveError": "Unable to save the result",
+      "you": "You",
+      "watch": "{{side}} moves…",
+      "find": "Find the best move for {{side}}",
+      "mateIn_one": "Checkmate in {{count}} move",
+      "mateIn_other": "Checkmate in {{count}} moves",
+      "about": "{{level}} · puzzle rated {{rating}}",
+      "yourRating": "Your rating",
+      "streak_one": "{{count}} solved in a row",
+      "streak_other": "{{count}} solved in a row",
+      "solved": "Solved!",
+      "solvedAfterMiss": "Solved — after a miss",
+      "shown": "The solution",
+      "wrong": "Not that move. Try again — this try no longer counts for your rating.",
+      "hintPiece": "Hint: move the highlighted piece.",
+      "hintSquare": "Hint: to the highlighted square.",
+      "hint": "Hint",
+      "hintMore": "Show the move",
+      "solution": "Show solution",
+      "skip": "Skip",
+      "next": "Next puzzle",
+      "retry": "Try again",
+      "practiceTitle": "Practice",
+      "practice": "This try doesn’t change your rating.",
+      "repeat": "You’ve tried every puzzle near this level; this one is practice.",
+      "levelLabel": "Puzzles",
+      "levels": {
+        "auto": "For me",
+        "veryEasy": "Very easy",
+        "easy": "Easy",
+        "medium": "Medium",
+        "hard": "Hard",
+        "expert": "Expert"
+      }
     }
   },
   "comms": {

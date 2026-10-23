@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Flag, Handshake, LogOut, Repeat2, RotateCcw, Settings2, Undo2 } from "lucide-react";
-import { chess, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
+import { chess, type AiLevel, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
 import { Comms } from "../../shared/Comms";
 import { useFeed } from "../../shared/useFeed";
 import { localSound, useGameSounds } from "../../shared/useGameSounds";
@@ -156,9 +156,13 @@ export function ChessPage() {
       />
 
       {settingsOpen && (
-        <ChessSettingsDialog
-          level={setup.mode === "computer" && !finished ? setup.level : undefined}
-          onLevel={controller.setLevel}
+        <ChessSettingsDialog<AiLevel>
+          level={setup.mode === "computer" && !finished ? {
+            label: t("chess.setup.level"),
+            value: setup.level,
+            options: (["easy", "normal", "hard"] as const).map((value) => ({ value, label: t(LEVEL_LABEL[value]) })),
+            onChange: controller.setLevel
+          } : undefined}
           onClose={() => setSettingsOpen(false)}
         />
       )}

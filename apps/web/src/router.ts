@@ -6,6 +6,7 @@ export type Route =
   | { name: "lobby" }
   | { name: "game"; gameId: string }
   | { name: "match"; gameId: string; matchId: string }
+  | { name: "puzzles" }
   | { name: "notFound" };
 
 const ID = /^[A-Za-z0-9_-]+$/;
@@ -22,6 +23,8 @@ export function parseRoute(pathname: string): Route {
   const gameId = RENAMED_GAMES[parts[0]] ?? parts[0];
   if (!/^[a-z][a-z0-9-]*$/.test(gameId)) return { name: "notFound" };
   if (parts.length === 1) return { name: "game", gameId };
+  // /games/chess/puzzles — chess puzzles.
+  if (parts.length === 2 && gameId === "chess" && parts[1] === "puzzles") return { name: "puzzles" };
   // /games/<game>/m/<match id> — an online match.
   if (parts.length === 3 && parts[1] === "m" && ID.test(parts[2])) return { name: "match", gameId, matchId: parts[2] };
   return { name: "notFound" };

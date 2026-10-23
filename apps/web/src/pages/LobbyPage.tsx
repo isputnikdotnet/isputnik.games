@@ -240,6 +240,7 @@ export function LobbyPage() {
                       </ul>
                       <div className="game-card-actions">
                         {link(to, "primary-button game-card-play", resuming ? t("lobby.continue") : t("lobby.play"))}
+                        {entry.extra && link(href(entry.extra.path), "secondary-button game-card-extra", t(entry.extra.label))}
                         <Button variant="secondary" onClick={() => setInviting({ game: game.id })}>{t("lobby.games.invite")}</Button>
                       </div>
                     </div>

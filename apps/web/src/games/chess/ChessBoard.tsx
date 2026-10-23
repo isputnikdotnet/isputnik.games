@@ -11,12 +11,13 @@ const FILES = "abcdefgh";
 // or keyboard and read out square by square. Tap a piece of the side this
 // screen may move and the squares it can go to are marked; tap one to move.
 // A pawn reaching the end asks what it becomes. The last move and a king in
-// check are marked too. `orientation` is the seat at the bottom.
+// check are marked too, and a puzzle's hint. `orientation` is the seat at the bottom.
 export function ChessBoard({
   state,
   orientation,
   movable,
-  onMove
+  onMove,
+  hint
 }: {
   state: ChessState;
   orientation: PlayerIndex;
@@ -24,6 +25,8 @@ export function ChessBoard({
    *  move, the computer thinking, the game over). */
   movable: PlayerIndex | null;
   onMove: (move: ChessMove) => void;
+  /** A puzzle hint: the piece to move, and once asked twice where it goes. */
+  hint?: { from: string; to?: string } | null;
 }) {
   const { t } = useTranslation();
   // A selection belongs to the position it was made in: once a move is played
@@ -77,6 +80,7 @@ export function ChessBoard({
               square === selected && "is-selected",
               last && (square === last.from || square === last.to) && "is-last",
               square === checked && "is-check",
+              hint && (square === hint.from || square === hint.to) && "is-hint",
               target && (piece ? "is-capture" : "is-target")
             ].filter(Boolean).join(" ");
             return (

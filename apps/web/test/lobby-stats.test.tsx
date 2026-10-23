@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { FamilyStats } from "../src/api";
-import { Leaderboard, YourMonth, computerStandings, standings } from "../src/pages/LobbyStats";
+import { Leaderboard, YourMonth, computerStandings, puzzleStandings, standings } from "../src/pages/LobbyStats";
 
 const stats: FamilyStats = {
   since: "2026-10-01T05:00:00.000Z",
@@ -28,7 +28,12 @@ const stats: FamilyStats = {
       { id: "kid", name: "Kid", game: "starbattle", played: 3, won: 2, drawn: 0, score: 6, best: "hard" },
       { id: "mum", name: "Мама", game: "chess", played: 9, won: 7, drawn: 0, score: 9, best: "normal" }
     ]
-  }
+  },
+  puzzles: [
+    { id: "dad", name: "Dad", rating: 1240, played: 30, solved: 22, solvedSince: 2 },
+    { id: "kid", name: "Kid", rating: 910, played: 12, solved: 9, solvedSince: 7 },
+    { id: "mum", name: "Мама", rating: 1010, played: 3, solved: 1, solvedSince: 0 }
+  ]
 };
 
 // The player cell is the avatar's initial, then the name: read the name.
@@ -106,6 +111,28 @@ describe("the vs Computer board", () => {
     await user.click(within(panel).getByRole("button", { name: "All time" }));
     await user.click(within(panel).getByRole("button", { name: "Chess" }));
     expect(within(panel).getByRole("table")).toHaveTextContent("Beat Normal in Chess");
+  });
+});
+
+describe("the Puzzles board", () => {
+  it("ranks all time by rating, this month by puzzles solved", () => {
+    expect(puzzleStandings(stats.puzzles, "all").map((row) => row.id)).toEqual(["dad", "mum", "kid"]);
+    // Mum solved none this month: not on the month's board.
+    expect(puzzleStandings(stats.puzzles, "month").map((row) => row.id)).toEqual(["kid", "dad"]);
+  });
+
+  it("is the third tab, ratings and solves, no game filter", async () => {
+    const user = userEvent.setup();
+    render(<Leaderboard stats={stats} myId="mum" />);
+    const panel = screen.getByRole("region", { name: /Family leaderboard/ });
+    await user.click(within(panel).getByRole("tab", { name: "Puzzles" }));
+    expect(within(panel).queryByRole("group", { name: "Game" })).not.toBeInTheDocument();
+    const table = within(panel).getByRole("table");
+    expect(within(table).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["#", "Player", "Rating", "Solved"]);
+    expect(names(table)).toEqual(["Kid", "Dad"]);
+    await user.click(within(panel).getByRole("button", { name: "All time" }));
+    expect(names(within(panel).getByRole("table"))).toEqual(["Dad", "Мама (you)", "Kid"]);
+    expect(panel).toHaveTextContent("Chess puzzle ratings.");
   });
 });
 

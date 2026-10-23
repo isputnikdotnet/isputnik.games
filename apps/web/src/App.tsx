@@ -11,6 +11,7 @@ import { DotsMatchPage } from "./games/dots/DotsMatchPage";
 import { StarBattlePage } from "./games/starbattle/StarBattlePage";
 import { StarBattleMatchPage } from "./games/starbattle/StarBattleMatchPage";
 import { ChessPage } from "./games/chess/ChessPage";
+import { ChessPuzzlePage } from "./games/chess/PuzzlePage";
 import { ChessMatchPage } from "./games/chess/ChessMatchPage";
 
 function Routes() {
@@ -38,6 +39,7 @@ function Routes() {
     if (route.gameId === "starbattle") return <StarBattlePage />;
     if (route.gameId === "chess") return <ChessPage />;
   }
+  if (route.name === "puzzles") return <ChessPuzzlePage />;
   if (route.name === "match" && getGame(route.gameId)) {
     if (route.gameId === "dots") return <DotsMatchPage matchId={route.matchId} />;
     if (route.gameId === "starbattle") return <StarBattleMatchPage matchId={route.matchId} />;

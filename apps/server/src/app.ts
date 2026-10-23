@@ -1,7 +1,7 @@
 import fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest, type FastifyServerOptions } from "fastify";
 import staticFiles from "@fastify/static";
 import { z } from "zod";
-import { AI_LEVELS, GAME_IDS, type AiLevel } from "@isputnik/games-engine";
+import { AI_LEVELS, Chess, GAME_IDS, type AiLevel, type PuzzleLevel } from "@isputnik/games-engine";
 import { BASE_PATH } from "./config.js";
 import { openDatabase } from "./db.js";
 import {
@@ -30,6 +30,7 @@ import {
   summaryFor,
   type Member
 } from "./matches.js";
+import { nextPuzzle, recordPuzzleResult, UnknownPuzzleError } from "./puzzles.js";
 import { familyStats, recordComputerResult } from "./stats.js";
 
 declare module "fastify" {
@@ -94,6 +95,19 @@ const computerResultSchema = z.object({
   result: z.enum(["won", "lost", "drawn"]),
   key: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/)
 });
+
+// A chess puzzle: the next one at a level ("auto" — near the member's
+// rating — when none is given), and how a try went.
+const puzzleQuerySchema = z.object({
+  level: z.enum(["auto", ...Chess.PUZZLE_LEVELS] as ["auto", ...PuzzleLevel[]]).default("auto")
+});
+
+const puzzleResultSchema = z.object({
+  solved: z.boolean(),
+  hints: z.number().int().min(0).max(2)
+});
+
+const puzzleId = (request: FastifyRequest) => z.string().regex(/^[A-Za-z0-9]{1,16}$/).parse((request.params as { id?: string }).id);
 
 const messageSchema = z.object({
   text: z.string().min(1).max(MESSAGE_MAX)
@@ -192,6 +206,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       if (error.event) note(request, error.event === "move.illegal" ? "warn" : "info", error.event, { matchId: idOf(request), detail: error.message });
       return reply.code(error.status).send({ error: error.message });
     }
+    if (error instanceof UnknownPuzzleError) return reply.code(404).send({ error: error.message });
     if (error instanceof z.ZodError) {
       const fields = [...new Set(error.issues.map((issue) => issue.path.join(".") || "(body)"))].join(", ");
       note(request, "warn", "request.invalid", { matchId: idOf(request), detail: `${request.method} ${pathOf(request)}: ${fields}` });
@@ -293,6 +308,19 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     const input = computerResultSchema.parse(request.body ?? {});
     const recorded = recordComputerResult(db, request.identity!.id, input);
     return reply.code(recorded ? 201 : 200).send({ recorded });
+  });
+
+  // Chess puzzles, for members: a guest is here for one match.
+  app.get(`${API}/puzzles/next`, { preHandler: requireIdentity }, async (request, reply) => {
+    if (request.identity!.role === "guest") return reply.code(403).send({ error: "Puzzles are for the family" });
+    const { level } = puzzleQuerySchema.parse(request.query ?? {});
+    return nextPuzzle(db, request.identity!.id, level);
+  });
+
+  app.post(`${API}/puzzles/:id/result`, { preHandler: requireIdentity }, async (request, reply) => {
+    if (request.identity!.role === "guest") return reply.code(403).send({ error: "Puzzles are for the family" });
+    const input = puzzleResultSchema.parse(request.body ?? {});
+    return recordPuzzleResult(db, request.identity!.id, puzzleId(request), input);
   });
 
   app.post(`${API}/matches`, { preHandler: requireMember }, async (request, reply) => {
