@@ -11,6 +11,13 @@ const events: CommsLine[] = [
 ];
 
 describe("Comms", () => {
+  it("gives a long name its first word, the whole one in the tooltip", () => {
+    render(<Comms lines={[{ key: "e0", kind: "event", who: "them", name: "Sergey Mikhalchenko", text: "dot 10,9" }]} onSend={() => {}} sendTo="Sergey Mikhalchenko" />);
+    const name = screen.getByTitle("Sergey Mikhalchenko");
+    expect(name).toHaveTextContent(/^■ Sergey$/);
+    expect(screen.getByPlaceholderText("message Sergey…")).toBeInTheDocument();
+  });
+
   it("slots what was said after the move it was said after", () => {
     const lines = withTalk(events, [
       { id: 1, by: 1, text: "lucky", afterMove: 1 },

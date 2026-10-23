@@ -17,7 +17,7 @@
 
 .chess-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: var(--space-5);
   align-items: start;
 }
@@ -298,13 +298,24 @@
   justify-content: flex-start;
 }
 
+/* Comms fills the panel down to the board's foot, so the talk has room. */
+.chess-side {
+  align-self: stretch;
+}
+
+.chess-side .comms {
+  flex: 1 1 0;
+  min-height: 260px;
+}
+
 .chess-side .comms-lines {
-  max-height: 260px;
+  flex: 1 1 0;
+  min-height: 120px;
+  max-height: none;
   font-size: 13px;
 }
 
 .chess-side .comms-line {
-  grid-template-columns: minmax(72px, auto) 1fr auto;
   column-gap: 8px;
 }
 
@@ -340,6 +351,16 @@
 @media (max-width: 900px) {
   .chess-layout {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Under the board there is no foot to reach: Comms gets a height of its own. */
+  .chess-side .comms,
+  .chess-side .comms-lines {
+    flex: none;
+  }
+
+  .chess-side .comms-lines {
+    height: 240px;
   }
 
   .chess-main {

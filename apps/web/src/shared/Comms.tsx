@@ -8,6 +8,13 @@ import type { CommsLine } from "./commsLines";
 // the game's own words, what the players said in between, and — online only —
 // a prompt to say something and a few one-tap phrases. Who is always the same
 // two colours; only a result is coloured otherwise.
+
+/** A console has room for "SERGEY", not "SERGEY MIKHALCHENKO": the first
+ *  name, with the whole one in the line's tooltip. */
+export function firstName(name: string | undefined): string {
+  return name?.trim().split(/\s+/)[0] ?? "";
+}
+
 export function Comms({
   lines,
   onSend,
@@ -56,7 +63,7 @@ export function Comms({
               ? <span className="comms-system">— {line.text}</span>
               : (
                 <>
-                  <span className="comms-name"><span className="comms-mark" aria-hidden="true">{line.who === "you" ? "●" : "■"}</span> {line.name}</span>
+                  <span className="comms-name" title={line.name}><span className="comms-mark" aria-hidden="true">{line.who === "you" ? "●" : "■"}</span> {firstName(line.name)}</span>
                   <span className={line.kind === "say" ? "comms-say" : "comms-text"}>{line.kind === "say" ? `“${line.text}”` : line.text}</span>
                   {line.result && <span className={`comms-result is-${line.result.tone}`}>{line.result.text}</span>}
                 </>
@@ -74,7 +81,7 @@ export function Comms({
               type="text"
               value={draft}
               maxLength={120}
-              placeholder={t("comms.placeholder", { name: sendTo ?? "" })}
+              placeholder={t("comms.placeholder", { name: firstName(sendTo) })}
               autoComplete="off"
               onChange={(event) => setDraft(event.target.value)}
               disabled={busy}

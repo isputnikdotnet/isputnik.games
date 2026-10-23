@@ -131,151 +131,154 @@ export function LobbyPage() {
         </Button>
       </header>
 
-      <section className="lobby-waiting" id={MATCHES_ANCHOR} aria-labelledby="lobby-waiting-title">
-        <h2 id="lobby-waiting-title" className="lobby-section-title">
-          {t("lobby.waiting.title")}
-          {waiting > 0 && <span className="lobby-count">{waiting}</span>}
-        </h2>
-        {failed && <MessageBox tone="error" title={t("lobby.online.loadFailed")} />}
-        {matches && waiting === 0 && !failed && (
-          <p className="muted">{list.length === 0 ? t("lobby.online.empty") : t("lobby.waiting.none")}</p>
-        )}
-        {waiting > 0 && (
-          <ul className="waiting-list">
-            {received.map((match) => (
-              <li key={match.id} className="waiting-card">
-                <Avatar id={opponentOf(match).id} name={opponentOf(match).name} />
-                {link(matchHref(match.game, match.id), "waiting-card-main", (
-                  <>
-                    <span className="waiting-card-kind">
-                      <span className="lobby-pill is-invite">{t("lobby.pill.invitation")}</span> {gameName(match.game)}
-                    </span>
-                    <strong>{t("lobby.online.from", { name: opponentOf(match).name })}</strong>
-                    <span className="muted">{when(match.createdAt)}</span>
-                  </>
-                ))}
-                <span className="waiting-card-actions">
-                  <Button variant="primary" onClick={() => void answer(match, "accept")}>{t("lobby.online.accept")}</Button>
-                  <Button variant="secondary" onClick={() => void answer(match, "decline")}>{t("lobby.online.decline")}</Button>
-                </span>
-              </li>
-            ))}
-            {mine.map((match) => (
-              <li key={match.id} className="waiting-card">
-                <Avatar id={opponentOf(match).id} name={opponentOf(match).name} />
-                {link(matchHref(match.game, match.id), "waiting-card-main", (
-                  <>
-                    <span className="waiting-card-kind">
-                      <span className="lobby-pill is-move">{t("lobby.pill.yourMove", { count: 1 })}</span> {gameName(match.game)}
-                    </span>
-                    <strong>{t("lobby.online.vs", { name: opponentOf(match).name })}</strong>
-                    <span className="muted">{[scoreOf(match), when(match.updatedAt)].filter(Boolean).join(" · ")}</span>
-                  </>
-                ))}
-                <span className="waiting-card-actions">
-                  {link(matchHref(match.game, match.id), "primary-button", t("lobby.play"))}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {theirs.length + sent.length > 0 && (
-          <p className="lobby-theirs muted">
-            {t("lobby.waiting.theirs")}{" "}
-            {[...theirs, ...sent].map((match, index) => (
-              <span key={match.id}>
-                {index > 0 && " · "}
-                {link(matchHref(match.game, match.id), "lobby-theirs-link", match.status === "invited"
-                  ? t("lobby.waiting.sent", { game: gameName(match.game), name: opponentOf(match).name })
-                  : t("lobby.waiting.vs", { game: gameName(match.game), name: opponentOf(match).name }))}
-              </span>
-            ))}
-          </p>
-        )}
-      </section>
-
-      <div className="lobby-row">
-        <section className="lobby-games" aria-labelledby="lobby-games-title">
-          <div className="lobby-games-head">
-            <h2 id="lobby-games-title" className="lobby-section-title">{t("lobby.games.title")}</h2>
-            <p className="muted">{t("lobby.games.lead")}</p>
-          </div>
-          <div className="lobby-grid">
-            {GAMES.map((game) => {
-              const entry = CATALOG[game.id];
-              if (!entry) return null;
-              const to = href(game.id);
-              const resuming = entry.inProgress();
-              const myMoves = mine.filter((m) => m.game === game.id).length;
-              const pills = (
-                <>
-                  {myMoves > 0 && <span className="lobby-pill is-move">{t("lobby.pill.yourMove", { count: myMoves })}</span>}
-                  {resuming && <span className="lobby-pill is-progress">{t("lobby.pill.inProgress")}</span>}
-                </>
-              );
-              return (
-                <article key={game.id} className="game-card">
-                  {/* The states sit on the picture; on a phone, where the picture
-                      is a thumbnail, beside the name instead (the CSS picks one). */}
-                  <div className="game-card-art">
-                    <GamePreview game={game.id} />
-                    <span className="game-card-pills">{pills}</span>
-                    {isNew(entry) && <span className="lobby-pill is-new game-card-new">{t("lobby.pill.new")}</span>}
-                  </div>
-                  <div className="game-card-body">
-                    <div className="game-card-title">
-                      <h3>{t(entry.name)}</h3>
-                      <span className="game-card-pills-inline">
-                        {pills}
-                        {isNew(entry) && <span className="lobby-pill is-new">{t("lobby.pill.new")}</span>}
-                      </span>
-                    </div>
-                    <p className="muted">{t(entry.summary)}</p>
-                    <ul className="game-card-modes" aria-label={t("lobby.games.modes")}>
-                      {entry.modes.map((mode) => {
-                        const Icon = MODE_ICONS[mode];
-                        return <li key={mode} className="lobby-tag"><Icon size={11} aria-hidden="true" /> {t(`lobby.modes.${mode}`)}</li>;
-                      })}
-                    </ul>
-                    <div className="game-card-actions">
-                      {link(to, "primary-button game-card-play", resuming ? t("lobby.continue") : t("lobby.play"))}
-                      <Button variant="secondary" onClick={() => setInviting({ game: game.id })}>{t("lobby.games.invite")}</Button>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-        <Leaderboard stats={stats} myId={myId} />
-      </div>
-
-      <div className="lobby-row">
-        {finished.length > 0 && (
-          <section className="lobby-recent" aria-labelledby="lobby-recent-title">
-            <h2 id="lobby-recent-title" className="lobby-section-title">{t("lobby.recent.title")}</h2>
-            <ul className="recent-list">
-              {finished.map((match) => {
-                const result = resultOf(match);
-                return (
-                  <li key={match.id}>
-                    {link(matchHref(match.game, match.id), "recent-row", (
+      <div className="lobby-body">
+        <div className="lobby-main">
+          <section className="lobby-waiting" id={MATCHES_ANCHOR} aria-labelledby="lobby-waiting-title">
+            <h2 id="lobby-waiting-title" className="lobby-section-title">
+              {t("lobby.waiting.title")}
+              {waiting > 0 && <span className="lobby-count">{waiting}</span>}
+            </h2>
+            {failed && <MessageBox tone="error" title={t("lobby.online.loadFailed")} />}
+            {matches && waiting === 0 && !failed && (
+              <p className="muted">{list.length === 0 ? t("lobby.online.empty") : t("lobby.waiting.none")}</p>
+            )}
+            {waiting > 0 && (
+              <ul className="waiting-list">
+                {received.map((match) => (
+                  <li key={match.id} className="waiting-card">
+                    <Avatar id={opponentOf(match).id} name={opponentOf(match).name} />
+                    {link(matchHref(match.game, match.id), "waiting-card-main", (
                       <>
-                        <Avatar id={opponentOf(match).id} name={opponentOf(match).name} size={32} />
-                        <span className="recent-row-main">
-                          <span>{t("lobby.waiting.vs", { game: gameName(match.game), name: opponentOf(match).name })}</span>
-                          <span className="muted">{[when(match.finishedAt ?? match.updatedAt), scoreOf(match)].filter(Boolean).join(" · ")}</span>
+                        <span className="waiting-card-kind">
+                          <span className="lobby-pill is-invite">{t("lobby.pill.invitation")}</span> {gameName(match.game)}
                         </span>
-                        <strong className={`recent-result is-${result.tone}`}>{result.text}</strong>
+                        <strong>{t("lobby.online.from", { name: opponentOf(match).name })}</strong>
+                        <span className="muted">{when(match.createdAt)}</span>
                       </>
                     ))}
+                    <span className="waiting-card-actions">
+                      <Button variant="primary" onClick={() => void answer(match, "accept")}>{t("lobby.online.accept")}</Button>
+                      <Button variant="secondary" onClick={() => void answer(match, "decline")}>{t("lobby.online.decline")}</Button>
+                    </span>
                   </li>
+                ))}
+                {mine.map((match) => (
+                  <li key={match.id} className="waiting-card">
+                    <Avatar id={opponentOf(match).id} name={opponentOf(match).name} />
+                    {link(matchHref(match.game, match.id), "waiting-card-main", (
+                      <>
+                        <span className="waiting-card-kind">
+                          <span className="lobby-pill is-move">{t("lobby.pill.yourMove", { count: 1 })}</span> {gameName(match.game)}
+                        </span>
+                        <strong>{t("lobby.online.vs", { name: opponentOf(match).name })}</strong>
+                        <span className="muted">{[scoreOf(match), when(match.updatedAt)].filter(Boolean).join(" · ")}</span>
+                      </>
+                    ))}
+                    <span className="waiting-card-actions">
+                      {link(matchHref(match.game, match.id), "primary-button", t("lobby.play"))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {theirs.length + sent.length > 0 && (
+              <p className="lobby-theirs muted">
+                {t("lobby.waiting.theirs")}{" "}
+                {[...theirs, ...sent].map((match, index) => (
+                  <span key={match.id}>
+                    {index > 0 && " · "}
+                    {link(matchHref(match.game, match.id), "lobby-theirs-link", match.status === "invited"
+                      ? t("lobby.waiting.sent", { game: gameName(match.game), name: opponentOf(match).name })
+                      : t("lobby.waiting.vs", { game: gameName(match.game), name: opponentOf(match).name }))}
+                  </span>
+                ))}
+              </p>
+            )}
+          </section>
+
+          <section className="lobby-games" aria-labelledby="lobby-games-title">
+            <div className="lobby-games-head">
+              <h2 id="lobby-games-title" className="lobby-section-title">{t("lobby.games.title")}</h2>
+              <p className="muted">{t("lobby.games.lead")}</p>
+            </div>
+            <div className="lobby-grid">
+              {GAMES.map((game) => {
+                const entry = CATALOG[game.id];
+                if (!entry) return null;
+                const to = href(game.id);
+                const resuming = entry.inProgress();
+                const myMoves = mine.filter((m) => m.game === game.id).length;
+                const pills = (
+                  <>
+                    {myMoves > 0 && <span className="lobby-pill is-move">{t("lobby.pill.yourMove", { count: myMoves })}</span>}
+                    {resuming && <span className="lobby-pill is-progress">{t("lobby.pill.inProgress")}</span>}
+                  </>
+                );
+                return (
+                  <article key={game.id} className="game-card">
+                    {/* The states sit on the picture; on a phone, where the picture
+                        is a thumbnail, beside the name instead (the CSS picks one). */}
+                    <div className="game-card-art">
+                      <GamePreview game={game.id} />
+                      <span className="game-card-pills">{pills}</span>
+                      {isNew(entry) && <span className="lobby-pill is-new game-card-new">{t("lobby.pill.new")}</span>}
+                    </div>
+                    <div className="game-card-body">
+                      <div className="game-card-title">
+                        <h3>{t(entry.name)}</h3>
+                        <span className="game-card-pills-inline">
+                          {pills}
+                          {isNew(entry) && <span className="lobby-pill is-new">{t("lobby.pill.new")}</span>}
+                        </span>
+                      </div>
+                      <p className="muted">{t(entry.summary)}</p>
+                      <ul className="game-card-modes" aria-label={t("lobby.games.modes")}>
+                        {entry.modes.map((mode) => {
+                          const Icon = MODE_ICONS[mode];
+                          return <li key={mode} className="lobby-tag"><Icon size={11} aria-hidden="true" /> {t(`lobby.modes.${mode}`)}</li>;
+                        })}
+                      </ul>
+                      <div className="game-card-actions">
+                        {link(to, "primary-button game-card-play", resuming ? t("lobby.continue") : t("lobby.play"))}
+                        <Button variant="secondary" onClick={() => setInviting({ game: game.id })}>{t("lobby.games.invite")}</Button>
+                      </div>
+                    </div>
+                  </article>
                 );
               })}
-            </ul>
+            </div>
           </section>
-        )}
-        <YourMonth stats={stats} myId={myId} myName={myName} />
+
+          {finished.length > 0 && (
+            <section className="lobby-recent" aria-labelledby="lobby-recent-title">
+              <h2 id="lobby-recent-title" className="lobby-section-title">{t("lobby.recent.title")}</h2>
+              <ul className="recent-list">
+                {finished.map((match) => {
+                  const result = resultOf(match);
+                  return (
+                    <li key={match.id}>
+                      {link(matchHref(match.game, match.id), "recent-row", (
+                        <>
+                          <Avatar id={opponentOf(match).id} name={opponentOf(match).name} size={32} />
+                          <span className="recent-row-main">
+                            <span>{t("lobby.waiting.vs", { game: gameName(match.game), name: opponentOf(match).name })}</span>
+                            <span className="muted">{[when(match.finishedAt ?? match.updatedAt), scoreOf(match)].filter(Boolean).join(" · ")}</span>
+                          </span>
+                          <strong className={`recent-result is-${result.tone}`}>{result.text}</strong>
+                        </>
+                      ))}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+        </div>
+        {/* The family's results beside it all; below it on a narrow screen. */}
+        <aside className="lobby-side">
+          <Leaderboard stats={stats} myId={myId} />
+          <YourMonth stats={stats} myId={myId} myName={myName} />
+        </aside>
       </div>
 
       <footer className="lobby-foot muted">
