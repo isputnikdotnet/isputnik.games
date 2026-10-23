@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Flag, Repeat2, Settings2 } from "lucide-react";
+import { ArrowLeft, Flag, History, Repeat2, Settings2 } from "lucide-react";
 import type { ChessMove, ChessState, PlayerIndex } from "@isputnik/games-engine";
 import { ApiError, answerMatch, postMessage, postMove, resignMatch } from "../../api";
 import { Comms } from "../../shared/Comms";
@@ -18,6 +18,7 @@ import { useMatch } from "../dots/useMatch";
 import { chessLines } from "./comms";
 import { chessReason } from "./ending";
 import { ChessTable } from "./ChessTable";
+import { ChessRatingLine, useChessRatingAfter } from "./RatingLine";
 import { ChessSettingsDialog } from "./SettingsDialog";
 
 // An online game of chess: the same table, the server's position, and the
@@ -37,6 +38,11 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
   const [resultDismissed, setResultDismissed] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // A finished game between two members moved both chess ratings; a game
+  // with a guest moved none.
+  const rated = match?.status === "finished" && session.status === "ready" && session.user.role !== "guest"
+    && !match.players.some((player) => player.guest);
+  const chessRating = useChessRatingAfter(rated ? match.id : null);
 
   if (!match) {
     return (
@@ -145,6 +151,7 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
           <div className="chess-status">
             <p className={`chess-status-line${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
             {reason && <p className="muted chess-reason">{reason}</p>}
+            {chessRating && <ChessRatingLine rating={chessRating} />}
           </div>
         }
         notices={
@@ -180,6 +187,11 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
             )}
             {(finished || match.status === "declined" || match.status === "cancelled") && (
               <Button variant="primary" onClick={() => navigate(href())}>{t("app.allGames")}</Button>
+            )}
+            {finished && (
+              <Button variant="secondary" onClick={() => navigate(href(`chess/review/m/${match.id}`))}>
+                <History size={16} aria-hidden="true" /> {t("chess.review.open")}
+              </Button>
             )}
           </>
         }

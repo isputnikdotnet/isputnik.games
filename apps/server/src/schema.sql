@@ -98,3 +98,24 @@ CREATE TABLE IF NOT EXISTS puzzle_attempts (
   finished_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   UNIQUE (member_id, puzzle_id)
 );
+
+-- A finished game played on one device (against the computer, or two at one
+-- screen), kept for review. Online matches are in matches already. game_key
+-- is the browser's own id for the game, so a resend changes nothing; moves
+-- were replayed through the rules before they were kept.
+CREATE TABLE IF NOT EXISTS game_records (
+  id            TEXT PRIMARY KEY,
+  member_id     TEXT NOT NULL,
+  game          TEXT NOT NULL,
+  game_key      TEXT NOT NULL,
+  mode          TEXT NOT NULL CHECK (mode IN ('computer', 'local')),
+  level         TEXT CHECK (level IN ('easy', 'normal', 'hard')),
+  seat          INTEGER,
+  moves         TEXT NOT NULL,
+  finish_reason TEXT NOT NULL,
+  winner        INTEGER,
+  finished_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  UNIQUE (member_id, game_key)
+);
+
+CREATE INDEX IF NOT EXISTS game_records_member ON game_records (member_id, finished_at DESC);

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { FamilyStats } from "../src/api";
-import { Leaderboard, YourMonth, computerStandings, puzzleStandings, standings } from "../src/pages/LobbyStats";
+import { Leaderboard, YourMonth, computerStandings, puzzleStandings, ratingStandings, standings } from "../src/pages/LobbyStats";
 
 const stats: FamilyStats = {
   since: "2026-10-01T05:00:00.000Z",
@@ -33,6 +33,11 @@ const stats: FamilyStats = {
     { id: "dad", name: "Dad", rating: 1240, played: 30, solved: 22, solvedSince: 2 },
     { id: "kid", name: "Kid", rating: 910, played: 12, solved: 9, solvedSince: 7 },
     { id: "mum", name: "Мама", rating: 1010, played: 3, solved: 1, solvedSince: 0 }
+  ],
+  chessRatings: [
+    { id: "kid", name: "Kid", rating: 1080, games: 4, provisional: true, change: 12 },
+    { id: "dad", name: "Dad", rating: 1080, games: 25, provisional: false, change: -6 },
+    { id: "mum", name: "Мама", rating: 1150, games: 14, provisional: false, change: 9 }
   ]
 };
 
@@ -111,6 +116,27 @@ describe("the vs Computer board", () => {
     await user.click(within(panel).getByRole("button", { name: "All time" }));
     await user.click(within(panel).getByRole("button", { name: "Chess" }));
     expect(within(panel).getByRole("table")).toHaveTextContent("Beat Normal in Chess");
+  });
+});
+
+describe("the Chess rating board", () => {
+  it("ranks by rating, a settled rating before a provisional one", () => {
+    expect(ratingStandings(stats.chessRatings).map((row) => row.id)).toEqual(["mum", "dad", "kid"]);
+  });
+
+  it("is a tab of its own, all time, with games played and provisional ratings marked", async () => {
+    const user = userEvent.setup();
+    render(<Leaderboard stats={stats} myId="mum" />);
+    const panel = screen.getByRole("region", { name: /Family leaderboard/ });
+    await user.click(within(panel).getByRole("tab", { name: "Chess rating" }));
+    expect(within(panel).queryByRole("group", { name: "Period" })).not.toBeInTheDocument();
+    expect(within(panel).queryByRole("group", { name: "Game" })).not.toBeInTheDocument();
+    const table = within(panel).getByRole("table");
+    expect(within(table).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["#", "Player", "Rating", "Games"]);
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(rows[0]).toHaveTextContent("Мама (you)");
+    expect(rows[2]).toHaveTextContent("Provisional");
+    expect(panel).toHaveTextContent("Easy 600, Normal 1100, Hard 1500");
   });
 });
 

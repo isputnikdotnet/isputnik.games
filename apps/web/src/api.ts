@@ -1,7 +1,7 @@
 // The games API, under the same /games prefix the pages live at. The home gateway
 // authenticates every call; this module only needs to echo its CSRF token on
 // state-changing requests, the way the home SPA does.
-import type { AiLevel, ChessPuzzle, GameEvent, GameStatus, PlayerIndex, PuzzleLevel } from "@isputnik/games-engine";
+import type { AiLevel, ChessMove, ChessPuzzle, GameEvent, GameStatus, PlayerIndex, PuzzleLevel } from "@isputnik/games-engine";
 
 export const API_BASE = "/games/api";
 
@@ -136,6 +136,27 @@ export interface FamilyStats {
   computer: { month: ComputerRow[]; all: ComputerRow[] };
   /** Chess puzzles: each member's rating and solves (the leaderboard's Puzzles tab). */
   puzzles: PuzzleRow[];
+  /** Chess ratings, all time (the leaderboard's Chess rating tab). */
+  chessRatings: ChessRatingRow[];
+}
+
+/** A chess rating: games against the computer (its levels rated) and online games with members. */
+export interface ChessRating {
+  rating: number;
+  games: number;
+  /** Fewer than ten games: still finding its level. */
+  provisional: boolean;
+  /** What the latest game did to it; null before any. */
+  change: number | null;
+}
+
+export interface ChessRatingRow extends ChessRating {
+  id: string;
+  name: string;
+}
+
+export function fetchChessRating(): Promise<ChessRating> {
+  return apiFetch<ChessRating>("/chess/rating");
 }
 
 export interface PuzzleRow {
@@ -170,8 +191,56 @@ export interface ComputerResult {
 }
 
 /** A game against the computer has ended on this device. */
-export function reportComputerResult(result: ComputerResult): Promise<{ recorded: boolean }> {
-  return post<{ recorded: boolean }>("/computer-results", result);
+export function reportComputerResult(result: ComputerResult): Promise<{ recorded: boolean; chessRating?: ChessRating }> {
+  return post<{ recorded: boolean; chessRating?: ChessRating }>("/computer-results", result);
+}
+
+// ── Game review ─────────────────────────────────────────────────────────────
+
+export type ReviewMode = "computer" | "local" | "online";
+
+/** One finished game of the member's, for "My games". */
+export interface ReviewItem {
+  source: "record" | "match";
+  id: string;
+  game: string;
+  mode: ReviewMode;
+  level: AiLevel | null;
+  /** The member's seat; null at one screen. */
+  seat: PlayerIndex | null;
+  /** The other member online; null against the computer or at one screen. */
+  opponent: string | null;
+  winner: PlayerIndex | null;
+  reason: string | null;
+  moveCount: number;
+  finishedAt: string;
+}
+
+export interface ReviewRecord extends ReviewItem {
+  moves: ChessMove[];
+}
+
+export interface RecordInput {
+  game: "chess";
+  key: string;
+  mode: "computer" | "local";
+  level?: AiLevel;
+  seat?: PlayerIndex;
+  moves: ChessMove[];
+  finish?: { reason: "agreed" | "resigned"; resigning?: PlayerIndex };
+}
+
+/** A finished game on this device, kept for review; resending it changes nothing. */
+export function saveGameRecord(input: RecordInput): Promise<{ recorded: boolean; id: string }> {
+  return post<{ recorded: boolean; id: string }>("/records", input);
+}
+
+export async function fetchMyGames(): Promise<ReviewItem[]> {
+  return (await apiFetch<{ items: ReviewItem[] }>("/records?game=chess")).items;
+}
+
+export function fetchGameRecord(id: string): Promise<ReviewRecord> {
+  return apiFetch<ReviewRecord>(`/records/${encodeURIComponent(id)}`);
 }
 
 // ── Chess puzzles ───────────────────────────────────────────────────────────

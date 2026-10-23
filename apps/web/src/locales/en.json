@@ -86,7 +86,12 @@
       "solved": "Solved",
       "puzzlesEmptyMonth": "No puzzles solved this month yet.",
       "puzzlesEmpty": "No puzzles tried yet.",
-      "puzzlesNote": "Chess puzzle ratings. This month ranks by puzzles solved; a puzzle solved with the move shown doesn’t count."
+      "puzzlesNote": "Chess puzzle ratings. This month ranks by puzzles solved; a puzzle solved with the move shown doesn’t count.",
+      "tabRating": "Chess rating",
+      "games": "Games",
+      "provisional": "Provisional",
+      "ratingEmpty": "No rated chess games yet.",
+      "ratingNote": "Chess against the computer counts as a game against a rated player (Easy 600, Normal 1100, Hard 1500), and online games between members count for both. Two at one screen doesn’t count. Provisional for the first 10 games."
     },
     "month": {
       "title": "Your month",
@@ -503,6 +508,38 @@
         "hard": "Hard",
         "expert": "Expert"
       }
+    },
+    "review": {
+      "title": "Game review",
+      "loading": "Loading the game…",
+      "errorTitle": "Unable to open the game",
+      "listError": "Unable to load your games",
+      "notFinished": "This game is not over yet.",
+      "myGames": "My games",
+      "myGamesLink": "My games — review a finished one",
+      "open": "Review game",
+      "empty": "No finished games yet. Every game you finish — online, against the computer, or two at one screen — will be here.",
+      "computerAt": "Computer ({{level}})",
+      "players": "{{white}} – {{black}}",
+      "online": "Online",
+      "local": "Two at one screen",
+      "computer": "Against the computer",
+      "vs": "vs {{name}}",
+      "won": "Won",
+      "lost": "Lost",
+      "drawn": "Draw",
+      "steps": "Step through the game",
+      "start": "Start",
+      "back": "Back",
+      "next": "Next",
+      "end": "End",
+      "moves": "Moves",
+      "at": "{{ply}} of {{count}}",
+      "noMoves": "No moves were played."
+    },
+    "rating": {
+      "label": "Chess rating",
+      "provisional": "provisional"
     }
   },
   "comms": {

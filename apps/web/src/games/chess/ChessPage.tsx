@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Flag, Handshake, LogOut, Repeat2, RotateCcw, Settings2, Undo2 } from "lucide-react";
+import { ArrowLeft, Flag, Handshake, History, List, LogOut, Repeat2, RotateCcw, Settings2, Undo2 } from "lucide-react";
 import { chess, type AiLevel, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
 import { Comms } from "../../shared/Comms";
 import { useFeed } from "../../shared/useFeed";
@@ -18,6 +18,8 @@ import { ChessNewGameForm } from "./NewGameForm";
 import { ChessTable } from "./ChessTable";
 import { ChessSettingsDialog } from "./SettingsDialog";
 import { humanSeat, isComputerSeat, useChessGame } from "./useChessGame";
+import { useChessRecord } from "./useChessRecord";
+import { ChessRatingLine } from "./RatingLine";
 import type { ChessSetup } from "./storage";
 
 const LEVEL_LABEL = { easy: "chess.setup.levelEasy", normal: "chess.setup.levelNormal", hard: "chess.setup.levelHard" } as const;
@@ -41,7 +43,8 @@ export function ChessPage() {
   const feed = useFeed(chess, {}, game?.state.moves ?? NO_MOVES);
   const me = game ? humanSeat(game.setup) : null;
   useGameSounds(game && localSound("chess", feed, me, game.state.status));
-  useComputerResult(game && me !== null && game.state.status.kind === "finished"
+  const recordId = useChessRecord(game);
+  const chessRating = useComputerResult(game && me !== null && game.state.status.kind === "finished"
     ? { game: "chess", key: game.key, level: game.setup.level, human: me, winner: game.state.status.winner }
     : null);
 
@@ -53,6 +56,11 @@ export function ChessPage() {
       <section className="chess-page">
         <PageHead title={t("games.chess.name")} />
         <ChessNewGameForm onStart={controller.start} />
+        <p className="chess-my-games">
+          <a className="text-link" href={href("chess/games")} onClick={(event) => follow(event, href("chess/games"))}>
+            <List size={16} aria-hidden="true" /> {t("chess.review.myGamesLink")}
+          </a>
+        </p>
       </section>
     );
   }
@@ -107,6 +115,7 @@ export function ChessPage() {
           <div className="chess-status">
             <p className={`chess-status-line${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
             {reason && <p className="muted chess-reason">{reason}</p>}
+            {finished && chessRating && <ChessRatingLine rating={chessRating} />}
             {setup.mode === "computer" && !finished && (
               <p className="muted chess-reason">{t("chess.levelLine", { level: t(LEVEL_LABEL[setup.level]) })}</p>
             )}
@@ -146,6 +155,11 @@ export function ChessPage() {
               <>
                 <Button variant="primary" onClick={again}>{t("chess.end.again")}</Button>
                 <Button variant="secondary" onClick={controller.abandon}>{t("chess.end.change")}</Button>
+                {recordId && (
+                  <Button variant="secondary" onClick={() => navigate(href(`chess/review/${recordId}`))}>
+                    <History size={16} aria-hidden="true" /> {t("chess.review.open")}
+                  </Button>
+                )}
                 <Button variant="secondary" onClick={exit}>
                   <LogOut size={16} aria-hidden="true" /> {t("chess.end.toLobby")}
                 </Button>

@@ -140,7 +140,7 @@ describe("stats API", () => {
   it("answers a member, from the month start they send", async () => {
     const reply = await app.inject({ method: "GET", url: "/games/api/stats?since=2026-10-01T05:00:00.000Z", headers: as("mum", "Мама") });
     expect(reply.statusCode).toBe(200);
-    expect(reply.json()).toEqual({ since: "2026-10-01T05:00:00.000Z", month: [], all: [], streak: 0, computer: { month: [], all: [] }, puzzles: [] });
+    expect(reply.json()).toEqual({ since: "2026-10-01T05:00:00.000Z", month: [], all: [], streak: 0, computer: { month: [], all: [] }, puzzles: [], chessRatings: [] });
   });
 
   it("refuses a bad date, a guest, and nobody at all", async () => {
@@ -156,7 +156,9 @@ describe("stats API", () => {
     expect(first.statusCode).toBe(201);
     const again = await app.inject({ method: "POST", url: "/games/api/computer-results", headers: as("kid", "Kid"), payload: body });
     expect(again.statusCode).toBe(200);
-    expect(again.json()).toEqual({ recorded: false });
+    // A chess game answers with the chess rating too; the repeat moved nothing.
+    expect(again.json()).toEqual({ recorded: false, chessRating: first.json().chessRating });
+    expect(first.json().chessRating).toMatchObject({ games: 1, provisional: true });
     const stats = (await app.inject({ method: "GET", url: "/games/api/stats", headers: as("mum", "Мама") })).json();
     expect(stats.computer.all).toEqual([{ id: "kid", name: "Kid", game: "chess", played: 1, won: 1, drawn: 0, score: 3, best: "hard" }]);
   });

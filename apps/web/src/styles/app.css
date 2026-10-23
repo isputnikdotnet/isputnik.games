@@ -1153,16 +1153,18 @@
 /* Each other │ vs Computer: one segmented row over the board's switches. */
 .board-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
   gap: 2px;
   padding: 3px;
   border-radius: 10px;
   background: var(--surface-2);
 }
 
+/* Four boards: one row where the panel is wide, two where it is not. */
 .board-tab {
   min-height: 32px;
   padding: 0 var(--space-2);
+  white-space: nowrap;
   border-radius: 8px;
   color: var(--muted);
   font-size: var(--text-sm);

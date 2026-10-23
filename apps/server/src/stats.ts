@@ -5,10 +5,12 @@
 // reported (computer_results), scored by the level beaten. The numbers are per
 // member and per game, for this month and for all time; the lobby sums or
 // filters them as its switches say, so one small answer serves every view.
-// Its Puzzles tab ranks the members' chess puzzle ratings (puzzles.ts).
+// Its Puzzles tab ranks the members' chess puzzle ratings (puzzles.ts), and
+// its Chess rating tab their chess ratings (chess-rating.ts).
 import type { AiLevel } from "@isputnik/games-engine";
 import type { Db } from "./db.js";
 import { isGuestId } from "./identity.js";
+import { chessRatingRows, type ChessRatingRow } from "./chess-rating.js";
 import { puzzleStats, type PuzzleRow } from "./puzzles.js";
 
 export interface StatsRow {
@@ -31,6 +33,8 @@ export interface FamilyStats {
   computer: { month: ComputerRow[]; all: ComputerRow[] };
   /** Chess puzzles: each member's rating and solves, all time and since `since`. */
   puzzles: PuzzleRow[];
+  /** Chess ratings (chess-rating.ts): all time only — a rating has no month. */
+  chessRatings: ChessRatingRow[];
 }
 
 export interface ComputerRow {
@@ -109,7 +113,8 @@ export function familyStats(db: Db, userId: string, since: string = monthStart()
     all: tally(rows),
     streak,
     computer: computerStats(db, names, since),
-    puzzles: puzzleStats(db, names, since)
+    puzzles: puzzleStats(db, names, since),
+    chessRatings: chessRatingRows(db, names)
   };
 }
 

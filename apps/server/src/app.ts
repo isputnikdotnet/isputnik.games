@@ -31,6 +31,8 @@ import {
   type Member
 } from "./matches.js";
 import { nextPuzzle, recordPuzzleResult, UnknownPuzzleError } from "./puzzles.js";
+import { getRecord, listReviews, saveRecord } from "./records.js";
+import { chessRatingOf } from "./chess-rating.js";
 import { familyStats, recordComputerResult } from "./stats.js";
 
 declare module "fastify" {
@@ -108,6 +110,23 @@ const puzzleResultSchema = z.object({
 });
 
 const puzzleId = (request: FastifyRequest) => z.string().regex(/^[A-Za-z0-9]{1,16}$/).parse((request.params as { id?: string }).id);
+
+// A finished chess game from one device, kept for review; the moves are
+// checked by replaying them (records.ts), so only their count is capped here.
+const recordSchema = z.object({
+  game: z.literal("chess"),
+  key: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),
+  mode: z.enum(["computer", "local"]),
+  level: z.enum(AI_LEVELS as [AiLevel, ...AiLevel[]]).optional(),
+  seat: z.union([z.literal(0), z.literal(1)]).optional(),
+  moves: z.array(z.unknown()).max(1000),
+  finish: z.object({
+    reason: z.enum(["agreed", "resigned"]),
+    resigning: z.union([z.literal(0), z.literal(1)]).optional()
+  }).optional()
+});
+
+const reviewQuerySchema = z.object({ game: z.literal("chess").default("chess") });
 
 const messageSchema = z.object({
   text: z.string().min(1).max(MESSAGE_MAX)
@@ -307,7 +326,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     if (request.identity!.role === "guest") return reply.code(403).send({ error: "Guests have no family results" });
     const input = computerResultSchema.parse(request.body ?? {});
     const recorded = recordComputerResult(db, request.identity!.id, input);
-    return reply.code(recorded ? 201 : 200).send({ recorded });
+    // A chess game moves the chess rating: the answer carries where it stands now.
+    const chessRating = input.game === "chess" ? chessRatingOf(db, request.identity!.id) : undefined;
+    return reply.code(recorded ? 201 : 200).send({ recorded, chessRating });
   });
 
   // Chess puzzles, for members: a guest is here for one match.
@@ -321,6 +342,25 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     if (request.identity!.role === "guest") return reply.code(403).send({ error: "Puzzles are for the family" });
     const input = puzzleResultSchema.parse(request.body ?? {});
     return recordPuzzleResult(db, request.identity!.id, puzzleId(request), input);
+  });
+
+  // The member's chess rating, for the panel once an online game is over.
+  app.get(`${API}/chess/rating`, { preHandler: requireMember }, async (request) => chessRatingOf(db, request.identity!.id));
+
+  // Finished games for review: the member's own, online and on one device.
+  app.post(`${API}/records`, { preHandler: requireMember }, async (request, reply) => {
+    const saved = saveRecord(db, request.identity!.id, recordSchema.parse(request.body ?? {}));
+    return reply.code(saved.recorded ? 201 : 200).send(saved);
+  });
+
+  app.get(`${API}/records`, { preHandler: requireMember }, async (request) => {
+    const { game } = reviewQuerySchema.parse(request.query ?? {});
+    return { items: listReviews(db, request.identity!.id, game) };
+  });
+
+  app.get(`${API}/records/:id`, { preHandler: requireMember }, async (request, reply) => {
+    const record = getRecord(db, request.identity!.id, z.string().regex(/^[A-Za-z0-9_-]{1,32}$/).parse((request.params as { id?: string }).id));
+    return record ?? reply.code(404).send({ error: "No such game" });
   });
 
   app.post(`${API}/matches`, { preHandler: requireMember }, async (request, reply) => {

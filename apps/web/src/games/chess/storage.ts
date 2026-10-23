@@ -59,11 +59,16 @@ export function loadChessGame(): LoadedChessGame | null {
   }
 }
 
-export function saveChessGame(game: LoadedChessGame): void {
-  const status = game.state.status;
-  const finished = status.kind === "finished" && (status.reason === "agreed" || status.reason === "resigned")
+/** How a game the rules did not end was ended (a draw agreed, a resignation), to replay it later. */
+export function finishOf(state: ChessState): SavedChessGame["finished"] {
+  const status = state.status;
+  return status.kind === "finished" && (status.reason === "agreed" || status.reason === "resigned")
     ? { reason: status.reason, resigning: status.winner === null ? undefined : (status.winner === 0 ? 1 : 0) as PlayerIndex }
     : null;
+}
+
+export function saveChessGame(game: LoadedChessGame): void {
+  const finished = finishOf(game.state);
   const saved: SavedChessGame = { setup: game.setup, key: game.key, moves: game.state.moves, finished };
   try {
     localStorage.setItem(KEY, JSON.stringify(saved));
