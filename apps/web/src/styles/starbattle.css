@@ -661,9 +661,12 @@ body[data-arena="star"] .setup-label {
     padding: 3px;
   }
 
+  /* Name over count-and-pips. The pip row can give way (minmax(0, …), pips
+     that shrink) so a narrow screen or a large font never pushes it over
+     the VS into the other half. */
   .arena-strip-half {
     display: grid;
-    grid-template-columns: auto auto;
+    grid-template-columns: auto minmax(0, max-content);
     justify-content: center;
     align-items: center;
     column-gap: 6px;
@@ -685,10 +688,14 @@ body[data-arena="star"] .setup-label {
   }
 
   .arena-strip .arena-pips {
+    display: flex;
+    min-width: 0;
     gap: 2px;
   }
 
   .arena-strip .arena-pip {
+    flex: 0 1 7px;
+    min-width: 3px;
     width: 7px;
     height: 7px;
     border-radius: 2px;
