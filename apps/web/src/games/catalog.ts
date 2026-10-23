@@ -1,13 +1,14 @@
-import { CircleDot, Satellite, type LucideIcon } from "lucide-react";
+import { ChessKnight, CircleDot, Satellite, type LucideIcon } from "lucide-react";
 import { loadDotsGame } from "./dots/storage";
 import { loadStarBattleGame } from "./starbattle/storage";
+import { loadChessGame } from "./chess/storage";
 
 // What the lobby and the invite dialog show for each game in the engine's
 // registry: an icon and the keys of its name and summary, and whether a local
 // game of it is in progress on this device. A game without an entry here is
 // not offered, whatever the engine knows.
-export type GameNameKey = "games.dots.name" | "games.starbattle.name";
-export type GameSummaryKey = "games.dots.summary" | "games.starbattle.summary";
+export type GameNameKey = "games.dots.name" | "games.starbattle.name" | "games.chess.name";
+export type GameSummaryKey = "games.dots.summary" | "games.starbattle.summary" | "games.chess.summary";
 
 export interface CatalogEntry {
   icon: LucideIcon;
@@ -28,5 +29,11 @@ export const CATALOG: Record<string, CatalogEntry> = {
     name: "games.starbattle.name",
     summary: "games.starbattle.summary",
     inProgress: () => loadStarBattleGame()?.state.status.kind === "playing"
+  },
+  chess: {
+    icon: ChessKnight,
+    name: "games.chess.name",
+    summary: "games.chess.summary",
+    inProgress: () => loadChessGame()?.state.status.kind === "playing"
   }
 };

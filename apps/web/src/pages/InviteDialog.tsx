@@ -58,9 +58,9 @@ export function InviteDialog({ myId, onClose, onSent }: { myId: string; onClose:
     setBusy(true);
     setError(null);
     try {
-      const options = game === "dots" ? { size, targetCaptures: target } : { fleet };
+      const options = game === "dots" ? { size, targetCaptures: target } : game === "starbattle" ? { fleet } : {};
       if (game === "dots") saveDotsSetup({ ...loadDotsSetup(), size, targetCaptures: target });
-      else saveStarBattleSetup({ ...loadStarBattleSetup(), fleet });
+      else if (game === "starbattle") saveStarBattleSetup({ ...loadStarBattleSetup(), fleet });
       if (guest) {
         setLink(await createGuestInvite({ game, options, seat, guestName: name }));
         setBusy(false);
@@ -191,6 +191,12 @@ export function InviteDialog({ myId, onClose, onSent }: { myId: string; onClose:
             ))}
           </>
         )}
+        {game === "chess" && row(t("invite.yourColour"), (
+          <div className="chip-row">
+            <Button variant="chip" selected={seat === 0} onClick={() => setSeat(0)}>{t("chess.players.white")}</Button>
+            <Button variant="chip" selected={seat === 1} onClick={() => setSeat(1)}>{t("chess.players.black")}</Button>
+          </div>
+        ))}
         {!ready && !guest && members && members.length > 0 && <p className="muted invite-hint">{t("invite.pickSomeone")}</p>}
         {error !== null && <MessageBox tone="error" title={guest ? t("invite.linkFailed") : t("invite.failed")}>{error}</MessageBox>}
       </div>

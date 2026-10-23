@@ -8,6 +8,7 @@ import { useSyncExternalStore } from "react";
 // whether a phone beeps is the person's own business.
 export type Cue =
   | "dot" | "dotTheirs" | "capture" | "captured" | "lost"
+  | "take" | "check"
   | "deploy" | "fire" | "miss" | "hit" | "destroyed"
   | "yourMove" | "message" | "invite" | "win" | "lose" | "draw";
 
@@ -158,6 +159,15 @@ const cues: Record<Cue, (ctx: AudioContext, out: AudioNode, at: number) => numbe
   lost: (ctx, out, at) => {
     tone(ctx, out, { type: "triangle", freq: 300, to: 160, at, dur: 0.25, gain: 0.5 });
     return 0.25;
+  },
+  take: (ctx, out, at) => {
+    tone(ctx, out, { type: "triangle", freq: 520, to: 260, at, dur: 0.12, gain: 0.8 });
+    noise(ctx, out, { at, dur: 0.08, gain: 0.25, filter: "bandpass", freq: 1800, to: 700 });
+    return 0.12;
+  },
+  check: (ctx, out, at) => {
+    notes(ctx, out, at + 0.05, [988, 988], 0.09, 0.06, "square", 0.12);
+    return 0.3;
   },
   deploy: (ctx, out, at) => {
     tone(ctx, out, { type: "sawtooth", freq: 140, to: 520, at, dur: 0.3, gain: 0.12 });

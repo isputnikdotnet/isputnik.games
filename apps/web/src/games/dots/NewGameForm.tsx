@@ -2,39 +2,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dots, type AiLevel, type PlayerIndex } from "@isputnik/games-engine";
 import { Button } from "../../shared/Button";
+import { Choice } from "../../shared/Choice";
 import { loadDotsSetup, type DotsMode, type DotsSetup } from "./storage";
 
 const TARGETS: (number | null)[] = [null, 5, 10, 20];
-
-function Choice<T extends string | number | null>({
-  label,
-  value,
-  options,
-  onChange
-}: {
-  label: string;
-  value: T;
-  options: { value: T; label: string }[];
-  onChange: (value: T) => void;
-}) {
-  return (
-    <div className="setup-row" role="group" aria-label={label}>
-      <span className="setup-label">{label}</span>
-      <div className="chip-row">
-        {options.map((option) => (
-          <Button
-            key={String(option.value)}
-            variant="chip"
-            selected={option.value === value}
-            onClick={() => onChange(option.value)}
-          >
-            {option.label}
-          </Button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function NewGameForm({ onStart }: { onStart: (setup: DotsSetup) => void }) {
   const { t } = useTranslation();

@@ -18,7 +18,17 @@ export type FinishReason =
   /** Both players agreed to stop and count. */
   | "agreed"
   /** One player gave up; the other wins. */
-  | "resigned";
+  | "resigned"
+  /** Chess: the king is in check and cannot get out of it. */
+  | "checkmate"
+  /** Chess: no legal move, not in check — a draw. */
+  | "stalemate"
+  /** Chess: the same position for the third time — a draw. */
+  | "repetition"
+  /** Chess: fifty moves each without a capture or a pawn move — a draw. */
+  | "fifty-moves"
+  /** Chess: neither side has enough left to mate — a draw. */
+  | "material";
 
 export type GameStatus =
   | { kind: "playing"; turn: PlayerIndex }

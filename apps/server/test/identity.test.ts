@@ -66,7 +66,7 @@ describe("api", () => {
     expect((await app.inject({ method: "GET", url: "/games/api/me" })).statusCode).toBe(401);
     const me = await app.inject({ method: "GET", url: "/games/api/me", headers: gatewayHeaders() });
     expect(me.statusCode).toBe(200);
-    expect(me.json()).toMatchObject({ user: { id: "u_42", name: "Мама" }, games: ["dots", "starbattle"] });
+    expect(me.json()).toMatchObject({ user: { id: "u_42", name: "Мама" }, games: ["dots", "starbattle", "chess"] });
   });
 
   it("ignores identity headers from a caller without the secret", async () => {

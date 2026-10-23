@@ -9,7 +9,7 @@ import { play, type Cue } from "./sound";
 // the page opened, so a match opened mid-game does not replay its history, and
 // an undo or a new game is silent.
 export interface SoundState {
-  game: "dots" | "starbattle";
+  game: "dots" | "starbattle" | "chess";
   feed: readonly GameEvent[];
   /** This screen's seat; null when both seats play here (hot-seat Dots). */
   me: PlayerIndex | null;
@@ -30,6 +30,12 @@ export function eventCues(game: SoundState["game"], event: GameEvent, me: Player
     const out: Cue[] = [mine ? "dot" : "dotTheirs"];
     if ((event.captured as number) > 0) out.push(me === null || mine ? "capture" : "captured");
     else if (event.lost) out.push("lost");
+    return out;
+  }
+  if (game === "chess") {
+    // The wooden tick of a piece set down; a take knocks harder; check rings.
+    const out: Cue[] = [event.capture ? "take" : mine ? "dot" : "dotTheirs"];
+    if (event.check && !event.mate) out.push("check");
     return out;
   }
   if (event.kind === "deploy") return ["deploy"];

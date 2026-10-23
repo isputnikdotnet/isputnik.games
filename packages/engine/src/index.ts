@@ -7,3 +7,6 @@ export type { DotsMove, DotsOptions, DotsState, BoardSize } from "./dots/rules.j
 export * as StarBattle from "./starbattle/index.js";
 export { starbattle } from "./starbattle/index.js";
 export type { StarBattleMove, StarBattleOptions, StarBattleState, Vessel, FleetKind, LastShot, ShotResult, Phase as StarBattlePhase } from "./starbattle/rules.js";
+export * as Chess from "./chess/index.js";
+export { chess } from "./chess/index.js";
+export type { ChessMove, ChessOptions, ChessState, ChessMoveNote, Promotion } from "./chess/rules.js";

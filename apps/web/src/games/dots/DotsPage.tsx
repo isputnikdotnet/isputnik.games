@@ -78,6 +78,7 @@ export function DotsPage() {
       case "board-full": return t("dots.end.reasonBoardFull");
       case "agreed": return t("dots.end.reasonAgreed");
       case "resigned": return t("dots.end.reasonResigned", { player: seatName(setup, status.winner === 0 ? 1 : 0) });
+      default: return null;
     }
   })();
 

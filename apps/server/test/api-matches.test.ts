@@ -89,7 +89,7 @@ describe("matches API", () => {
     const bad = await post("/games/api/matches", mum, { game: "dots", opponent: { id: "" } });
     expect(bad.statusCode).toBe(400);
     expect(bad.json().error).toBe("Invalid request");
-    const unknown = await post("/games/api/matches", mum, { game: "chess", options: {}, opponent: { id: "dad", name: "Dad" } });
+    const unknown = await post("/games/api/matches", mum, { game: "go", options: {}, opponent: { id: "dad", name: "Dad" } });
     expect(unknown.statusCode).toBe(400);
     expect(unknown.json().error).toBe("Unknown game");
   });

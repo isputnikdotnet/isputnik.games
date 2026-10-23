@@ -52,7 +52,7 @@ describe("invitations", () => {
 
   it("refuses a self-invite, an unknown game and bad options", () => {
     expect(() => createMatch(db, mum, { game: "dots", options: { size: 10, targetCaptures: null }, opponent: mum, seat: 0 })).toThrow(MatchError);
-    expect(() => createMatch(db, mum, { game: "chess", options: {}, opponent: dad, seat: 0 })).toThrow(MatchError);
+    expect(() => createMatch(db, mum, { game: "go", options: {}, opponent: dad, seat: 0 })).toThrow(MatchError);
     expect(() => createMatch(db, mum, { game: "dots", options: { size: 7, targetCaptures: null }, opponent: dad, seat: 0 })).toThrow(MatchError);
   });
 
@@ -181,5 +181,34 @@ describe("summaryFor", () => {
     answerInvitation(db, "dad", fresh.id, "accept");
     db.prepare("UPDATE matches SET updated_at = '2024-01-01T00:00:00.000Z' WHERE id = ?").run(stale.id);
     expect(summaryFor(db, "dad").yourMove.map((m) => m.id)).toEqual([fresh.id, stale.id]);
+  });
+});
+
+describe("a chess match", () => {
+  it("is played move by move to a checkmate the server records", () => {
+    const match = createMatch(db, mum, { game: "chess", options: { colour: "white" }, opponent: dad, seat: 0 });
+    // Chess has no options; whatever came with them is not kept.
+    expect(match.options).toEqual({});
+    answerInvitation(db, "dad", match.id, "accept");
+    const moves: [string, string, string][] = [
+      ["mum", "e2", "e4"], ["dad", "e7", "e5"], ["mum", "f1", "c4"], ["dad", "b8", "c6"],
+      ["mum", "d1", "h5"], ["dad", "g8", "f6"], ["mum", "h5", "f7"]
+    ];
+    let detail = getMatch(db, "mum", match.id);
+    moves.forEach(([who, from, to], count) => {
+      detail = playMove(db, who, match.id, { from, to }, count);
+    });
+    expect(detail.status).toBe("finished");
+    expect(detail.finishReason).toBe("checkmate");
+    expect(detail.winner).toBe(0);
+    expect(detail.feed.map((event) => event.san)).toEqual(["e4", "e5", "Bc4", "Nc6", "Qh5", "Nf6", "Qxf7#"]);
+  });
+
+  it("refuses a move the rules do not allow, and a promotion without a piece", () => {
+    const match = createMatch(db, mum, { game: "chess", options: {}, opponent: dad, seat: 0 });
+    answerInvitation(db, "dad", match.id, "accept");
+    expect(() => playMove(db, "mum", match.id, { from: "e2", to: "e5" }, 0)).toThrow(MatchError);
+    expect(() => playMove(db, "mum", match.id, { from: "e2", to: "e4", promotion: "q" }, 0)).toThrow(MatchError);
+    expect(playMove(db, "mum", match.id, { from: "e2", to: "e4" }, 0).moveCount).toBe(1);
   });
 });
