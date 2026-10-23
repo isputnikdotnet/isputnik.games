@@ -166,6 +166,15 @@
   border-color: var(--line);
 }
 
+.bare-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
 .chip-button {
   min-height: 38px;
   padding: 0 14px;

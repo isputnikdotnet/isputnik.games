@@ -223,6 +223,85 @@ body[data-arena="star"] .setup-label {
   width: 100%;
 }
 
+/* ── The phone's battle strip: one board at a time ─────────────────────── */
+
+.arena-boards.is-phone {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.arena-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--arena-line);
+  border-radius: 14px;
+  background: var(--arena-panel);
+}
+
+.arena-strip-half {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 64px;
+  padding: 8px 6px;
+  border-radius: 11px;
+  color: var(--arena-muted);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.arena-strip-half.is-on {
+  color: #ffffff;
+}
+
+.arena-strip-half.is-you.is-on {
+  background: rgba(8, 28, 60, 0.95);
+  box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.4);
+}
+
+.arena-strip-half.is-them.is-on {
+  background: rgba(22, 12, 46, 0.95);
+  box-shadow: inset 0 0 0 1px rgba(190, 120, 255, 0.35);
+}
+
+.arena-strip-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.arena-strip-count {
+  font-size: var(--text-sm);
+  color: #c9d6ff;
+}
+
+.arena-strip-half.is-you .arena-pip.is-lit { background: var(--arena-accent); }
+.arena-strip-half.is-them .arena-pip.is-lit { background: var(--arena-danger); }
+
+.arena-strip-vs {
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6f7da3;
+}
+
+.arena-boards.is-phone .arena-panel {
+  order: 0;
+  padding: var(--space-3);
+}
+
 /* ── The board itself ──────────────────────────────────────────────────── */
 
 .star-board {
@@ -505,14 +584,6 @@ body[data-arena="star"] .setup-label {
 
   .arena-panel {
     width: 100%;
-  }
-
-  .arena-panel.is-enemy { order: 1; }
-  .arena-panel.is-own { order: 2; }
-
-  .arena-panel.is-own .star-board {
-    width: 70%;
-    margin: 0 auto;
   }
 
   .star-editor-body {

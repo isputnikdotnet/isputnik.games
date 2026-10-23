@@ -240,7 +240,11 @@
       "deploying": "Размещение",
       "over": "Игра окончена",
       "turn": "Ход {{count}}",
-      "intact": "{{count}} / {{total}} кораблей целы"
+      "intact": "{{count}} / {{total}} кораблей целы",
+      "whichSector": "Какой сектор показать",
+      "vs": "против",
+      "stripYou": "Ваш флот",
+      "stripThem": "Противник"
     }
   },
   "comms": {

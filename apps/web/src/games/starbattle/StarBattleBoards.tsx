@@ -1,11 +1,20 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StarBattle, otherPlayer, type PlayerIndex, type StarBattleState, type ShotResult } from "@isputnik/games-engine";
+import { Button } from "../../shared/Button";
+import { PHONE_ARENA, useMediaQuery } from "../../shared/useMediaQuery";
 import { SectorBoard, cellName } from "./SectorBoard";
 
-// The two sectors as one player sees them, each in its panel: their own fleet
-// with the other side's shots on it, and the enemy sector with their own shots
-// and the craft they have destroyed. Each panel says how much of that fleet
-// is still intact, in words and as a row of pips.
+type Side = "own" | "enemy";
+
+// The two sectors as one player sees them: their own fleet with the other
+// side's shots on it, and the enemy sector with their own shots and the craft
+// they have destroyed. On a desktop both sit side by side, each in a panel
+// that says how much of that fleet is still intact. On a phone one board
+// shows at a time under a battle strip — YOUR FLEET vs ENEMY SECTOR, with the
+// same counts — and the shown board follows the turn: the enemy sector when
+// it is the player's shot, their own fleet while the other side fires. A tap
+// on the strip overrides that until the turn changes again.
 export function StarBattleBoards({
   state,
   viewer,
@@ -24,6 +33,7 @@ export function StarBattleBoards({
   revealEnemy?: boolean;
 }) {
   const { t } = useTranslation();
+  const phone = useMediaQuery(PHONE_ARENA);
   const other = otherPlayer(viewer);
   const columns = t("starbattle.columns");
   const total = StarBattle.FLEETS[state.fleet].length;
@@ -31,53 +41,105 @@ export function StarBattleBoards({
   const theirs = revealEnemy ? state.vessels[other] ?? [] : StarBattle.destroyedVessels(state, other);
   const last = state.lastShot;
   const open = (x: number, y: number) => state.shots[viewer][y * state.size + x] === StarBattle.UNKNOWN;
+  const myIntact = total - state.destroyed[other];
+  const theirIntact = total - state.destroyed[viewer];
+
+  // Whose turn it is, as a key: an override on the strip lasts one turn.
+  const turnKey = state.status.kind === "playing" ? `turn-${state.status.turn}` : "over";
+  const auto: Side = state.status.kind === "playing" && state.status.turn !== viewer ? "own" : "enemy";
+  const [override, setOverride] = useState<{ side: Side; turnKey: string } | null>(null);
+  const shown: Side = override && override.turnKey === turnKey ? override.side : auto;
+
+  const enemyBoard = (
+    <SectorBoard
+      size={state.size}
+      shots={state.shots[viewer]}
+      vessels={theirs}
+      kind="enemy"
+      lastShot={last && last.by === viewer ? last : null}
+      canTarget={canFire ? open : undefined}
+      onCell={canFire ? (x, y) => open(x, y) && onFire(x, y) : undefined}
+      columns={columns}
+      label={t("starbattle.sector.enemyAria")}
+    />
+  );
+  const ownBoard = (
+    <SectorBoard
+      size={state.size}
+      shots={state.shots[other]}
+      vessels={mine}
+      kind="own"
+      lastShot={last && last.by === other ? last : null}
+      columns={columns}
+      label={t("starbattle.sector.ownAria")}
+    />
+  );
+
+  if (phone) {
+    return (
+      <div className="arena-boards is-phone">
+        <div className="arena-strip" role="tablist" aria-label={t("starbattle.arena.whichSector")}>
+          <Button
+            variant="bare"
+            role="tab"
+            aria-selected={shown === "own"}
+            className={`arena-strip-half is-you${shown === "own" ? " is-on" : ""}`}
+            onClick={() => setOverride({ side: "own", turnKey })}
+          >
+            <span className="arena-strip-name">{t("starbattle.arena.stripYou")}</span>
+            <span className="arena-strip-count">{myIntact} / {total}</span>
+            <Pips lit={myIntact} total={total} />
+          </Button>
+          <span className="arena-strip-vs" aria-hidden="true">{t("starbattle.arena.vs")}</span>
+          <Button
+            variant="bare"
+            role="tab"
+            aria-selected={shown === "enemy"}
+            className={`arena-strip-half is-them${shown === "enemy" ? " is-on" : ""}`}
+            onClick={() => setOverride({ side: "enemy", turnKey })}
+          >
+            <span className="arena-strip-name">{t("starbattle.arena.stripThem")}</span>
+            <span className="arena-strip-count">{theirIntact} / {total}</span>
+            <Pips lit={theirIntact} total={total} />
+          </Button>
+        </div>
+        <section className={`arena-panel is-${shown === "enemy" ? "enemy" : "own"}`} aria-label={shown === "enemy" ? t("starbattle.sector.enemyAria") : t("starbattle.sector.ownAria")}>
+          {shown === "enemy" ? enemyBoard : ownBoard}
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="arena-boards">
       <section className="arena-panel is-enemy" aria-label={t("starbattle.sector.enemyAria")}>
         <header className="arena-panel-head">
           <h2>{t("starbattle.sector.theirs", { name: names[other] })}</h2>
-          <Intact intact={total - state.destroyed[viewer]} total={total} tone="them" />
+          <span className="arena-intact is-them">
+            <span>{t("starbattle.arena.intact", { count: theirIntact, total })}</span>
+            <Pips lit={theirIntact} total={total} />
+          </span>
         </header>
-        <SectorBoard
-          size={state.size}
-          shots={state.shots[viewer]}
-          vessels={theirs}
-          kind="enemy"
-          lastShot={last && last.by === viewer ? last : null}
-          canTarget={canFire ? open : undefined}
-          onCell={canFire ? (x, y) => open(x, y) && onFire(x, y) : undefined}
-          columns={columns}
-          label={t("starbattle.sector.enemyAria")}
-        />
+        {enemyBoard}
       </section>
       <section className="arena-panel is-own" aria-label={t("starbattle.sector.ownAria")}>
         <header className="arena-panel-head">
           <h2>{t("starbattle.sector.yours", { name: names[viewer] })}</h2>
-          <Intact intact={total - state.destroyed[other]} total={total} tone="you" />
+          <span className="arena-intact is-you">
+            <span>{t("starbattle.arena.intact", { count: myIntact, total })}</span>
+            <Pips lit={myIntact} total={total} />
+          </span>
         </header>
-        <SectorBoard
-          size={state.size}
-          shots={state.shots[other]}
-          vessels={mine}
-          kind="own"
-          lastShot={last && last.by === other ? last : null}
-          columns={columns}
-          label={t("starbattle.sector.ownAria")}
-        />
+        {ownBoard}
       </section>
     </div>
   );
 }
 
-function Intact({ intact, total, tone }: { intact: number; total: number; tone: "you" | "them" }) {
-  const { t } = useTranslation();
+function Pips({ lit, total }: { lit: number; total: number }) {
   return (
-    <span className={`arena-intact is-${tone}`}>
-      <span>{t("starbattle.arena.intact", { count: intact, total })}</span>
-      <span className="arena-pips" aria-hidden="true">
-        {Array.from({ length: total }, (_, i) => <span key={i} className={`arena-pip${i < intact ? " is-lit" : ""}`} />)}
-      </span>
+    <span className="arena-pips" aria-hidden="true">
+      {Array.from({ length: total }, (_, i) => <span key={i} className={`arena-pip${i < lit ? " is-lit" : ""}`} />)}
     </span>
   );
 }

@@ -364,8 +364,11 @@ the old address under the new id.
   with a turn chip on the right (YOUR TURN / COMPUTER'S TURN / DEPLOYING / GAME
   OVER, and "Turn n" counted as one more per miss); the two sectors as panels
   with "n / total craft intact" and a row of pips; the Comms panel; a status bar
-  with the instruction, the last event and the actions. On a phone the enemy
-  sector comes first, then the own one smaller.
+  with the instruction, the last event and the actions. On a phone (≤900px)
+  one board shows at a time under a **battle strip** — YOUR FLEET vs ENEMY
+  SECTOR, each half with its count and pips — and the shown board follows the
+  turn: the enemy sector on the player's shot, their own fleet while the other
+  side fires; a tap on the strip overrides that until the turn changes.
 - **Comms**, the one panel every game wears (`shared/Comms`, `shared/commsLines`):
   a dark console with one line per move in the game's own words, the players'
   messages in between, and a line from the game at the end (your move, X to

@@ -234,7 +234,11 @@
       "deploying": "Deploying",
       "over": "Game over",
       "turn": "Turn {{count}}",
-      "intact": "{{count}} / {{total}} craft intact"
+      "intact": "{{count}} / {{total}} craft intact",
+      "whichSector": "Which sector to show",
+      "vs": "vs",
+      "stripYou": "Your fleet",
+      "stripThem": "Enemy sector"
     }
   },
   "comms": {

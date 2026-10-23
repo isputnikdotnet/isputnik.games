@@ -8,7 +8,9 @@ import React from "react";
 //   text       borderless inline action
 //   icon       square icon-only — pass aria-label or title
 //   chip       a small pill in a row of choices; `selected` marks the chosen one
-export type ButtonVariant = "primary" | "secondary" | "danger" | "text" | "icon" | "chip";
+//   bare       no chrome of its own — the className carries the look (a tab in
+//              the arena's battle strip)
+export type ButtonVariant = "primary" | "secondary" | "danger" | "text" | "icon" | "chip" | "bare";
 
 const variantClass: Record<ButtonVariant, string> = {
   primary: "primary-button",
@@ -16,7 +18,8 @@ const variantClass: Record<ButtonVariant, string> = {
   danger: "danger-button",
   text: "text-button",
   icon: "icon-button",
-  chip: "chip-button"
+  chip: "chip-button",
+  bare: "bare-button"
 };
 
 export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
