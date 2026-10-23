@@ -36,6 +36,10 @@ RUN npm ci --omit=dev --workspace apps/server --workspace packages/engine     &&
 FROM node:26-slim
 WORKDIR /app
 
+# Unraid draws the container's icon from this label when its saved template
+# has none, so a template edit or an update cannot leave the tile blank.
+LABEL net.unraid.docker.icon="https://raw.githubusercontent.com/isputnikdotnet/isputnik.games/main/Assets/icon.png"
+
 # gosu drops the entrypoint from root to the runtime user (scripts/docker-entrypoint.sh).
 RUN apt-get update && apt-get install -y --no-install-recommends gosu \
     && rm -rf /var/lib/apt/lists/*
