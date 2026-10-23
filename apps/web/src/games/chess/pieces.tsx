@@ -118,9 +118,9 @@ export function ChessPiece({ letter, className }: { letter: string; className?: 
   );
 }
 
-/** The shading Walnut paints its pieces with (chess.css names the ids), put
- *  once on a page that has a board. Every other theme fills flat, and where
- *  these are missing Walnut falls back to flat ivory and ebony. */
+/** The shading Walnut and Sputnik 1961 paint their pieces with (chess.css
+ *  names the ids), put once on a page that has a board. The other themes fill
+ *  flat, and where these are missing the two fall back to flat colours. */
 export function ChessDefs() {
   return (
     <svg className="chess-defs" width="0" height="0" aria-hidden="true" focusable="false">
@@ -134,6 +134,11 @@ export function ChessDefs() {
           <stop offset="0" stopColor="#5a4130" />
           <stop offset="0.5" stopColor="#2a1c14" />
           <stop offset="1" stopColor="#120a06" />
+        </linearGradient>
+        <linearGradient id="chess-charcoal" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#57524c" />
+          <stop offset="0.5" stopColor="#23201d" />
+          <stop offset="1" stopColor="#0c0b0a" />
         </linearGradient>
       </defs>
     </svg>

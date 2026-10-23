@@ -1,8 +1,9 @@
 /* Chess: the board and its pieces keep their own colours whatever the app's
    theme — light and dark squares are the game's own language, like Dots' blue
-   and red. Which colours is the player's choice (theme.ts), from flat Mono to
-   shaded Walnut; Classic wood is the default. The selectors match the root
-   (the whole page) and a theme swatch alike, so the picker can show each one;
+   and red. Which colours is the player's choice (theme.ts): from flat Mono to
+   shaded Walnut, then three of our own — Sputnik 1961, Gzhel and Khokhloma;
+   Classic wood is the default. The selectors match the root (the whole page)
+   and a theme swatch alike, so the picker can show each one;
    every theme starts from the Classic set below and changes what it needs.
    The panel beside the board wears the app's theme. */
 :root,
@@ -13,6 +14,9 @@
   --chess-dark-grain: none;
   --chess-frame: transparent;
   --chess-frame-width: 0;
+  --chess-frame-art: none;
+  --chess-frame-rule: 0 0 0 0 transparent;
+  --chess-coord-font: inherit;
   --chess-mark: rgba(30, 72, 40, 0.42);
   --chess-last: rgba(222, 186, 46, 0.42);
   --chess-selected: rgba(222, 186, 46, 0.68);
@@ -22,6 +26,7 @@
   --chess-black-fill: #2b2622;
   --chess-black-line: #0f0d0b;
   --chess-black-detail: #d8cfbf;
+  --chess-white-detail: var(--chess-white-line);
   --chess-white-paint: var(--chess-white-fill);
   --chess-black-paint: var(--chess-black-fill);
   --chess-piece-shadow: none;
@@ -84,6 +89,75 @@
   --chess-piece-shadow: drop-shadow(0 1.5px 1.2px rgba(0, 0, 0, 0.45));
 }
 
+/* Sputnik 1961: a club board of the space age — ivory and oxblood felt in a
+   dark bakelite frame with a brass rule, the satellite in its corner and a
+   nameplate at its foot; charcoal and ivory pieces picked out in brass. */
+[data-chess-theme="sputnik"] {
+  --chess-light: #e8dbbd;
+  --chess-dark: #8a2f2a;
+  --chess-light-grain: repeating-linear-gradient(45deg, rgba(120, 90, 50, 0.05) 0 1px, transparent 1px 3px);
+  --chess-dark-grain: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.08) 0 1px, transparent 1px 3px);
+  --chess-frame: #2b1a12;
+  --chess-frame-width: clamp(10px, 2.4vmin, 18px);
+  --chess-frame-art: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2040%2016%27%3E%3Cg%20stroke%3D%27%23c9a24a%27%20stroke-width%3D%270.7%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M30%205%20L4%2014%20M30%205%20L10%2015.5%20M30%205%20L16%2015.8%20M30%205%20L22%2015.8%27%2F%3E%3C%2Fg%3E%3Ccircle%20cx%3D%2730%27%20cy%3D%275%27%20r%3D%273.4%27%20fill%3D%27%23c9a24a%27%2F%3E%3Ccircle%20cx%3D%2729%27%20cy%3D%274%27%20r%3D%271.1%27%20fill%3D%27%23f3dfa2%27%2F%3E%3Cpath%20d%3D%27M37%201.2%20l0.5%201.1%201.2%200.1%20-0.9%200.8%200.3%201.2%20-1.1%20-0.6%20-1.1%200.6%200.3%20-1.2%20-0.9%20-0.8%201.2%20-0.1z%27%20fill%3D%27%23c9a24a%27%2F%3E%3C%2Fsvg%3E") right 4% top 0 / auto var(--chess-frame-width) no-repeat, url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20120%2014%27%3E%3Crect%20x%3D%270.6%27%20y%3D%271.6%27%20width%3D%27118.8%27%20height%3D%2710.8%27%20rx%3D%275.4%27%20fill%3D%27%2324160f%27%20stroke%3D%27%23c9a24a%27%20stroke-width%3D%271%27%2F%3E%3Ccircle%20cx%3D%276%27%20cy%3D%277%27%20r%3D%271.3%27%20fill%3D%27%23c9a24a%27%2F%3E%3Ccircle%20cx%3D%27114%27%20cy%3D%277%27%20r%3D%271.3%27%20fill%3D%27%23c9a24a%27%2F%3E%3Ctext%20x%3D%2760%27%20y%3D%279.6%27%20text-anchor%3D%27middle%27%20font-family%3D%27Georgia%2C%20serif%27%20font-size%3D%277%27%20letter-spacing%3D%270.4%27%20fill%3D%27%23c9a24a%27%3EiSputnik%20%C2%B7%201961%3C%2Ftext%3E%3C%2Fsvg%3E") center bottom 0 / auto var(--chess-frame-width) no-repeat;
+  --chess-frame-rule: inset 0 0 0 1.5px #c9a24a;
+  --chess-coord-font: Georgia, "Times New Roman", serif;
+  --chess-mark: rgba(30, 18, 10, 0.45);
+  --chess-last: rgba(201, 162, 74, 0.45);
+  --chess-selected: rgba(201, 162, 74, 0.72);
+  --chess-white-fill: #efe5cf;
+  --chess-white-line: #3a2a1a;
+  --chess-white-detail: #c9a24a;
+  --chess-black-fill: #22201e;
+  --chess-black-line: #0b0a09;
+  --chess-black-detail: #c9a24a;
+  --chess-white-paint: url(#chess-ivory) var(--chess-white-fill);
+  --chess-black-paint: url(#chess-charcoal) var(--chess-black-fill);
+  --chess-piece-shadow: drop-shadow(0 1.5px 1.2px rgba(0, 0, 0, 0.45));
+}
+
+/* Gzhel: cobalt painted on white porcelain — a faint ring on every square,
+   white pieces drawn in blue, blue pieces in white. */
+[data-chess-theme="gzhel"] {
+  --chess-light: #f8fafd;
+  --chess-dark: #7193d2;
+  --chess-light-grain: radial-gradient(circle, transparent 0 26%, rgba(51, 88, 168, 0.13) 27% 31%, transparent 32%);
+  --chess-dark-grain: radial-gradient(circle, transparent 0 26%, rgba(255, 255, 255, 0.22) 27% 31%, transparent 32%);
+  --chess-frame: #23407e;
+  --chess-frame-width: 6px;
+  --chess-mark: rgba(19, 38, 80, 0.45);
+  --chess-last: rgba(120, 190, 255, 0.4);
+  --chess-selected: rgba(120, 190, 255, 0.7);
+  --chess-white-fill: #ffffff;
+  --chess-white-line: #23407e;
+  --chess-black-fill: #1f3f8f;
+  --chess-black-line: #0e2050;
+  --chess-black-detail: #ffffff;
+  --chess-piece-shadow: drop-shadow(0 1px 1px rgba(14, 32, 80, 0.3));
+}
+
+/* Khokhloma: gold and black lacquer with cinnabar — red pieces for White,
+   black ones edged in gold for Black, in a red frame. */
+[data-chess-theme="khokhloma"] {
+  --chess-light: #e0a93b;
+  --chess-dark: #1b1311;
+  --chess-light-grain: radial-gradient(circle at 30% 30%, rgba(255, 236, 170, 0.35), transparent 60%);
+  --chess-dark-grain:
+    radial-gradient(circle at 78% 22%, rgba(198, 45, 31, 0.5) 0 7%, transparent 8%),
+    radial-gradient(circle at 22% 78%, rgba(224, 169, 59, 0.35) 0 5%, transparent 6%);
+  --chess-frame: #8f1d14;
+  --chess-frame-width: 6px;
+  --chess-mark: rgba(143, 29, 20, 0.6);
+  --chess-last: rgba(255, 220, 120, 0.4);
+  --chess-selected: rgba(255, 220, 120, 0.7);
+  --chess-white-fill: #c62d1f;
+  --chess-white-line: #3a0a05;
+  --chess-black-fill: #120c0a;
+  --chess-black-line: #e0a93b;
+  --chess-black-detail: #e0a93b;
+  --chess-piece-shadow: drop-shadow(0 1.5px 1px rgba(0, 0, 0, 0.45));
+}
+
 /* On the game stage the board and its two players are one column; the
    stage sizes the square from the window, less the two strips. */
 .chess-stage {
@@ -103,10 +177,22 @@
   aspect-ratio: 1;
   border-radius: 8px;
   overflow: hidden;
-  border: var(--chess-frame-width) solid var(--chess-frame);
+  position: relative;
+  border: var(--chess-frame-width) solid transparent;
+  background: var(--chess-frame-art), var(--chess-frame);
+  background-origin: border-box;
   box-shadow: 0 10px 30px var(--shadow);
   user-select: none;
   touch-action: manipulation;
+}
+
+.chess-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  box-shadow: var(--chess-frame-rule);
+  pointer-events: none;
 }
 
 .chess-square {
@@ -189,6 +275,7 @@
 .chess-coord {
   position: absolute;
   z-index: 2;
+  font-family: var(--chess-coord-font);
   font-size: clamp(8px, 1.4vmin, 12px);
   font-weight: var(--weight-semibold);
   line-height: 1;
@@ -238,7 +325,7 @@
 }
 
 .chess-piece.is-white .chess-piece-detail {
-  stroke: var(--chess-white-line);
+  stroke: var(--chess-white-detail);
 }
 
 .chess-piece.is-black .chess-piece-body > * {
@@ -270,13 +357,26 @@
   gap: 8px;
   min-height: 36px;
   padding: 4px 10px;
-  border: 1px solid transparent;
+  border: 1px solid var(--line);
   border-radius: 10px;
 }
 
+/* Each player's strip wears the colour of their pieces, so "Computer" over
+   the board reads as the black side at a glance; whose move it is rings it. */
+.chess-player.is-white {
+  border-color: var(--chess-white-line);
+  background: var(--chess-white-fill);
+  color: var(--chess-white-line);
+}
+
+.chess-player.is-black {
+  border-color: var(--chess-black-line);
+  background: var(--chess-black-fill);
+  color: var(--chess-black-detail);
+}
+
 .chess-player.is-active {
-  border-color: var(--line);
-  background: var(--surface-raised);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mint) 55%, transparent);
 }
 
 .chess-player-pip {
@@ -284,7 +384,7 @@
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  border: 1px solid var(--chess-white-line);
+  border: 1px solid currentColor;
 }
 
 .chess-player.is-white .chess-player-pip {
@@ -293,11 +393,10 @@
 
 .chess-player.is-black .chess-player-pip {
   background: var(--chess-black-fill);
-  border-color: var(--chess-black-detail);
 }
 
 .chess-player.is-active .chess-player-pip {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mint) 40%, transparent);
+  background: var(--mint);
 }
 
 .chess-player-name {
@@ -322,14 +421,14 @@
 }
 
 .chess-lead {
-  color: var(--muted);
+  opacity: 0.75;
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
 }
 
 /* ── Status ────────────────────────────────────────────────────────── */
 /* At the head of the panel: whose move as a pill, why it ended, and against
-   the computer its level as one segmented row. */
+   the computer its level (changed in Settings). */
 
 .chess-status {
   display: flex;
@@ -361,30 +460,6 @@
   text-align: center;
 }
 
-.chess-status .setup-row {
-  width: 100%;
-  margin: 0;
-}
-
-.chess-status .setup-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-.chess-status .chip-row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-1);
-}
-
-.chess-status .chip-button {
-  justify-content: center;
-}
-
 /* ── Promotion ─────────────────────────────────────────────────────────── */
 
 .chess-promotion {
@@ -414,13 +489,23 @@
   height: 84%;
 }
 
-/* ── Board style (ThemeDialog.tsx) ───────────────────────────────────── */
+/* ── Settings (SettingsDialog.tsx) ───────────────────────────────────── */
 
 .chess-defs {
   position: absolute;
   width: 0;
   height: 0;
   overflow: hidden;
+}
+
+.chess-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.chess-settings .setup-row {
+  margin: 0;
 }
 
 .chess-themes {

@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { ChessPage } from "../src/games/chess/ChessPage";
 import { setChessTheme } from "../src/games/chess/theme";
 
-describe("Chess board style", () => {
+describe("Chess settings", () => {
   beforeEach(() => {
     setChessTheme("classic");
     localStorage.clear();
@@ -18,15 +18,20 @@ describe("Chess board style", () => {
     await user.click(screen.getByRole("button", { name: "Start game" }));
     expect(document.documentElement.dataset.chessTheme).toBe("classic");
 
-    await user.click(screen.getByRole("button", { name: "Board style" }));
+    await user.click(screen.getByRole("button", { name: "Settings" }));
     const choices = screen.getAllByRole("radio");
     expect(choices.map((choice) => choice.textContent)).toEqual([
       expect.stringContaining("Mono"),
       expect.stringContaining("Classic"),
       expect.stringContaining("Green"),
       expect.stringContaining("Slate"),
-      expect.stringContaining("Walnut")
+      expect.stringContaining("Walnut"),
+      expect.stringContaining("Sputnik"),
+      expect.stringContaining("Gzhel"),
+      expect.stringContaining("Khokhloma")
     ]);
+    // Two at one screen has no computer, so no level.
+    expect(screen.queryByRole("group", { name: "Level" })).not.toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Classic/ })).toHaveAttribute("aria-checked", "true");
 
     await user.click(screen.getByRole("radio", { name: /Walnut/ }));

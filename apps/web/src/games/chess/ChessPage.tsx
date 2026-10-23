@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Flag, Handshake, LogOut, Palette, Repeat2, RotateCcw, Undo2 } from "lucide-react";
-import { chess, type AiLevel, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
-import { Choice } from "../../shared/Choice";
+import { ArrowLeft, Flag, Handshake, LogOut, Repeat2, RotateCcw, Settings2, Undo2 } from "lucide-react";
+import { chess, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
 import { Comms } from "../../shared/Comms";
 import { useFeed } from "../../shared/useFeed";
 import { localSound, useGameSounds } from "../../shared/useGameSounds";
@@ -17,9 +16,11 @@ import { chessLines } from "./comms";
 import { chessReason } from "./ending";
 import { ChessNewGameForm } from "./NewGameForm";
 import { ChessTable } from "./ChessTable";
-import { ChessThemeDialog } from "./ThemeDialog";
+import { ChessSettingsDialog } from "./SettingsDialog";
 import { humanSeat, isComputerSeat, useChessGame } from "./useChessGame";
 import type { ChessSetup } from "./storage";
+
+const LEVEL_LABEL = { easy: "chess.setup.levelEasy", normal: "chess.setup.levelNormal", hard: "chess.setup.levelHard" } as const;
 
 type Pending = "draw" | "resign" | "new" | "exit" | null;
 
@@ -32,7 +33,7 @@ export function ChessPage() {
   const controller = useChessGame();
   const [pending, setPending] = useState<Pending>(null);
   const [flipped, setFlipped] = useState(false);
-  const [choosingTheme, setChoosingTheme] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // The result dialog can be put aside to look at the final position; it
   // stays aside for that ending only.
   const [resultDismissed, setResultDismissed] = useState<string | null>(null);
@@ -107,16 +108,7 @@ export function ChessPage() {
             <p className={`chess-status-line${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
             {reason && <p className="muted chess-reason">{reason}</p>}
             {setup.mode === "computer" && !finished && (
-              <Choice<AiLevel>
-                label={t("chess.setup.level")}
-                value={setup.level}
-                options={[
-                  { value: "easy", label: t("chess.setup.levelEasy") },
-                  { value: "normal", label: t("chess.setup.levelNormal") },
-                  { value: "hard", label: t("chess.setup.levelHard") }
-                ]}
-                onChange={controller.setLevel}
-              />
+              <p className="muted chess-reason">{t("chess.levelLine", { level: t(LEVEL_LABEL[setup.level]) })}</p>
             )}
           </div>
         }
@@ -131,8 +123,8 @@ export function ChessPage() {
                 <Button variant="secondary" onClick={() => setFlipped((f) => !f)}>
                   <Repeat2 size={16} aria-hidden="true" /> {t("chess.flip")}
                 </Button>
-                <Button variant="secondary" onClick={() => setChoosingTheme(true)}>
-                  <Palette size={16} aria-hidden="true" /> {t("chess.theme.open")}
+                <Button variant="secondary" onClick={() => setSettingsOpen(true)}>
+                  <Settings2 size={16} aria-hidden="true" /> {t("chess.settings.open")}
                 </Button>
                 {setup.mode === "local" && (
                   <Button variant="secondary" onClick={() => setPending("draw")} disabled={state.moves.length === 0}>
@@ -163,7 +155,13 @@ export function ChessPage() {
         }
       />
 
-      {choosingTheme && <ChessThemeDialog onClose={() => setChoosingTheme(false)} />}
+      {settingsOpen && (
+        <ChessSettingsDialog
+          level={setup.mode === "computer" && !finished ? setup.level : undefined}
+          onLevel={controller.setLevel}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
       {showResult && (
         <GameOverDialog
           headline={statusLine}

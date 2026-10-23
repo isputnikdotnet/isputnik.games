@@ -1,12 +1,13 @@
 import { useSyncExternalStore } from "react";
 
 // The look of the chess board and its pieces, from the plainest to the
-// richest. A theme is only a set of colours (and for Walnut some shading) in
-// chess.css under :root[data-chess-theme=…], so it reaches every board on the
-// page — the game, the taken pieces, the lobby's preview — without a prop.
+// richest, then three of the house's own: Sputnik 1961, Gzhel
+// porcelain and Khokhloma lacquer. A theme is only a set of colours (and some
+// shading) in chess.css under [data-chess-theme=…], so it reaches every board
+// on the page — the game, the taken pieces, the lobby's preview — without a prop.
 // Remembered per device, like the sound switch: a small phone may want Mono
 // where the family computer wears Walnut.
-export const CHESS_THEMES = ["mono", "classic", "green", "slate", "walnut"] as const;
+export const CHESS_THEMES = ["mono", "classic", "green", "slate", "walnut", "sputnik", "gzhel", "khokhloma"] as const;
 export type ChessTheme = (typeof CHESS_THEMES)[number];
 
 const STORAGE_KEY = "isputnik-games-chess-theme";

@@ -83,10 +83,12 @@ describe("ChessPage", () => {
     expect(loadChessGame()?.state.moves).toHaveLength(0);
   });
 
-  it("changes the computer's level during the game", async () => {
+  it("changes the computer's level during the game, in Settings", async () => {
     saved(["e2e4", "e7e5"], "computer");
     const user = userEvent.setup();
     render(<ChessPage />);
+    expect(screen.getByText("Against the computer · Easy")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Settings" }));
     const level = screen.getByRole("group", { name: "Level" });
     expect(within(level).getByRole("button", { name: "Easy" })).toHaveAttribute("aria-pressed", "true");
     await user.click(within(level).getByRole("button", { name: "Hard" }));
@@ -95,6 +97,8 @@ describe("ChessPage", () => {
     // The moves stay; the next new game starts at Hard too.
     expect(loadChessGame()?.state.moves).toHaveLength(2);
     expect(JSON.parse(localStorage.getItem("isputnik-games.chess.setup")!).level).toBe("hard");
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    expect(screen.getByText("Against the computer · Hard")).toBeInTheDocument();
   });
 
   it("exits to the lobby after asking, and leaves no game behind", async () => {

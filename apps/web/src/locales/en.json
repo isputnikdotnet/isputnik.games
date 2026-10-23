@@ -364,10 +364,14 @@
     "newGame": "New game",
     "exit": "Exit game",
     "taken": "Pieces taken",
+    "levelLine": "Against the computer · {{level}}",
+    "settings": {
+      "open": "Settings",
+      "title": "Settings",
+      "done": "Done"
+    },
     "theme": {
-      "open": "Board style",
       "title": "Board style",
-      "done": "Done",
       "mono": "Mono",
       "monoHint": "White and grey, the plainest",
       "classic": "Classic",
@@ -377,7 +381,13 @@
       "slate": "Slate",
       "slateHint": "Cool grey-blue",
       "walnut": "Walnut",
-      "walnutHint": "Framed, shaded pieces"
+      "walnutHint": "Framed, shaded pieces",
+      "sputnik": "Sputnik 1961",
+      "sputnikHint": "Ivory, oxblood and brass",
+      "gzhel": "Gzhel",
+      "gzhelHint": "Cobalt on white porcelain",
+      "khokhloma": "Khokhloma",
+      "khokhlomaHint": "Red and gold on black lacquer"
     },
     "end": {
       "winner": "{{player}} wins",
