@@ -53,6 +53,33 @@
     "recent": {
       "title": "Recent games"
     },
+    "board": {
+      "title": "Family leaderboard",
+      "period": "Period",
+      "month": "This month",
+      "all": "All time",
+      "game": "Game",
+      "allGames": "All games",
+      "player": "Player",
+      "won": "Won",
+      "played": "Played",
+      "you": "{{name}} (you)",
+      "emptyMonth": "No online games finished this month yet.",
+      "empty": "No online games finished yet.",
+      "note": "Online games between members. Games against the computer, and with guests, don’t count."
+    },
+    "month": {
+      "title": "Your month",
+      "when": "{{month}}, online games",
+      "played": "Played",
+      "won": "Won",
+      "streak": "Streak",
+      "streakWins_one": "win in a row",
+      "streakWins_other": "wins in a row",
+      "empty": "You haven’t finished an online game this month yet.",
+      "byGame": "By game — won of played",
+      "wonOf": "{{won}} of {{played}}"
+    },
     "online": {
       "invite": "Invite a member",
       "empty": "No online matches yet. Invite a member to play.",

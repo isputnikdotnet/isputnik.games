@@ -30,6 +30,7 @@ import {
   summaryFor,
   type Member
 } from "./matches.js";
+import { familyStats } from "./stats.js";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -74,6 +75,15 @@ const createMatchSchema = z.object({
   options: z.unknown(),
   opponent: memberSchema,
   seat: z.union([z.literal(0), z.literal(1)]).default(0)
+});
+
+// "This month" begins at the member's own midnight on the 1st, which only the
+// browser knows; the server takes it as an instant and counts from there.
+const statsQuerySchema = z.object({
+  since: z.string().max(40)
+    .refine((value) => !Number.isNaN(Date.parse(value)), "since must be a date")
+    .transform((value) => new Date(value).toISOString())
+    .optional()
 });
 
 const messageSchema = z.object({
@@ -258,6 +268,14 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   app.get(`${API}/summary`, { preHandler: requireIdentity }, async (request) =>
     summaryFor(db, request.identity!.id, scopeOf(request))
   );
+
+  // The family leaderboard and the member's own month (stats.ts). The family's
+  // results are the family's: a guest, here for one match, has none to see.
+  app.get(`${API}/stats`, { preHandler: requireIdentity }, async (request, reply) => {
+    if (request.identity!.role === "guest") return reply.code(403).send({ error: "Guests have no family results" });
+    const { since } = statsQuerySchema.parse(request.query ?? {});
+    return familyStats(db, request.identity!.id, since);
+  });
 
   app.post(`${API}/matches`, { preHandler: requireMember }, async (request, reply) => {
     const input = createMatchSchema.parse(request.body ?? {});

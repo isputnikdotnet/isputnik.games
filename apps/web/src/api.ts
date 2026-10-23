@@ -114,6 +114,31 @@ export function fetchMe(): Promise<MeResponse> {
   return apiFetch<MeResponse>("/me");
 }
 
+// ── The family's results (the lobby's leaderboard and "Your month") ─────────
+
+/** One member's results in one game. */
+export interface StatsRow {
+  id: string;
+  name: string;
+  game: string;
+  played: number;
+  won: number;
+  drawn: number;
+}
+
+export interface FamilyStats {
+  since: string;
+  month: StatsRow[];
+  all: StatsRow[];
+  /** The asking member's current run of wins. */
+  streak: number;
+}
+
+/** `since` is where "this month" begins for this reader: their own midnight on the 1st. */
+export async function fetchStats(since: string): Promise<FamilyStats> {
+  return apiFetch<FamilyStats>(`/stats?since=${encodeURIComponent(since)}`);
+}
+
 // ── Online matches ───────────────────────────────────────────────────────────
 
 export async function fetchMatches(): Promise<MatchSummary[]> {

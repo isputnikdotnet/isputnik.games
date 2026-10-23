@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Cpu, Globe, UserPlus, Users, type LucideIcon } from "lucide-react";
 import { GAMES } from "@isputnik/games-engine";
-import { answerMatch, fetchMatches, type MatchSummary } from "../api";
+import { answerMatch, fetchMatches, fetchStats, type FamilyStats, type MatchSummary } from "../api";
 import { follow, href, matchHref, navigate } from "../router";
 import { useSession } from "../session";
 import { ago } from "../shared/ago";
@@ -13,6 +13,7 @@ import { useNewcomerCue } from "../shared/useGameSounds";
 import { CATALOG, isNew, type GameMode } from "../games/catalog";
 import { GamePreview } from "../games/previews";
 import { InviteDialog } from "./InviteDialog";
+import { Leaderboard, YourMonth } from "./LobbyStats";
 import { MATCHES_ANCHOR } from "../shared/MobileNav";
 
 /** "alpha" / "beta" in the interface language; anything else as the server says it. */
@@ -27,6 +28,11 @@ const MODE_ICONS: Record<GameMode, LucideIcon> = { computer: Cpu, local: Users, 
 /** How many finished matches the lobby lists. */
 const RECENT = 5;
 
+/** Midnight on the 1st where the reader is: where their "this month" begins. */
+function localMonthStart(now = new Date()): string {
+  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+}
+
 // The lobby, in the order a member needs it: what waits on them (an
 // invitation to answer, a match where it is their move), then the games to
 // start, then how the last ones went. Each game card says at a glance what is
@@ -39,6 +45,7 @@ export function LobbyPage() {
   const [matches, setMatches] = useState<MatchSummary[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [inviting, setInviting] = useState<{ game?: string } | null>(null);
+  const [stats, setStats] = useState<FamilyStats | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -55,6 +62,19 @@ export function LobbyPage() {
     const timer = window.setInterval(() => void load(), 15000);
     return () => window.clearInterval(timer);
   }, [load]);
+
+  // The results change only when a match ends: they are fetched once the list
+  // is in, and again when a match in it has finished since — not with every poll.
+  // If they fail, the panels wait and the rest of the lobby stands.
+  const finishedKey = matches ? matches.filter((m) => m.status === "finished").map((m) => m.id).join(",") : null;
+  useEffect(() => {
+    if (finishedKey === null) return;
+    let current = true;
+    fetchStats(localMonthStart()).then((next) => { if (current) setStats(next); }, () => undefined);
+    return () => {
+      current = false;
+    };
+  }, [finishedKey]);
 
   const answer = async (match: MatchSummary, what: "accept" | "decline") => {
     try {
@@ -174,83 +194,89 @@ export function LobbyPage() {
         )}
       </section>
 
-      <section className="lobby-games" aria-labelledby="lobby-games-title">
-        <div className="lobby-games-head">
-          <h2 id="lobby-games-title" className="lobby-section-title">{t("lobby.games.title")}</h2>
-          <p className="muted">{t("lobby.games.lead")}</p>
-        </div>
-        <div className="lobby-grid">
-          {GAMES.map((game) => {
-            const entry = CATALOG[game.id];
-            if (!entry) return null;
-            const to = href(game.id);
-            const resuming = entry.inProgress();
-            const myMoves = mine.filter((m) => m.game === game.id).length;
-            const pills = (
-              <>
-                {myMoves > 0 && <span className="lobby-pill is-move">{t("lobby.pill.yourMove", { count: myMoves })}</span>}
-                {resuming && <span className="lobby-pill is-progress">{t("lobby.pill.inProgress")}</span>}
-              </>
-            );
-            return (
-              <article key={game.id} className="game-card">
-                {/* The states sit on the picture; on a phone, where the picture
-                    is a thumbnail, beside the name instead (the CSS picks one). */}
-                <div className="game-card-art">
-                  <GamePreview game={game.id} />
-                  <span className="game-card-pills">{pills}</span>
-                  {isNew(entry) && <span className="lobby-pill is-new game-card-new">{t("lobby.pill.new")}</span>}
-                </div>
-                <div className="game-card-body">
-                  <div className="game-card-title">
-                    <h3>{t(entry.name)}</h3>
-                    <span className="game-card-pills-inline">
-                      {pills}
-                      {isNew(entry) && <span className="lobby-pill is-new">{t("lobby.pill.new")}</span>}
-                    </span>
-                  </div>
-                  <p className="muted">{t(entry.summary)}</p>
-                  <ul className="game-card-modes" aria-label={t("lobby.games.modes")}>
-                    {entry.modes.map((mode) => {
-                      const Icon = MODE_ICONS[mode];
-                      return <li key={mode} className="lobby-tag"><Icon size={11} aria-hidden="true" /> {t(`lobby.modes.${mode}`)}</li>;
-                    })}
-                  </ul>
-                  <div className="game-card-actions">
-                    {link(to, "primary-button game-card-play", resuming ? t("lobby.continue") : t("lobby.play"))}
-                    <Button variant="secondary" onClick={() => setInviting({ game: game.id })}>{t("lobby.games.invite")}</Button>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </section>
-
-      {finished.length > 0 && (
-        <section className="lobby-recent" aria-labelledby="lobby-recent-title">
-          <h2 id="lobby-recent-title" className="lobby-section-title">{t("lobby.recent.title")}</h2>
-          <ul className="recent-list">
-            {finished.map((match) => {
-              const result = resultOf(match);
+      <div className="lobby-row">
+        <section className="lobby-games" aria-labelledby="lobby-games-title">
+          <div className="lobby-games-head">
+            <h2 id="lobby-games-title" className="lobby-section-title">{t("lobby.games.title")}</h2>
+            <p className="muted">{t("lobby.games.lead")}</p>
+          </div>
+          <div className="lobby-grid">
+            {GAMES.map((game) => {
+              const entry = CATALOG[game.id];
+              if (!entry) return null;
+              const to = href(game.id);
+              const resuming = entry.inProgress();
+              const myMoves = mine.filter((m) => m.game === game.id).length;
+              const pills = (
+                <>
+                  {myMoves > 0 && <span className="lobby-pill is-move">{t("lobby.pill.yourMove", { count: myMoves })}</span>}
+                  {resuming && <span className="lobby-pill is-progress">{t("lobby.pill.inProgress")}</span>}
+                </>
+              );
               return (
-                <li key={match.id}>
-                  {link(matchHref(match.game, match.id), "recent-row", (
-                    <>
-                      <Avatar id={opponentOf(match).id} name={opponentOf(match).name} size={32} />
-                      <span className="recent-row-main">
-                        <span>{t("lobby.waiting.vs", { game: gameName(match.game), name: opponentOf(match).name })}</span>
-                        <span className="muted">{[when(match.finishedAt ?? match.updatedAt), scoreOf(match)].filter(Boolean).join(" · ")}</span>
+                <article key={game.id} className="game-card">
+                  {/* The states sit on the picture; on a phone, where the picture
+                      is a thumbnail, beside the name instead (the CSS picks one). */}
+                  <div className="game-card-art">
+                    <GamePreview game={game.id} />
+                    <span className="game-card-pills">{pills}</span>
+                    {isNew(entry) && <span className="lobby-pill is-new game-card-new">{t("lobby.pill.new")}</span>}
+                  </div>
+                  <div className="game-card-body">
+                    <div className="game-card-title">
+                      <h3>{t(entry.name)}</h3>
+                      <span className="game-card-pills-inline">
+                        {pills}
+                        {isNew(entry) && <span className="lobby-pill is-new">{t("lobby.pill.new")}</span>}
                       </span>
-                      <strong className={`recent-result is-${result.tone}`}>{result.text}</strong>
-                    </>
-                  ))}
-                </li>
+                    </div>
+                    <p className="muted">{t(entry.summary)}</p>
+                    <ul className="game-card-modes" aria-label={t("lobby.games.modes")}>
+                      {entry.modes.map((mode) => {
+                        const Icon = MODE_ICONS[mode];
+                        return <li key={mode} className="lobby-tag"><Icon size={11} aria-hidden="true" /> {t(`lobby.modes.${mode}`)}</li>;
+                      })}
+                    </ul>
+                    <div className="game-card-actions">
+                      {link(to, "primary-button game-card-play", resuming ? t("lobby.continue") : t("lobby.play"))}
+                      <Button variant="secondary" onClick={() => setInviting({ game: game.id })}>{t("lobby.games.invite")}</Button>
+                    </div>
+                  </div>
+                </article>
               );
             })}
-          </ul>
+          </div>
         </section>
-      )}
+        <Leaderboard stats={stats} myId={myId} />
+      </div>
+
+      <div className="lobby-row">
+        {finished.length > 0 && (
+          <section className="lobby-recent" aria-labelledby="lobby-recent-title">
+            <h2 id="lobby-recent-title" className="lobby-section-title">{t("lobby.recent.title")}</h2>
+            <ul className="recent-list">
+              {finished.map((match) => {
+                const result = resultOf(match);
+                return (
+                  <li key={match.id}>
+                    {link(matchHref(match.game, match.id), "recent-row", (
+                      <>
+                        <Avatar id={opponentOf(match).id} name={opponentOf(match).name} size={32} />
+                        <span className="recent-row-main">
+                          <span>{t("lobby.waiting.vs", { game: gameName(match.game), name: opponentOf(match).name })}</span>
+                          <span className="muted">{[when(match.finishedAt ?? match.updatedAt), scoreOf(match)].filter(Boolean).join(" · ")}</span>
+                        </span>
+                        <strong className={`recent-result is-${result.tone}`}>{result.text}</strong>
+                      </>
+                    ))}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+        <YourMonth stats={stats} myId={myId} myName={myName} />
+      </div>
 
       <footer className="lobby-foot muted">
         {session.status === "ready" && t("lobby.version", { version: session.version })}
