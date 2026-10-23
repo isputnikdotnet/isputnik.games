@@ -1,25 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleDot, UserPlus, type LucideIcon } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { GAMES } from "@isputnik/games-engine";
 import { answerMatch, fetchMatches, type MatchSummary } from "../api";
 import { follow, href, matchHref, navigate } from "../router";
 import { useSession } from "../session";
 import { Button } from "../shared/Button";
 import { MessageBox } from "../shared/MessageBox";
-import { loadDotsGame } from "../games/dots/storage";
-import { InviteDialog } from "../games/dots/InviteDialog";
-
-// What the lobby shows for each game in the engine's registry: an icon and the
-// keys of its name and summary. A game without an entry here is not offered.
-const CATALOG: Record<string, { icon: LucideIcon; name: "games.dots.name"; summary: "games.dots.summary"; inProgress: () => boolean }> = {
-  dots: {
-    icon: CircleDot,
-    name: "games.dots.name",
-    summary: "games.dots.summary",
-    inProgress: () => loadDotsGame()?.state.status.kind === "playing"
-  }
-};
+import { CATALOG } from "../games/catalog";
+import { InviteDialog } from "./InviteDialog";
 
 export function LobbyPage() {
   const { t } = useTranslation();
@@ -65,7 +54,7 @@ export function LobbyPage() {
   const finished = list.filter((m) => m.status === "finished").slice(0, 10);
 
   const resultOf = (match: MatchSummary) => {
-    if (match.winner === null) return t("dots.end.draw");
+    if (match.winner === null) return t("match.draw");
     return match.winner === mySeat(match) ? t("match.won") : t("match.lost", { name: opponentOf(match).name });
   };
 
@@ -75,6 +64,7 @@ export function LobbyPage() {
       <li key={match.id} className="match-row">
         <a className="match-row-main" href={to} onClick={(event) => follow(event, to)}>
           <strong>{t("lobby.online.vs", { name: opponentOf(match).name })}</strong>
+          <span className="match-row-game muted">{CATALOG[match.game] ? t(CATALOG[match.game].name) : match.game}</span>
           <span className="muted">
             {line}
             {match.score && ` · ${match.score[0]} : ${match.score[1]}`}

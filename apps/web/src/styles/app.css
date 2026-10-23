@@ -245,6 +245,24 @@
   margin-top: var(--space-5);
 }
 
+/* The result dialog: who won, large, then the score. */
+.result-line {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--ink);
+}
+
+.result-score {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-lg);
+  color: var(--ink);
+}
+
+.dialog-body .muted {
+  margin: var(--space-2) 0 0;
+}
+
 /* ── Lobby ─────────────────────────────────────────────────────────────── */
 
 .lobby-grid {
@@ -356,6 +374,12 @@
   flex-direction: column;
   gap: 2px;
   text-decoration: none;
+}
+
+.match-row-game {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .match-row-main .muted {

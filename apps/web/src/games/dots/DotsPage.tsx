@@ -6,7 +6,7 @@ import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
 import { follow, href } from "../../router";
 import { DotsBoard } from "./DotsBoard";
-import { GameOverDialog } from "./GameOverDialog";
+import { GameOverDialog } from "../../shared/GameOverDialog";
 import { NewGameForm } from "./NewGameForm";
 import { isComputerSeat, useDotsGame } from "./useDotsGame";
 import type { DotsSetup } from "./storage";

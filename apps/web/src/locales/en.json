@@ -33,14 +33,16 @@
     }
   },
   "invite": {
-    "title": "Invite to Dots",
+    "title": "Invite to play",
     "member": "Who",
     "noMembers": "Nobody else to invite yet.",
     "pickSomeone": "Pick someone to invite.",
     "yourColour": "You play",
     "send": "Send invitation",
     "cancel": "Cancel",
-    "failed": "Unable to send the invitation"
+    "failed": "Unable to send the invitation",
+    "game": "Game",
+    "them": "The other player"
   },
   "match": {
     "you": "You",
@@ -59,12 +61,17 @@
       "cancel": "Keep playing"
     },
     "loadFailed": "Unable to load the match",
-    "moveFailed": "Unable to make that move"
+    "moveFailed": "Unable to make that move",
+    "draw": "A draw"
   },
   "games": {
     "dots": {
       "name": "Dots",
       "summary": "Ring the other side's dots to capture them. The classic paper game for two."
+    },
+    "seabattle": {
+      "name": "Sea Battle",
+      "summary": "Hide your fleet, call the squares, sink theirs first. The squared-paper classic."
     }
   },
   "dots": {
@@ -98,7 +105,6 @@
     "endGame": "End game",
     "newGame": "New game",
     "end": {
-      "title": "Game over",
       "winner": "{{player}} wins",
       "draw": "A draw",
       "score": "{{blue}} : {{red}}",
@@ -124,5 +130,101 @@
     },
     "boardAria": "Dots board, {{size}} by {{size}}",
     "pointAria": "Point {{x}}, {{y}}"
+  },
+  "common": {
+    "gameOver": "Game over"
+  },
+  "seabattle": {
+    "columns": "ABCDEFGHIJ",
+    "setup": {
+      "title": "New game",
+      "fleet": "Fleet",
+      "fleetClassic": "Full — 10 ships",
+      "fleetSmall": "Small — 6 ships",
+      "mode": "Players",
+      "modeComputer": "Against the computer",
+      "modeLocal": "Two players, one screen",
+      "firesFirst": "Fires first",
+      "level": "Level",
+      "levelEasy": "Easy",
+      "levelNormal": "Normal",
+      "levelHard": "Hard",
+      "start": "Start game"
+    },
+    "players": {
+      "p1": "Player 1",
+      "p2": "Player 2",
+      "computer": "Computer",
+      "you": "You"
+    },
+    "place": {
+      "title": "{{player}}, lay your fleet",
+      "hint": "Pick a ship, then tap the square for its bow. Tap a laid ship to lift it again.",
+      "tray": "Ships to lay",
+      "trayShip": "{{length}}-deck ship, {{count}} left",
+      "acrossDown": "Lying across",
+      "downAcross": "Lying down",
+      "random": "Random",
+      "clear": "Clear",
+      "left_one": "{{count}} ship to lay",
+      "left_other": "{{count}} ships to lay",
+      "allLaid": "The fleet is laid.",
+      "ready": "Ready",
+      "sending": "Sending…",
+      "boardAria": "Your sea, 10 by 10"
+    },
+    "sea": {
+      "theirs": "Enemy waters · {{name}}",
+      "yours": "Your fleet",
+      "afloat_one": "{{count}} ship afloat",
+      "afloat_other": "{{count}} ships afloat",
+      "enemyAria": "Enemy sea, 10 by 10",
+      "ownAria": "Your sea, 10 by 10"
+    },
+    "status": {
+      "yourShot": "Your shot — call a square",
+      "fire": "{{player}}, fire!",
+      "aiming": "The computer is aiming…",
+      "computerLaying": "The computer is laying its fleet…",
+      "hitAgain": "Hit! Fire again.",
+      "sunkAgain": "Sunk! Fire again.",
+      "waitLaying": "Waiting for {{name}} to lay the fleet",
+      "theirShot": "{{name}} fires",
+      "last": "{{player}}: {{cell}} — {{result}}"
+    },
+    "result": {
+      "miss": "miss",
+      "hit": "hit",
+      "sunk": "sunk"
+    },
+    "handover": {
+      "title": "Pass the device to {{player}}",
+      "body": "Only {{player}} should see the next screen.",
+      "ready": "I'm {{player}}"
+    },
+    "end": {
+      "winner": "{{player}} wins",
+      "draw": "A draw",
+      "scoreLine": "{{p1Name}} {{p1}} : {{p2}} {{p2Name}}",
+      "reasonTarget": "{{player}}'s fleet is sunk.",
+      "reasonAgreed": "Ended by agreement.",
+      "reasonResigned": "{{player}} resigned.",
+      "again": "Play again",
+      "change": "Change settings"
+    },
+    "endGame": "End game",
+    "newGame": "New game",
+    "confirmEnd": {
+      "title": "End this game?",
+      "body": "The game stops here and the ships sunk so far decide it.",
+      "confirm": "End game",
+      "cancel": "Keep playing"
+    },
+    "confirmNew": {
+      "title": "Start a new game?",
+      "body": "The game in progress is abandoned.",
+      "confirm": "New game",
+      "cancel": "Keep playing"
+    }
   }
 }

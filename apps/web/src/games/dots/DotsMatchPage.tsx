@@ -9,7 +9,7 @@ import { MessageBox } from "../../shared/MessageBox";
 import { follow, href, navigate } from "../../router";
 import { useSession } from "../../session";
 import { DotsBoard } from "./DotsBoard";
-import { GameOverDialog } from "./GameOverDialog";
+import { GameOverDialog } from "../../shared/GameOverDialog";
 import { useMatch } from "./useMatch";
 
 // An online match of Dots: the same board, the server's position, and the

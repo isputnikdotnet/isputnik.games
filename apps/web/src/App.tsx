@@ -7,6 +7,8 @@ import { MessageBox } from "./shared/MessageBox";
 import { LobbyPage } from "./pages/LobbyPage";
 import { DotsPage } from "./games/dots/DotsPage";
 import { DotsMatchPage } from "./games/dots/DotsMatchPage";
+import { SeaBattlePage } from "./games/seabattle/SeaBattlePage";
+import { SeaBattleMatchPage } from "./games/seabattle/SeaBattleMatchPage";
 
 function Routes() {
   const route = useRoute();
@@ -29,9 +31,11 @@ function Routes() {
   // its branches here.
   if (route.name === "game" && getGame(route.gameId)) {
     if (route.gameId === "dots") return <DotsPage />;
+    if (route.gameId === "seabattle") return <SeaBattlePage />;
   }
   if (route.name === "match" && getGame(route.gameId)) {
     if (route.gameId === "dots") return <DotsMatchPage matchId={route.matchId} />;
+    if (route.gameId === "seabattle") return <SeaBattleMatchPage matchId={route.matchId} />;
   }
   return <MessageBox tone="info" title={t("app.notFound")} />;
 }

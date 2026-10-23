@@ -94,6 +94,54 @@ describe("matches API", () => {
     expect(unknown.json().error).toBe("Unknown game");
   });
 
+  it("sends each player of Sea Battle their own view: the other fleet stays on the server", async () => {
+    const fleet = (shift: number) => [
+      { x: 0, y: shift, length: 3, horizontal: true },
+      { x: 4, y: shift, length: 2, horizontal: true },
+      { x: 7, y: shift, length: 2, horizontal: true },
+      { x: 0, y: shift + 2, length: 1, horizontal: true },
+      { x: 2, y: shift + 2, length: 1, horizontal: true },
+      { x: 4, y: shift + 2, length: 1, horizontal: true }
+    ];
+    const created = await post("/games/api/matches", mum, {
+      game: "seabattle", options: { fleet: "small", extra: true }, opponent: { id: "dad", name: "Dad" }, seat: 0
+    });
+    expect(created.statusCode).toBe(201);
+    expect(created.json().options).toEqual({ fleet: "small" });
+    const id = created.json().id as string;
+    await post(`/games/api/matches/${id}/accept`, dad);
+
+    // A shot before the fleets are laid is illegal; mum lays hers, then dad his.
+    expect((await post(`/games/api/matches/${id}/moves`, mum, { move: { kind: "shoot", x: 0, y: 0 }, moveCount: 0 })).statusCode).toBe(400);
+    const laid = await post(`/games/api/matches/${id}/moves`, mum, { move: { kind: "place", ships: fleet(0) }, moveCount: 0 });
+    expect(laid.statusCode).toBe(200);
+    expect(laid.json().state.ships).toEqual([fleet(0), null]);
+    expect(laid.json().turn).toBe(1);
+
+    // Dad's view before he lays his own: mum's fleet is there as "laid", not as ships.
+    const dadView = (await get(`/games/api/matches/${id}`, dad)).json();
+    expect(dadView.state.placed).toEqual([true, false]);
+    expect(dadView.state.ships).toEqual([[], null]);
+
+    await post(`/games/api/matches/${id}/moves`, dad, { move: { kind: "place", ships: fleet(5) }, moveCount: 1 });
+    // Mum fires first; a hit keeps the turn, a miss passes it.
+    const hit = await post(`/games/api/matches/${id}/moves`, mum, { move: { kind: "shoot", x: 0, y: 5 }, moveCount: 2 });
+    expect(hit.json().state.lastShot).toEqual({ by: 0, x: 0, y: 5, result: "hit" });
+    expect(hit.json().turn).toBe(0);
+    expect(hit.json().state.ships[1]).toEqual([]);
+    const sunk = await post(`/games/api/matches/${id}/moves`, mum, { move: { kind: "shoot", x: 0, y: 7 }, moveCount: 3 });
+    expect(sunk.json().state.lastShot.result).toBe("sunk");
+    expect(sunk.json().state.ships[1]).toEqual([{ x: 0, y: 7, length: 1, horizontal: true }]);
+    expect(sunk.json().score).toEqual([1, 0]);
+    const miss = await post(`/games/api/matches/${id}/moves`, mum, { move: { kind: "shoot", x: 9, y: 9 }, moveCount: 4 });
+    expect(miss.json().turn).toBe(1);
+    // The JSON dad gets never carries mum's unsunk ships, anywhere.
+    const dadNow = (await get(`/games/api/matches/${id}`, dad)).json();
+    expect(dadNow.state.ships[0]).toEqual([]);
+    expect(dadNow.state.ships[1]).toEqual(fleet(5));
+    expect(JSON.stringify(dadNow)).not.toContain('{"x":0,"y":0,"length":3');
+  });
+
   it("offers a made-up family in standalone development only", async () => {
     expect((await get("/games/api/dev/members", mum)).statusCode).toBe(404);
     const dev = await buildApp({ gatewaySecret: null, devUser: "dev:Developer:admin", staticPath: "", dbPath: ":memory:", version: "0.0.0-test", stage: null });

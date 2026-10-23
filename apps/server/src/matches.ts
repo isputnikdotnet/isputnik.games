@@ -130,6 +130,13 @@ function summarize(db: Db, row: MatchRow, state?: { status: GameStatus }): Match
   };
 }
 
+/** The position as one seat may see it: a game with hidden information (Sea
+ *  Battle's fleets) redacts the other side's; the rest hand back the whole. */
+function viewOf(row: MatchRow, state: { status: GameStatus }, seat: PlayerIndex): { status: GameStatus } {
+  const game = gameOf(row);
+  return game.viewFor ? game.viewFor(state, seat) : state;
+}
+
 function rowOf(db: Db, id: string): MatchRow {
   const row = db.prepare("SELECT * FROM matches WHERE id = ?").get(id) as MatchRow | undefined;
   if (!row) throw new MatchError(404, "Match not found");
@@ -175,9 +182,9 @@ export function createMatch(db: Db, me: Member, input: CreateMatchInput): MatchS
 
 export function getMatch(db: Db, userId: string, id: string): MatchDetail {
   const row = rowOf(db, id);
-  seatOf(row, userId);
+  const seat = seatOf(row, userId);
   const state = replay(row);
-  return { ...summarize(db, row, state), state };
+  return { ...summarize(db, row, state), state: viewOf(row, state, seat) };
 }
 
 export function listMatches(db: Db, userId: string): MatchSummary[] {
@@ -277,7 +284,7 @@ export function playMove(db: Db, userId: string, id: string, move: unknown, expe
       `).run(JSON.stringify(moves), moves.length, state.status.turn, id);
     }
     const updated = rowOf(db, id);
-    return { ...summarize(db, updated, state), state };
+    return { ...summarize(db, updated, state), state: viewOf(updated, state, seat) };
   })();
 }
 
@@ -293,6 +300,6 @@ export function resign(db: Db, userId: string, id: string): MatchDetail {
     `).run(otherPlayer(seat), id);
     const updated = rowOf(db, id);
     const state = replay(updated);
-    return { ...summarize(db, updated, state), state };
+    return { ...summarize(db, updated, state), state: viewOf(updated, state, seat) };
   })();
 }
