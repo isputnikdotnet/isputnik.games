@@ -160,7 +160,8 @@ describe("SputnikPage", () => {
     expect(Number.isInteger(sent.seed)).toBe(true);
     // The seed and log are the whole run: replayed here, they end where the page did.
     const caught = replayRun(sputnik, "B", sent.seed, sent.log as [number, SputnikRail][], 1_000_000).caught;
-    expect(screen.getByText(new RegExp(`^Game over with ${caught} sputniks?\\.`))).toBeInTheDocument();
+    // Any score above 0 is this fresh device's best, which the status says after a colon.
+    expect(screen.getByText(new RegExp(`^Game over with ${caught} sputniks?[.:]`))).toBeInTheDocument();
     expect(screen.getByText("On the family board. Your best at Game B: 57.")).toBeInTheDocument();
   });
 });
