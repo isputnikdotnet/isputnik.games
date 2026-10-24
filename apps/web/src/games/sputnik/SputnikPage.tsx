@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleHelp } from "lucide-react";
+import { CircleHelp, Maximize, Minimize, Smartphone } from "lucide-react";
 import type { ArcadeCue, SputnikRail, SputnikVariant } from "@isputnik/games-engine";
 import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
@@ -12,6 +12,7 @@ import type { HandheldMode } from "./lit";
 import { soundsOf } from "./sounds";
 import { useArcadeReport } from "./useArcadeReport";
 import { useArcadeRun } from "./useArcadeRun";
+import { useFullscreen } from "./useFullscreen";
 
 const sound = (cues: ArcadeCue[], mode: HandheldMode) => play(...soundsOf(cues, mode));
 
@@ -29,6 +30,7 @@ export function SputnikPage() {
   const run = useArcadeRun(sound);
   const report = useArcadeReport("sputnik", run.finished);
   const phone = useMediaQuery(PHONE);
+  const fullscreen = useFullscreen();
   const [flash, setFlash] = useState<HandheldControl | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -104,9 +106,13 @@ export function SputnikPage() {
   }
   if (run.mode === "over" && run.finished && report?.status === "failed") saved = t("sputnik.saved.failed");
 
-  // The keys, always in view: on a phone the screen's own buttons are the controls.
+  // The keys, always in view: on a phone the screen's own buttons are the
+  // controls, and held upright it says the wide screen is a turn away.
   const keys = phone ? (
-    <p className="sputnik-touch muted">{t("sputnik.keys.touch")}</p>
+    <>
+      <p className="sputnik-rotate muted"><Smartphone size={16} aria-hidden="true" className="sputnik-rotate-icon" /> {t("sputnik.keys.rotate")}</p>
+      <p className="sputnik-touch muted">{t("sputnik.keys.touch")}</p>
+    </>
   ) : (
     <section className="sputnik-keys" aria-labelledby="sputnik-keys-title">
       <h2 id="sputnik-keys-title">{t("sputnik.keys.title")}</h2>
@@ -168,9 +174,17 @@ export function SputnikPage() {
       }
       log={keys}
       actions={
-        <Button variant="secondary" onClick={openHelp}>
-          <CircleHelp size={16} aria-hidden="true" /> {t("sputnik.help.open")}
-        </Button>
+        <>
+          <Button variant="secondary" onClick={openHelp}>
+            <CircleHelp size={16} aria-hidden="true" /> {t("sputnik.help.open")}
+          </Button>
+          {fullscreen.supported && (
+            <Button variant="secondary" onClick={() => void fullscreen.toggle()}>
+              {fullscreen.on ? <Minimize size={16} aria-hidden="true" /> : <Maximize size={16} aria-hidden="true" />}
+              {" "}{fullscreen.on ? t("sputnik.fullscreen.exit") : t("sputnik.fullscreen.enter")}
+            </Button>
+          )}
+        </>
       }
     />
     </>

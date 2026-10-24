@@ -34,6 +34,41 @@
   }
 }
 
+/* A phone turned sideways: the handheld takes the whole screen. The top bar,
+   the tab bar and the page's title step aside (turning the phone back brings
+   them back), and the device is sized by the screen's height alone; the
+   panel waits below it. */
+@media (orientation: landscape) and (max-height: 520px) {
+  body:has(.game-stage.is-sputnik) .app-bar,
+  body:has(.game-stage.is-sputnik) .mobile-nav,
+  .game-stage.is-sputnik.is-phone > .game-stage-title {
+    display: none;
+  }
+
+  .app-main:has(> .game-stage.is-sputnik) {
+    max-width: none;
+    padding: var(--space-2);
+  }
+
+  /* :is() lifts this over the rules above, phone stage or not. */
+  .game-stage.is-sputnik:is(.is-phone, :not(.is-phone)) {
+    --hh-w: min(100vw - 2 * var(--space-2) - 8px, (100dvh - 2 * var(--space-2)) * 1.72);
+    grid-template-columns: var(--hh-w);
+  }
+
+  .game-stage.is-sputnik .game-stage-board {
+    width: var(--hh-w);
+    margin-inline: auto;
+  }
+}
+
+/* "Turn your phone" is for a phone held upright only. */
+@media (orientation: landscape) {
+  p.sputnik-rotate {
+    display: none;
+  }
+}
+
 .sputnik-best {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -117,8 +152,15 @@
   font: 600 var(--text-sm) / 1 ui-monospace, "Cascadia Code", Consolas, monospace;
 }
 
-.sputnik-touch {
+.sputnik-touch,
+.sputnik-rotate {
   margin: 0;
+}
+
+.sputnik-rotate {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .sputnik-help {

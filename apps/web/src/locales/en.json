@@ -798,7 +798,12 @@
       "arrows": "Move the net",
       "space": "Space",
       "pause": "Pause",
-      "touch": "Press the red buttons, or tap a corner of the screen, to move the net."
+      "touch": "Press the red buttons, or tap a corner of the screen, to move the net.",
+      "rotate": "Turn your phone sideways for the wide screen."
+    },
+    "fullscreen": {
+      "enter": "Full screen",
+      "exit": "Leave full screen"
     }
   }
 }
