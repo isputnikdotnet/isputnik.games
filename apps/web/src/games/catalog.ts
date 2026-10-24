@@ -21,8 +21,6 @@ export interface CatalogEntry {
   modes: GameMode[];
   /** The lobby calls the game new until this day (YYYY-MM-DD). */
   newUntil?: string;
-  /** A way into the game besides a game of it (Chess puzzles): its label and address under /games. */
-  extra?: { label: "lobby.puzzles"; path: string };
   inProgress: () => boolean;
 }
 
@@ -48,7 +46,6 @@ export const CATALOG: Record<string, CatalogEntry> = {
     summary: "games.chess.summary",
     modes: ["computer", "local", "online"],
     newUntil: "2026-11-23",
-    extra: { label: "lobby.puzzles", path: "chess/puzzles" },
     inProgress: () => loadChessGame()?.state.status.kind === "playing"
   },
   dominoes: {

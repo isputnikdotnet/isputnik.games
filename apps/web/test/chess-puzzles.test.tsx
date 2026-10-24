@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { PuzzleOffer } from "../src/api";
 import { ChessPuzzlePage, PUZZLE_DELAY } from "../src/games/chess/PuzzlePage";
+import { ChessNewGameForm } from "../src/games/chess/NewGameForm";
 import { parseRoute } from "../src/router";
 
 vi.mock("../src/api", async () => {
@@ -19,6 +20,7 @@ const offer: PuzzleOffer = {
     moves: ["g8f6", "h5f7"],
     rating: 700,
     mateIn: 1,
+    types: ["mateIn1"],
     level: "veryEasy"
   },
   repeat: false,
@@ -50,7 +52,7 @@ describe("chess puzzles", () => {
     const user = userEvent.setup();
     render(<ChessPuzzlePage />);
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Find the best move for White"));
-    expect(api.fetchNextPuzzle).toHaveBeenCalledWith("auto");
+    expect(api.fetchNextPuzzle).toHaveBeenCalledWith("auto", "any");
     expect(screen.getByText("Checkmate in 1 move")).toBeInTheDocument();
     expect(screen.getByText("Very easy · puzzle rated 700")).toBeInTheDocument();
     // …Nf6 was played: the knight is on f6.
@@ -90,13 +92,31 @@ describe("chess puzzles", () => {
     expect(api.reportPuzzleResult).toHaveBeenCalledTimes(1);
   });
 
-  it("asks for the level chosen in Settings", async () => {
+  it("asks for the kind and level chosen in Settings once it closes", async () => {
     const user = userEvent.setup();
     render(<ChessPuzzlePage />);
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Find the best move"));
     await user.click(screen.getByRole("button", { name: "Settings" }));
+    await user.click(screen.getByRole("button", { name: "Forks" }));
     await user.click(screen.getByRole("button", { name: "Hard" }));
-    await waitFor(() => expect(api.fetchNextPuzzle).toHaveBeenLastCalledWith("hard"));
+    expect(api.fetchNextPuzzle).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(api.fetchNextPuzzle).toHaveBeenLastCalledWith("hard", "fork"));
     expect(localStorage.getItem("isputnik-games.chess.puzzleLevel")).toBe("hard");
+    expect(localStorage.getItem("isputnik-games.chess.puzzleType")).toBe("fork");
+  });
+
+  it("starts from Play: puzzles of a kind and level", async () => {
+    const user = userEvent.setup();
+    const onStart = vi.fn();
+    render(<ChessNewGameForm onStart={onStart} />);
+    await user.click(screen.getByRole("button", { name: "Puzzles" }));
+    await user.click(screen.getByRole("button", { name: "Mate in 2" }));
+    await user.click(screen.getByRole("button", { name: "Medium" }));
+    await user.click(screen.getByRole("button", { name: "Start puzzles" }));
+    expect(onStart).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe("/games/chess/puzzles");
+    expect(localStorage.getItem("isputnik-games.chess.puzzleType")).toBe("mateIn2");
+    expect(localStorage.getItem("isputnik-games.chess.puzzleLevel")).toBe("medium");
   });
 });

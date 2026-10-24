@@ -276,7 +276,7 @@
   position: absolute;
   z-index: 2;
   font-family: var(--chess-coord-font);
-  font-size: clamp(8px, 1.4vmin, 12px);
+  font-size: clamp(11px, 2.1vmin, 17px);
   font-weight: var(--weight-semibold);
   line-height: 1;
   pointer-events: none;
@@ -355,7 +355,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 36px;
+  min-height: 40px;
   padding: 4px 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -415,9 +415,9 @@
 }
 
 .chess-taken .chess-piece {
-  width: 20px;
-  height: 20px;
-  margin-right: -6px;
+  width: 28px;
+  height: 28px;
+  margin-right: -8px;
 }
 
 .chess-lead {
@@ -748,7 +748,8 @@
   }
 
   .chess-taken .chess-piece {
-    width: 16px;
-    height: 16px;
+    width: 22px;
+    height: 22px;
+    margin-right: -6px;
   }
 }

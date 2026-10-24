@@ -1,6 +1,6 @@
 // Chess puzzles: the server holds the set and the ratings. It picks each
 // member's next puzzle (one they have not tried, near their rating or in the
-// level they asked for) and keeps every first try in puzzle_attempts with the
+// level and of the kind they asked for) and keeps every first try in puzzle_attempts with the
 // rating before and after, so a member's rating is their latest row's — a
 // second try at the same puzzle is practice and moves nothing. The page plays
 // the puzzle and reports solved or not and how many hints it took; the
@@ -8,7 +8,8 @@
 import {
   Chess,
   type ChessPuzzle,
-  type PuzzleLevel
+  type PuzzleLevel,
+  type PuzzleType
 } from "@isputnik/games-engine";
 import type { Db } from "./db.js";
 import { PUZZLE_DATA } from "./puzzle-set.js";
@@ -31,12 +32,19 @@ export interface PuzzleOffer {
 
 let cache: ChessPuzzle[] | null = null;
 
-/** The set, parsed once: one puzzle per line, "id,fen,moves,rating,mateIn". */
+/** The set, parsed once: one puzzle per line, "id,fen,moves,rating,mateIn,types". */
 export function puzzleSet(): ChessPuzzle[] {
   if (!cache) {
     cache = PUZZLE_DATA.trim().split("\n").map((line) => {
-      const [id, fen, moves, rating, mateIn] = line.split(",");
-      return { id, fen, moves: moves.split(" "), rating: Number(rating), mateIn: mateIn ? Number(mateIn) : null };
+      const [id, fen, moves, rating, mateIn, types = ""] = line.split(",");
+      return {
+        id,
+        fen,
+        moves: moves.split(" "),
+        rating: Number(rating),
+        mateIn: mateIn ? Number(mateIn) : null,
+        types: types.split(" ").filter(Chess.isPuzzleType)
+      };
     });
   }
   return cache;
@@ -76,15 +84,23 @@ function countsAsSolved(row: { solved: number; hints: number }): boolean {
 }
 
 /**
- * The next puzzle for this member: in `level` when they chose one, else
- * near their rating — within 150 points, then wider until something is
- * left. Tried puzzles are skipped while untried ones remain.
+ * The next puzzle for this member, of `type` when they chose one: in
+ * `level` when they chose one, else near their rating — within 150 points,
+ * then wider until something is left. Tried puzzles are skipped while
+ * untried ones remain. A kind with nothing in that level gives the nearest
+ * level that has one.
  */
-export function nextPuzzle(db: Db, memberId: string, level: PuzzleLevel | "auto", random: () => number = Math.random): PuzzleOffer {
+export function nextPuzzle(
+  db: Db,
+  memberId: string,
+  level: PuzzleLevel | "auto",
+  type: PuzzleType | "any" = "any",
+  random: () => number = Math.random
+): PuzzleOffer {
   const me = puzzleMe(db, memberId);
   const tried = new Set((db.prepare("SELECT puzzle_id FROM puzzle_attempts WHERE member_id = ?").all(memberId) as { puzzle_id: string }[])
     .map((row) => row.puzzle_id));
-  const all = puzzleSet();
+  const all = type === "any" ? puzzleSet() : puzzleSet().filter((puzzle) => puzzle.types.includes(type));
   let pool: ChessPuzzle[];
   if (level === "auto") {
     pool = [];
@@ -94,6 +110,11 @@ export function nextPuzzle(db: Db, memberId: string, level: PuzzleLevel | "auto"
     }
   } else {
     pool = all.filter((puzzle) => Chess.puzzleLevel(puzzle.rating) === level);
+    if (pool.length === 0) {
+      const target = Chess.PUZZLE_LEVEL_FLOOR[level];
+      const gap = Math.min(...all.map((puzzle) => Math.abs(puzzle.rating - target)));
+      pool = all.filter((puzzle) => Math.abs(puzzle.rating - target) <= gap + 150);
+    }
   }
   const fresh = pool.filter((puzzle) => !tried.has(puzzle.id));
   const from = fresh.length ? fresh : pool.length ? pool : all;

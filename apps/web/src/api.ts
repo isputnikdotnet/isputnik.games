@@ -1,7 +1,7 @@
 // The games API, under the same /games prefix the pages live at. The home gateway
 // authenticates every call; this module only needs to echo its CSRF token on
 // state-changing requests, the way the home SPA does.
-import type { AiLevel, ChessMove, ChessPuzzle, GameEvent, GameStatus, PlayerIndex, PuzzleLevel } from "@isputnik/games-engine";
+import type { AiLevel, ChessMove, ChessPuzzle, GameEvent, GameStatus, PlayerIndex, PuzzleLevel, PuzzleType } from "@isputnik/games-engine";
 
 export const API_BASE = "/games/api";
 
@@ -266,9 +266,9 @@ export interface PuzzleResult {
   me: PuzzleMe;
 }
 
-/** The next puzzle: near your rating ("auto") or at a level you chose. */
-export function fetchNextPuzzle(level: PuzzleLevel | "auto"): Promise<PuzzleOffer> {
-  return apiFetch<PuzzleOffer>(`/puzzles/next?level=${level}`);
+/** The next puzzle: near your rating ("auto") or at a level you chose, of any kind or one. */
+export function fetchNextPuzzle(level: PuzzleLevel | "auto", type: PuzzleType | "any" = "any"): Promise<PuzzleOffer> {
+  return apiFetch<PuzzleOffer>(`/puzzles/next?level=${level}&type=${type}`);
 }
 
 /** How a first try went; a second try is practice and moves nothing. */

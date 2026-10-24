@@ -18,6 +18,35 @@ export interface ChessPuzzle {
   /** A mate the solver is to find, in that many of their moves; null for
    *  anything else (win material, a fork…). */
   mateIn: number | null;
+  /** What kind of puzzle it is, from Lichess's themes; may be empty. */
+  types: PuzzleType[];
+}
+
+/** The kinds of puzzle a solver may ask for, besides any kind. */
+export const PUZZLE_TYPES = ["mateIn1", "mateIn2", "mateLong", "fork", "pin", "discovered", "sacrifice", "hanging", "promotion", "endgame"] as const;
+export type PuzzleType = (typeof PUZZLE_TYPES)[number];
+
+/** The Lichess themes behind each kind. */
+const LICHESS_THEMES: Record<PuzzleType, string[]> = {
+  mateIn1: ["mateIn1"],
+  mateIn2: ["mateIn2"],
+  mateLong: ["mateIn3", "mateIn4", "mateIn5"],
+  fork: ["fork"],
+  pin: ["pin", "skewer"],
+  discovered: ["discoveredAttack"],
+  sacrifice: ["sacrifice"],
+  hanging: ["hangingPiece"],
+  promotion: ["promotion", "advancedPawn"],
+  endgame: ["endgame"]
+};
+
+/** A Lichess puzzle's themes as the kinds offered here. */
+export function puzzleTypesOf(themes: string[]): PuzzleType[] {
+  return PUZZLE_TYPES.filter((type) => LICHESS_THEMES[type].some((theme) => themes.includes(theme)));
+}
+
+export function isPuzzleType(value: string): value is PuzzleType {
+  return (PUZZLE_TYPES as readonly string[]).includes(value);
 }
 
 export const PUZZLE_LEVELS = ["veryEasy", "easy", "medium", "hard", "expert"] as const;

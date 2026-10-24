@@ -17,7 +17,8 @@ const scholar: ChessPuzzle = {
   fen: "r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 3 3",
   moves: ["g8f6", "h5f7"],
   rating: 700,
-  mateIn: 1
+  mateIn: 1,
+  types: ["mateIn1"]
 };
 
 // A two-move line: the setup, the solver, the reply, the solver.
@@ -26,7 +27,8 @@ const line: ChessPuzzle = {
   fen: "6k1/5ppp/8/8/8/8/5PPP/R5K1 b - - 0 1",
   moves: ["h7h6", "a1a8", "g8h7", "a8a7"],
   rating: 1000,
-  mateIn: null
+  mateIn: null,
+  types: []
 };
 
 describe("chess puzzles", () => {

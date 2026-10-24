@@ -1,7 +1,7 @@
 import fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest, type FastifyServerOptions } from "fastify";
 import staticFiles from "@fastify/static";
 import { z } from "zod";
-import { AI_LEVELS, Chess, GAME_IDS, type AiLevel, type PuzzleLevel } from "@isputnik/games-engine";
+import { AI_LEVELS, Chess, GAME_IDS, type AiLevel, type PuzzleLevel, type PuzzleType } from "@isputnik/games-engine";
 import { BASE_PATH } from "./config.js";
 import { openDatabase } from "./db.js";
 import {
@@ -101,7 +101,8 @@ const computerResultSchema = z.object({
 // A chess puzzle: the next one at a level ("auto" — near the member's
 // rating — when none is given), and how a try went.
 const puzzleQuerySchema = z.object({
-  level: z.enum(["auto", ...Chess.PUZZLE_LEVELS] as ["auto", ...PuzzleLevel[]]).default("auto")
+  level: z.enum(["auto", ...Chess.PUZZLE_LEVELS] as ["auto", ...PuzzleLevel[]]).default("auto"),
+  type: z.enum(["any", ...Chess.PUZZLE_TYPES] as ["any", ...PuzzleType[]]).default("any")
 });
 
 const puzzleResultSchema = z.object({
@@ -334,8 +335,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   // Chess puzzles, for members: a guest is here for one match.
   app.get(`${API}/puzzles/next`, { preHandler: requireIdentity }, async (request, reply) => {
     if (request.identity!.role === "guest") return reply.code(403).send({ error: "Puzzles are for the family" });
-    const { level } = puzzleQuerySchema.parse(request.query ?? {});
-    return nextPuzzle(db, request.identity!.id, level);
+    const { level, type } = puzzleQuerySchema.parse(request.query ?? {});
+    return nextPuzzle(db, request.identity!.id, level, type);
   });
 
   app.post(`${API}/puzzles/:id/result`, { preHandler: requireIdentity }, async (request, reply) => {

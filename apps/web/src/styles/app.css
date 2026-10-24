@@ -1393,12 +1393,6 @@
     display: none;
   }
 
-  /* A way in of its own (Chess puzzles) stays: there is no other door to it. */
-  .game-card-actions .game-card-extra {
-    display: inline-flex;
-    min-height: 36px;
-  }
-
   .game-card-actions {
     margin: 0;
     padding: 0;

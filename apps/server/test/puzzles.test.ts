@@ -35,19 +35,29 @@ describe("the puzzle set", () => {
 describe("puzzles", () => {
   it("starts a member at 800 and offers a puzzle near it", () => {
     expect(puzzleMe(db, "mum")).toEqual({ rating: 800, played: 0, solved: 0, streak: 0 });
-    const offer = nextPuzzle(db, "mum", "auto", () => 0.5);
+    const offer = nextPuzzle(db, "mum", "auto", "any", () => 0.5);
     expect(Math.abs(offer.puzzle.rating - 800)).toBeLessThanOrEqual(150);
     expect(offer.repeat).toBe(false);
   });
 
   it("offers a chosen level", () => {
-    const offer = nextPuzzle(db, "mum", "expert", () => 0);
+    const offer = nextPuzzle(db, "mum", "expert", "any", () => 0);
     expect(offer.puzzle.level).toBe("expert");
     expect(offer.puzzle.rating).toBeGreaterThanOrEqual(2100);
   });
 
+  it("offers a chosen kind, at every level", () => {
+    for (const type of Chess.PUZZLE_TYPES) {
+      expect(nextPuzzle(db, "mum", "auto", type, () => 0.5).puzzle.types).toContain(type);
+      for (const level of Chess.PUZZLE_LEVELS) {
+        // A kind thin at a level comes from the nearest level that has it.
+        expect(nextPuzzle(db, "mum", level, type, () => 0).puzzle.types).toContain(type);
+      }
+    }
+  });
+
   it("moves the rating on a first try only, and skips tried puzzles", () => {
-    const offer = nextPuzzle(db, "mum", "auto", () => 0);
+    const offer = nextPuzzle(db, "mum", "auto", "any", () => 0);
     const first = recordPuzzleResult(db, "mum", offer.puzzle.id, { solved: true, hints: 0 });
     expect(first.recorded).toBe(true);
     expect(first.before).toBe(800);
@@ -58,7 +68,7 @@ describe("puzzles", () => {
     const again = recordPuzzleResult(db, "mum", offer.puzzle.id, { solved: false, hints: 0 });
     expect(again).toMatchObject({ recorded: false, before: first.after, after: first.after });
 
-    expect(nextPuzzle(db, "mum", "auto", () => 0).puzzle.id).not.toBe(offer.puzzle.id);
+    expect(nextPuzzle(db, "mum", "auto", "any", () => 0).puzzle.id).not.toBe(offer.puzzle.id);
   });
 
   it("counts a solve with the move shown as no solve, and breaks the streak", () => {
@@ -72,7 +82,7 @@ describe("puzzles", () => {
   it("calls every puzzle in reach a repeat once all are tried", () => {
     const expert = puzzleSet().filter((puzzle) => Chess.puzzleLevel(puzzle.rating) === "expert");
     for (const puzzle of expert) recordPuzzleResult(db, "mum", puzzle.id, { solved: false, hints: 0 });
-    const offer = nextPuzzle(db, "mum", "expert", () => 0);
+    const offer = nextPuzzle(db, "mum", "expert", "any", () => 0);
     expect(offer.repeat).toBe(true);
     expect(offer.puzzle.level).toBe("expert");
   });
@@ -121,8 +131,15 @@ describe("puzzles API", () => {
     expect(result.json()).toMatchObject({ recorded: true, before: 800 });
   });
 
-  it("refuses a bad level, an unknown puzzle, bad hints and a guest", async () => {
+  it("hands out a puzzle of the kind asked for", async () => {
+    const next = await app.inject({ method: "GET", url: "/games/api/puzzles/next?level=medium&type=fork", headers: as("mum", "Мама") });
+    expect(next.statusCode).toBe(200);
+    expect(next.json().puzzle.types).toContain("fork");
+  });
+
+  it("refuses a bad level or kind, an unknown puzzle, bad hints and a guest", async () => {
     expect((await app.inject({ method: "GET", url: "/games/api/puzzles/next?level=impossible", headers: as("mum", "Мама") })).statusCode).toBe(400);
+    expect((await app.inject({ method: "GET", url: "/games/api/puzzles/next?type=checkers", headers: as("mum", "Мама") })).statusCode).toBe(400);
     expect((await app.inject({ method: "POST", url: "/games/api/puzzles/nope0/result", headers: as("mum", "Мама"), payload: { solved: true, hints: 0 } })).statusCode).toBe(404);
     const id = puzzleSet()[0].id;
     expect((await app.inject({ method: "POST", url: `/games/api/puzzles/${id}/result`, headers: as("mum", "Мама"), payload: { solved: true, hints: 3 } })).statusCode).toBe(400);

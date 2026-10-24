@@ -1,4 +1,4 @@
-import { Chess, type AiLevel, type ChessMove, type ChessState, type PlayerIndex } from "@isputnik/games-engine";
+import { Chess, type AiLevel, type ChessMove, type ChessState, type PlayerIndex, type PuzzleLevel, type PuzzleType } from "@isputnik/games-engine";
 import { newGameKey } from "../../shared/gameKey";
 
 // The game in progress on this device, so a refresh or a locked phone does not
@@ -6,6 +6,9 @@ import { newGameKey } from "../../shared/gameKey";
 // through the rules on load, so a stored game can never disagree with them.
 const KEY = "isputnik-games.chess.local";
 const SETUP_KEY = "isputnik-games.chess.setup";
+const PLAY_KEY = "isputnik-games.chess.play";
+const PUZZLE_LEVEL_KEY = "isputnik-games.chess.puzzleLevel";
+const PUZZLE_TYPE_KEY = "isputnik-games.chess.puzzleType";
 
 export type ChessMode = "computer" | "local";
 
@@ -104,5 +107,53 @@ export function saveChessSetup(setup: ChessSetup): void {
     localStorage.setItem(SETUP_KEY, JSON.stringify(setup));
   } catch {
     /* private mode */
+  }
+}
+
+/** What the Play form offers first: a game (its setup says which) or puzzles. */
+export function loadPlaysPuzzles(): boolean {
+  try {
+    return localStorage.getItem(PLAY_KEY) === "puzzles";
+  } catch {
+    return false;
+  }
+}
+
+export function savePlaysPuzzles(puzzles: boolean): void {
+  try {
+    if (puzzles) localStorage.setItem(PLAY_KEY, "puzzles");
+    else localStorage.removeItem(PLAY_KEY);
+  } catch {
+    /* private mode */
+  }
+}
+
+/** The puzzles asked for: a level ("auto" = near your rating) and a kind. */
+export interface PuzzleChoice {
+  level: PuzzleLevel | "auto";
+  type: PuzzleType | "any";
+}
+
+export function loadPuzzleChoice(): PuzzleChoice {
+  try {
+    const level = localStorage.getItem(PUZZLE_LEVEL_KEY);
+    const type = localStorage.getItem(PUZZLE_TYPE_KEY);
+    return {
+      level: level && (Chess.PUZZLE_LEVELS as readonly string[]).includes(level) ? (level as PuzzleLevel) : "auto",
+      type: type && Chess.isPuzzleType(type) ? type : "any"
+    };
+  } catch {
+    return { level: "auto", type: "any" };
+  }
+}
+
+export function savePuzzleChoice(choice: PuzzleChoice): void {
+  try {
+    if (choice.level === "auto") localStorage.removeItem(PUZZLE_LEVEL_KEY);
+    else localStorage.setItem(PUZZLE_LEVEL_KEY, choice.level);
+    if (choice.type === "any") localStorage.removeItem(PUZZLE_TYPE_KEY);
+    else localStorage.setItem(PUZZLE_TYPE_KEY, choice.type);
+  } catch {
+    /* private mode: the choice holds for this visit */
   }
 }

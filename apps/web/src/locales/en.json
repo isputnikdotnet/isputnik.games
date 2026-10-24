@@ -41,7 +41,7 @@
     },
     "games": {
       "title": "Choose a game",
-      "lead": "Against the computer, two at one screen, or online.",
+      "lead": "Against the computer, two at one screen, or online — and puzzles.",
       "modes": "Ways to play",
       "invite": "Invite"
     },
@@ -118,7 +118,6 @@
     "version": "iSputnik Games {{version}}",
     "stageAlpha": "alpha",
     "stageBeta": "beta",
-    "puzzles": "Puzzles",
     "penaltyScore": "{{a}} : {{b}} towards {{target}}, fewer leads"
   },
   "invite": {
@@ -174,7 +173,7 @@
     },
     "chess": {
       "name": "Chess",
-      "summary": "The royal game: checkmate the other side's king. Against the computer, two at one screen, or online."
+      "summary": "The royal game: checkmate the other side's king. Against the computer, two at one screen, or online — and puzzles."
     },
     "dominoes": {
       "name": "Dominoes",
@@ -356,15 +355,17 @@
   "chess": {
     "setup": {
       "title": "New game",
-      "mode": "Players",
+      "mode": "Play",
       "modeComputer": "Against the computer",
       "modeLocal": "Two players, one screen",
+      "modePuzzles": "Puzzles",
       "youPlay": "You play",
       "level": "Level",
       "levelEasy": "Easy",
       "levelNormal": "Normal",
       "levelHard": "Hard",
-      "start": "Start game"
+      "start": "Start game",
+      "startPuzzles": "Start puzzles"
     },
     "players": {
       "white": "White",
@@ -504,7 +505,7 @@
       "practiceTitle": "Practice",
       "practice": "This try doesn’t change your rating.",
       "repeat": "You’ve tried every puzzle near this level; this one is practice.",
-      "levelLabel": "Puzzles",
+      "typeLabel": "Kind",
       "levels": {
         "auto": "For me",
         "veryEasy": "Very easy",
@@ -512,6 +513,19 @@
         "medium": "Medium",
         "hard": "Hard",
         "expert": "Expert"
+      },
+      "types": {
+        "any": "Any",
+        "mateIn1": "Mate in 1",
+        "mateIn2": "Mate in 2",
+        "mateLong": "Mate in 3+",
+        "fork": "Forks",
+        "pin": "Pins & skewers",
+        "discovered": "Discovered attacks",
+        "sacrifice": "Sacrifices",
+        "hanging": "Hanging pieces",
+        "promotion": "Pawn promotion",
+        "endgame": "Endgames"
       }
     },
     "review": {

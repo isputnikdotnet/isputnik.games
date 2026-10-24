@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Eye, Lightbulb, RotateCcw, Settings2, SkipForward } from "lucide-react";
-import { Chess, type ChessMove, type ChessState, type PlayerIndex, type PuzzleLevel } from "@isputnik/games-engine";
+import { Chess, type ChessMove, type ChessState, type PlayerIndex } from "@isputnik/games-engine";
 import { fetchNextPuzzle, reportPuzzleResult, type PuzzleMe, type PuzzleOffer, type PuzzleResult } from "../../api";
 import { Button } from "../../shared/Button";
 import { Comms } from "../../shared/Comms";
@@ -12,6 +12,8 @@ import { play } from "../../shared/sound";
 import { localSan } from "./comms";
 import { ChessSettingsDialog } from "./SettingsDialog";
 import { ChessTable } from "./ChessTable";
+import { puzzleLevelOptions, puzzleTypeOptions } from "./NewGameForm";
+import { loadPuzzleChoice, savePuzzleChoice, type PuzzleChoice } from "./storage";
 
 // Chess puzzles: the server hands over a position and its line, the other
 // side's move plays itself, and the solver finds the rest. A wrong move is
@@ -19,36 +21,16 @@ import { ChessTable } from "./ChessTable";
 // Hints come in two steps — the piece to move, then where it goes — and each
 // costs: the piece halves what a solve earns, the move shown makes it nothing. The first
 // try at a puzzle moves the solver's rating (the server does the maths);
-// "Try again" and a repeat are practice.
+// "Try again" and a repeat are practice. The kind and level come from the
+// Play form (and can be changed in Settings).
 
 type Phase = "loading" | "error" | "setup" | "solving" | "solved" | "shown";
-type Choice = PuzzleLevel | "auto";
-
-const LEVEL_KEY = "isputnik-games.chess.puzzleLevel";
 /** How long the other side "thinks" before a move plays itself. */
 export const PUZZLE_DELAY = { ms: 600 };
 
-function loadLevel(): Choice {
-  try {
-    const saved = localStorage.getItem(LEVEL_KEY);
-    return saved && (saved === "auto" || (Chess.PUZZLE_LEVELS as readonly string[]).includes(saved)) ? (saved as Choice) : "auto";
-  } catch {
-    return "auto";
-  }
-}
-
-function saveLevel(level: Choice) {
-  try {
-    if (level === "auto") localStorage.removeItem(LEVEL_KEY);
-    else localStorage.setItem(LEVEL_KEY, level);
-  } catch {
-    /* private mode: the level holds for this visit */
-  }
-}
-
 export function ChessPuzzlePage() {
   const { t } = useTranslation();
-  const [level, setLevel] = useState<Choice>(loadLevel);
+  const [choice, setChoice] = useState<PuzzleChoice>(loadPuzzleChoice);
   const [offer, setOffer] = useState<PuzzleOffer | null>(null);
   const [me, setMe] = useState<PuzzleMe | null>(null);
   const [state, setState] = useState<ChessState | null>(null);
@@ -66,6 +48,8 @@ export function ChessPuzzlePage() {
   // one finds it changed and does nothing.
   const turn = useRef(0);
   const reported = useRef(false);
+  /** The kind and level the puzzle on the board was fetched for. */
+  const loadedWith = useRef<PuzzleChoice | null>(null);
 
   const later = useCallback((fn: () => void, ms = PUZZLE_DELAY.ms) => {
     const mine = turn.current;
@@ -88,11 +72,12 @@ export function ChessPuzzlePage() {
     });
   }, [later]);
 
-  const load = useCallback((choice: Choice) => {
+  const load = useCallback((wanted: PuzzleChoice) => {
+    loadedWith.current = wanted;
     turn.current++;
     setPhase("loading");
     setError(null);
-    fetchNextPuzzle(choice).then((next) => {
+    fetchNextPuzzle(wanted.level, wanted.type).then((next) => {
       reported.current = false;
       setOffer(next);
       setMe(next.me);
@@ -108,7 +93,7 @@ export function ChessPuzzlePage() {
   }, [begin]);
 
   useEffect(() => {
-    load(loadLevel());
+    load(loadPuzzleChoice());
   }, [load]);
 
   const report = (solved: boolean) => {
@@ -130,7 +115,7 @@ export function ChessPuzzlePage() {
         title={t("chess.puzzle.title")}
         board={<div className="puzzle-board-wait" />}
         notices={<MessageBox tone="error" title={t("chess.puzzle.errorTitle")}>{error}</MessageBox>}
-        actions={<Button variant="primary" onClick={() => load(level)}>{t("chess.puzzle.next")}</Button>}
+        actions={<Button variant="primary" onClick={() => load(choice)}>{t("chess.puzzle.next")}</Button>}
       />
     );
   }
@@ -206,14 +191,20 @@ export function ChessPuzzlePage() {
     begin(offer);
   };
 
-  const changeLevel = (choice: Choice) => {
-    setLevel(choice);
-    saveLevel(choice);
-    setSettingsOpen(false);
-    load(choice);
+  // A new kind or level takes effect with the next puzzle.
+  const changeChoice = (changes: Partial<PuzzleChoice>) => {
+    const next = { ...choice, ...changes };
+    setChoice(next);
+    savePuzzleChoice(next);
   };
 
-  const levelName = (choice: Choice) => t(`chess.puzzle.levels.${choice}`);
+  const closeSettings = () => {
+    setSettingsOpen(false);
+    const was = loadedWith.current;
+    if (!was || was.level !== choice.level || was.type !== choice.type) load(choice);
+  };
+
+  const levelName = (level: PuzzleChoice["level"]) => t(`chess.puzzle.levels.${level}`);
   const practice = offer.repeat || again || (result !== null && !result.recorded);
   let statusLine: string;
   if (phase === "solved") statusLine = missed ? t("chess.puzzle.solvedAfterMiss") : t("chess.puzzle.solved");
@@ -277,7 +268,7 @@ export function ChessPuzzlePage() {
         actions={
           done ? (
             <>
-              <Button variant="primary" onClick={() => load(level)}>
+              <Button variant="primary" onClick={() => load(choice)}>
                 <SkipForward size={16} aria-hidden="true" /> {t("chess.puzzle.next")}
               </Button>
               <Button variant="secondary" onClick={retry}>
@@ -298,7 +289,7 @@ export function ChessPuzzlePage() {
               <Button variant="secondary" onClick={() => setSettingsOpen(true)}>
                 <Settings2 size={16} aria-hidden="true" /> {t("chess.settings.open")}
               </Button>
-              <Button variant="secondary" onClick={() => load(level)}>
+              <Button variant="secondary" onClick={() => load(choice)}>
                 <SkipForward size={16} aria-hidden="true" /> {t("chess.puzzle.skip")}
               </Button>
             </>
@@ -306,14 +297,20 @@ export function ChessPuzzlePage() {
         }
       />
       {settingsOpen && (
-        <ChessSettingsDialog<Choice>
-          level={{
-            label: t("chess.puzzle.levelLabel"),
-            value: level,
-            options: (["auto", ...Chess.PUZZLE_LEVELS] as Choice[]).map((value) => ({ value, label: levelName(value) })),
-            onChange: changeLevel
+        <ChessSettingsDialog<PuzzleChoice["level"], PuzzleChoice["type"]>
+          kind={{
+            label: t("chess.puzzle.typeLabel"),
+            value: choice.type,
+            options: puzzleTypeOptions(t),
+            onChange: (type) => changeChoice({ type })
           }}
-          onClose={() => setSettingsOpen(false)}
+          level={{
+            label: t("chess.setup.level"),
+            value: choice.level,
+            options: puzzleLevelOptions(t),
+            onChange: (level) => changeChoice({ level })
+          }}
+          onClose={closeSettings}
         />
       )}
     </>
