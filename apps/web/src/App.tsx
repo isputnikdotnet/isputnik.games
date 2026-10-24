@@ -15,6 +15,7 @@ import { ChessPuzzlePage } from "./games/chess/PuzzlePage";
 import { ChessReviewPage } from "./games/chess/ReviewPage";
 import { MyChessGamesPage } from "./games/chess/MyGamesPage";
 import { ChessMatchPage } from "./games/chess/ChessMatchPage";
+import { DominoesPage } from "./games/dominoes/DominoesPage";
 
 function Routes() {
   const route = useRoute();
@@ -40,6 +41,7 @@ function Routes() {
     if (route.gameId === "dots") return <DotsPage />;
     if (route.gameId === "starbattle") return <StarBattlePage />;
     if (route.gameId === "chess") return <ChessPage />;
+    if (route.gameId === "dominoes") return <DominoesPage />;
   }
   if (route.name === "puzzles") return <ChessPuzzlePage />;
   if (route.name === "myGames") return <MyChessGamesPage />;

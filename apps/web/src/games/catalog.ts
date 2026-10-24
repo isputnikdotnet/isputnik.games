@@ -1,14 +1,15 @@
-import { ChessKnight, CircleDot, Satellite, type LucideIcon } from "lucide-react";
+import { ChessKnight, CircleDot, RectangleVertical, Satellite, type LucideIcon } from "lucide-react";
 import { loadDotsGame } from "./dots/storage";
 import { loadStarBattleGame } from "./starbattle/storage";
 import { loadChessGame } from "./chess/storage";
+import { loadDominoesGame } from "./dominoes/storage";
 
 // What the lobby and the invite dialog show for each game in the engine's
 // registry: an icon and the keys of its name and summary, the ways it can be
 // played, and whether a local game of it is in progress on this device. A game
 // without an entry here is not offered, whatever the engine knows.
-export type GameNameKey = "games.dots.name" | "games.starbattle.name" | "games.chess.name";
-export type GameSummaryKey = "games.dots.summary" | "games.starbattle.summary" | "games.chess.summary";
+export type GameNameKey = "games.dots.name" | "games.starbattle.name" | "games.chess.name" | "games.dominoes.name";
+export type GameSummaryKey = "games.dots.summary" | "games.starbattle.summary" | "games.chess.summary" | "games.dominoes.summary";
 
 /** Against the computer, two people at one screen, two people online. */
 export type GameMode = "computer" | "local" | "online";
@@ -49,6 +50,15 @@ export const CATALOG: Record<string, CatalogEntry> = {
     newUntil: "2026-11-23",
     extra: { label: "lobby.puzzles", path: "chess/puzzles" },
     inProgress: () => loadChessGame()?.state.status.kind === "playing"
+  },
+  dominoes: {
+    icon: RectangleVertical,
+    name: "games.dominoes.name",
+    summary: "games.dominoes.summary",
+    // Hands are hidden, so no hot seat; online play comes with the server's seed.
+    modes: ["computer"],
+    newUntil: "2026-11-24",
+    inProgress: () => loadDominoesGame()?.state.status.kind === "playing"
   }
 };
 

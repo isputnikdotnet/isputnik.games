@@ -9,6 +9,7 @@ import { useSyncExternalStore } from "react";
 export type Cue =
   | "dot" | "dotTheirs" | "capture" | "captured" | "lost"
   | "take" | "check"
+  | "drawTile"
   | "deploy" | "fire" | "miss" | "hit" | "destroyed"
   | "yourMove" | "message" | "invite" | "win" | "lose" | "draw";
 
@@ -168,6 +169,11 @@ const cues: Record<Cue, (ctx: AudioContext, out: AudioNode, at: number) => numbe
   check: (ctx, out, at) => {
     notes(ctx, out, at + 0.05, [988, 988], 0.09, 0.06, "square", 0.12);
     return 0.3;
+  },
+  drawTile: (ctx, out, at) => {
+    // A tile slid off the pile: a short dry scrape.
+    noise(ctx, out, { at, dur: 0.07, gain: 0.3, filter: "bandpass", freq: 2200, to: 1100 });
+    return 0.07;
   },
   deploy: (ctx, out, at) => {
     tone(ctx, out, { type: "sawtooth", freq: 140, to: 520, at, dur: 0.3, gain: 0.12 });

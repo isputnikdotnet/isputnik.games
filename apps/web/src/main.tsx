@@ -8,6 +8,7 @@ import "./styles/app.css";
 import "./styles/dots.css";
 import "./styles/starbattle.css";
 import "./styles/chess.css";
+import "./styles/dominoes.css";
 
 // A theme before the first paint: the home app's stored one if this device has
 // it, else the dark default — the session applies the member's own once known.

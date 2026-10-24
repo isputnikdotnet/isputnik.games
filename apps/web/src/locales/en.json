@@ -174,6 +174,10 @@
     "chess": {
       "name": "Chess",
       "summary": "The royal game: checkmate the other side's king. Against the computer, two at one screen, or online."
+    },
+    "dominoes": {
+      "name": "Dominoes",
+      "summary": "«Козёл» for two: lay matching tiles, draw from the boneyard when stuck. Whoever collects 101 first is the goat."
     }
   },
   "dots": {
@@ -540,6 +544,109 @@
     "rating": {
       "label": "Chess rating",
       "provisional": "provisional"
+    }
+  },
+  "dominoes": {
+    "setup": {
+      "title": "New game",
+      "target": "Play to",
+      "target101": "101 points",
+      "target51": "51 — a quick game",
+      "level": "Computer's level",
+      "levelEasy": "Easy",
+      "levelNormal": "Normal",
+      "levelHard": "Hard",
+      "start": "Start game",
+      "cancel": "Cancel",
+      "note": "Who leads is the tiles' business: the lowest double opens the first hand."
+    },
+    "menu": {
+      "lead": "Lay matching tiles and empty your hand first. The other side collects what is left in theirs, and whoever reaches 101 is «козёл» — and loses."
+    },
+    "players": {
+      "you": "You",
+      "computer": "Computer"
+    },
+    "newGame": "New game",
+    "mainMenu": "Main menu",
+    "exitGame": "Exit game",
+    "playOn": "Play on",
+    "draw": "Draw a tile",
+    "pass": "Pass",
+    "confirmExit": {
+      "title": "Leave this game?",
+      "body": "The game in progress is abandoned, and you go back to the games.",
+      "confirm": "Exit game",
+      "cancel": "Keep playing"
+    },
+    "score": {
+      "aria": "Score",
+      "hand": "Hand {{count}}",
+      "target": "First to {{target}} is «козёл»"
+    },
+    "status": {
+      "thinking": "The computer is thinking…",
+      "handOver": "The hand is over.",
+      "lead": "You lead: {{tile}} opens the game.",
+      "open": "Your lead — any tile.",
+      "pick": "Your move — tap a lit tile.",
+      "pickEnd": "Tap a lit end to lay {{tile}}.",
+      "draw": "Nothing fits — draw from the boneyard.",
+      "pass": "Nothing fits and the boneyard is empty — pass."
+    },
+    "end": {
+      "youWin": "You win — the computer is «козёл»",
+      "youLose": "You are «козёл» — the computer wins",
+      "draw": "A draw"
+    },
+    "table": {
+      "aria": "Dominoes table",
+      "line_one": "The line: {{count}} tile, open ends {{left}} and {{right}}",
+      "line_other": "The line: {{count}} tiles, open ends {{left}} and {{right}}",
+      "lineEmpty": "The table is empty",
+      "theirHand_one": "{{name}} · {{count}} tile",
+      "theirHand_other": "{{name}} · {{count}} tiles",
+      "boneyard": "Boneyard · {{count}}",
+      "drawAria": "Draw from the boneyard, {{count}} left",
+      "yourHand": "Your hand",
+      "tileFits": "{{tile}}, fits",
+      "layLeft": "Lay {{tile}} on the left end",
+      "layRight": "Lay {{tile}} on the right end"
+    },
+    "comms": {
+      "lead": "{{tile}} to open",
+      "left": "{{tile}} on the left",
+      "right": "{{tile}} on the right",
+      "drew_one": "draws a tile",
+      "drew_other": "draws {{count}} tiles",
+      "pass": "passes",
+      "handOut": "hand {{hand}} to {{name}}, {{payer}} +{{points}} → {{total}}",
+      "handFish": "hand {{hand}}: «рыба», {{payer}} +{{points}} → {{total}}",
+      "handTie": "hand {{hand}}: «рыба», a tie — nobody scores"
+    },
+    "summary": {
+      "eyebrowFish": "Hand {{count}} · «рыба»",
+      "outYou": "You went out",
+      "outThem": "{{name}} went out",
+      "fishTitle": "The line is closed",
+      "tieTitle": "A closed line, and a tie",
+      "collectYou": "You collect {{count}}.",
+      "collectThem": "{{name}} collects {{count}}.",
+      "fishYou": "Your hand is the heavier: you collect your own {{count}}.",
+      "fishThem": "{{name}} holds the heavier hand and collects its own {{count}}.",
+      "tieLead": "Both hands count {{count}}: nobody scores.",
+      "goatYou": "You are «козёл»",
+      "goatThem": "{{name}} is «козёл»",
+      "wentOut": "Went out",
+      "pips_one": "{{count}} pip",
+      "pips_other": "{{count}} pips",
+      "of": "of {{target}}"
+    },
+    "history": {
+      "open": "Hand history",
+      "title": "Hand history",
+      "close": "Close",
+      "empty": "No hand has finished yet."
     }
   },
   "comms": {

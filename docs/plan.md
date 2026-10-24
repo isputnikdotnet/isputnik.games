@@ -549,7 +549,20 @@ styles like Chess's can come later.
      seed), `test/dominoes-rules.test.ts`.
   2. AI: easy, normal, hard, with measurements.
   3. Web against the computer, after a mock of the table on canvas agreed
-     with the owner (as for Star Battle and the game stage).
+     with the owner (as for Star Battle and the game stage). **Built 2026-10-23** after the
+     owner picked **A, square felt** from the mock
+     (https://claude.ai/artifact/BBKbHB3T9e49bm3iexUco8): `games/dominoes/` —
+     `layout.ts` (pure, tested: inside the box, no overlaps, touching halves
+     match; a corner after a crosswise double keeps clear of it, and a double
+     straight after a corner lies along the row), `DominoTile`, `DominoesTable`
+     (felt in 1000-unit percent; the hand on the felt on a desktop, in a row
+     under it on a phone), `DominoesPanel` (the «козёл» meter, the hand
+     summary, the hand history), the page on `GameStage`. A finished hand
+     holds the computer until the person plays on. Catalog modes are
+     `computer` only until step 4: the lobby shows Invite, and the invite
+     dialog a game, only for games with `online`. `useFeed` takes the seed.
+     Cues: a laid tile ticks like a dot, a draw scrapes (`drawTile`), a hand
+     won or lost rings like a capture.
   4. Online: `match_secrets`, the match page, the score display.
   5. Home: name and score.
   6. Release: games minor and home patch.

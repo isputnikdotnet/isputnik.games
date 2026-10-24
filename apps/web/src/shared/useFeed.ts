@@ -17,7 +17,8 @@ const reachedAfter = new WeakMap<object, Reached>();
 export function feedFor<O, S extends { status: GameStatus }, M extends object>(
   game: GameDefinition<O, S, M>,
   options: O,
-  moves: readonly M[]
+  moves: readonly M[],
+  seed?: number
 ): GameEvent[] {
   if (moves.length === 0) return [];
   const known = reachedAfter.get(moves[moves.length - 1]);
@@ -36,7 +37,7 @@ export function feedFor<O, S extends { status: GameStatus }, M extends object>(
     }
   }
   if (state === null) {
-    const start = narrateMoves(game, options, []);
+    const start = narrateMoves(game, options, [], seed);
     state = start.state;
     events = [];
     from = 0;
@@ -55,9 +56,11 @@ export function feedFor<O, S extends { status: GameStatus }, M extends object>(
 export function useFeed<O, S extends { status: GameStatus }, M extends object>(
   game: GameDefinition<O, S, M>,
   options: O,
-  moves: readonly M[]
+  moves: readonly M[],
+  /** The deal's seed, for a game dealt at random (Dominoes). */
+  seed?: number
 ): GameEvent[] {
-  // Options change only with a new game, which starts from an empty list.
+  // Options and the seed change only with a new game, which starts from an empty list.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  return useMemo(() => feedFor(game, options, moves), [game, moves]);
+  return useMemo(() => feedFor(game, options, moves, seed), [game, moves]);
 }

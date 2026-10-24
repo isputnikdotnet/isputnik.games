@@ -112,7 +112,7 @@ export function InviteDialog({ myId, game: initialGame = "dots", onClose, onSent
       <div className="invite-form">
         {row(t("invite.game"), (
           <div className="chip-row">
-            {GAMES.filter((entry) => CATALOG[entry.id]).map((entry) => (
+            {GAMES.filter((entry) => CATALOG[entry.id]?.modes.includes("online")).map((entry) => (
               <Button key={entry.id} variant="chip" selected={game === entry.id} onClick={() => setGame(entry.id)}>
                 {t(CATALOG[entry.id].name)}
               </Button>

@@ -1,12 +1,15 @@
 import { PieceGlyph } from "./chess/pieces";
+import { pipsOf } from "./dominoes/DominoTile";
 
 // A small picture of each game for its lobby card: a corner of a game under
 // way, drawn as the game itself draws it. Dots follows the theme; Star Battle
-// keeps its space and Chess its wooden board on every theme, as their pages do.
+// keeps its space, Chess its wooden board and Dominoes its felt on every theme,
+// as their pages do.
 export function GamePreview({ game }: { game: string }) {
   if (game === "dots") return <DotsPreview />;
   if (game === "starbattle") return <StarBattlePreview />;
   if (game === "chess") return <ChessPreview />;
+  if (game === "dominoes") return <DominoesPreview />;
   return null;
 }
 
@@ -84,6 +87,45 @@ function ChessPreview() {
         <rect key={square} x={xOf(square)} y={yOf(square)} width={SQUARE} height={SQUARE} className="game-preview-last" />
       ))}
       {PIECES.map(([square, letter]) => <PieceGlyph key={square} letter={letter} x={xOf(square)} y={yOf(square)} size={SQUARE} />)}
+    </svg>
+  );
+}
+
+const PIP = 11;
+// A stretch of a line on the felt, doubles crosswise, with a tile in hand below.
+const LINE: { x: number; y: number; v: boolean; a: number; b: number }[] = [
+  { x: 10, y: 38, v: false, a: 6, b: 2 },
+  { x: 46, y: 29, v: true, a: 2, b: 2 },
+  { x: 64, y: 38, v: false, a: 2, b: 5 },
+  { x: 100, y: 38, v: false, a: 5, b: 3 },
+  { x: 136, y: 29, v: true, a: 3, b: 3 },
+  { x: 154, y: 38, v: false, a: 3, b: 1 },
+  { x: 172, y: 56, v: true, a: 1, b: 4 }
+];
+
+function PreviewTile({ x, y, v, a, b }: { x: number; y: number; v: boolean; a: number; b: number }) {
+  const half = 18;
+  const w = v ? half : 2 * half;
+  const h = v ? 2 * half : half;
+  const pips = (n: number, ox: number, oy: number) =>
+    pipsOf(n, v).map(([px, py]) => <circle key={`${ox},${oy},${px},${py}`} cx={x + ox + (px / 100) * half} cy={y + oy + (py / 100) * half} r={PIP / 6} fill="#1d1a16" />);
+  return (
+    <g>
+      <rect x={x} y={y} width={w} height={h} rx="3" fill="#f4ecd8" stroke="#cbbd99" />
+      <line x1={v ? x + 3 : x + half} y1={v ? y + half : y + 3} x2={v ? x + half - 3 : x + half} y2={v ? y + half : y + half - 3} stroke="#a99b7b" />
+      {pips(a, 0, 0)}
+      {pips(b, v ? 0 : half, v ? half : 0)}
+    </g>
+  );
+}
+
+function DominoesPreview() {
+  return (
+    <svg className="game-preview is-dominoes" viewBox={VIEW} aria-hidden="true" focusable="false">
+      <rect width="200" height="112" fill="#1f4d3c" />
+      {LINE.map((tile) => <PreviewTile key={`${tile.x},${tile.y}`} {...tile} />)}
+      <rect x="40" y="86" width="18" height="36" rx="3" fill="#6b2a24" stroke="#4a1c18" />
+      <rect x="62" y="86" width="18" height="36" rx="3" fill="#6b2a24" stroke="#4a1c18" />
     </svg>
   );
 }
