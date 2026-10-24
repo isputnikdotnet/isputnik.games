@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { SputnikRail } from "@isputnik/games-engine";
+import type { ArcadeCue, SputnikRail, SputnikVariant } from "@isputnik/games-engine";
 import { GameStage } from "../../shared/GameStage";
+import { play } from "../../shared/sound";
 import { PHONE, useMediaQuery } from "../../shared/useMediaQuery";
 import { Handheld, type HandheldControl } from "./Handheld";
+import type { HandheldMode } from "./lit";
+import { soundsOf } from "./sounds";
 import { useArcadeRun } from "./useArcadeRun";
+
+const sound = (cues: ArcadeCue[], mode: HandheldMode) => play(...soundsOf(cues, mode));
 
 const RAIL_CODES: Record<string, SputnikRail> = { KeyQ: 0, KeyA: 1, KeyP: 2, KeyL: 3 };
 const FLASH_MS = 110;
@@ -16,11 +21,16 @@ const FLASH_MS = 110;
 // Q/A/P/L work on a Russian layout too.
 export function SputnikPage() {
   const { t } = useTranslation();
-  const run = useArcadeRun();
+  const run = useArcadeRun(sound);
   const phone = useMediaQuery(PHONE);
   const [flash, setFlash] = useState<HandheldControl | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const { start, move, togglePause, net } = run;
+  const { move, togglePause, net } = run;
+  const startRun = run.start;
+  const start = useCallback((variant: SputnikVariant) => {
+    play("lcdStart");
+    startRun(variant);
+  }, [startRun]);
 
   const press = useCallback((control: HandheldControl) => {
     setFlash(control);

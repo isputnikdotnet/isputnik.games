@@ -94,6 +94,16 @@ describe("lobby, online section", () => {
     await waitFor(() => expect(window.location.pathname).toBe("/games/dots/m/inv"));
   });
 
+  it("lists Sputnik Catch as a game for one, with Play and no Invite", async () => {
+    vi.mocked(api.fetchMatches).mockResolvedValue([]);
+    withSession(<LobbyPage />);
+    const games = await screen.findByRole("region", { name: "Choose a game" });
+    const card = within(games).getByRole("heading", { name: "Sputnik Catch" }).closest("article")!;
+    expect(within(card).getByText("Solo")).toBeInTheDocument();
+    expect(within(card).getByRole("link", { name: "Play" })).toHaveAttribute("href", "/games/sputnik");
+    expect(within(card).queryByRole("button", { name: "Invite" })).toBeNull();
+  });
+
   it("a game card's Invite opens the dialog on that game", async () => {
     vi.mocked(api.fetchMatches).mockResolvedValue([]);
     vi.mocked(api.fetchMembers).mockResolvedValue([{ id: "dad", name: "Dad" }]);

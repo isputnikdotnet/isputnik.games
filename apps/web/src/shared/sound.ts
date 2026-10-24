@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 
 // The games' sounds, made on the spot with Web Audio rather than shipped as
 // files: a soft wooden tick for a dot, a laser and a blast in space, a chime
-// when the move comes back to you. Nothing plays until the player has touched
+// when the move comes back to you, a handheld's piezo beeps for Sputnik Catch. Nothing plays until the player has touched
 // the page once (browsers keep an AudioContext silent until then), and nothing
 // at all while the top bar's switch says off — remembered per device, since
 // whether a phone beeps is the person's own business.
@@ -11,6 +11,8 @@ export type Cue =
   | "take" | "check"
   | "drawTile"
   | "deploy" | "fire" | "miss" | "hit" | "destroyed"
+  | "lcdStep0" | "lcdStep1" | "lcdStep2" | "lcdStep3"
+  | "lcdCatch" | "lcdCrash" | "lcdAlien" | "lcdPardon" | "lcdStart" | "lcdOver"
   | "yourMove" | "message" | "invite" | "win" | "lose" | "draw";
 
 const STORAGE_KEY = "isputnik-games-sound";
@@ -138,6 +140,14 @@ function notes(ctx: AudioContext, out: AudioNode, at: number, freqs: number[], s
   freqs.forEach((freq, i) => tone(ctx, out, { type, freq, at: at + i * step, dur: i === freqs.length - 1 ? dur * 2 : dur, gain }));
 }
 
+/** A square wave is loud for its gain: the handheld's beeps sit well under the rest. */
+const LCD_GAIN = 0.16;
+
+function lcdBeep(ctx: AudioContext, out: AudioNode, at: number, freq: number, dur = 0.03): number {
+  tone(ctx, out, { type: "square", freq, at, dur, gain: LCD_GAIN });
+  return dur;
+}
+
 // ── The cues: each draws itself from `at` and says how long it lasts ───────
 
 const cues: Record<Cue, (ctx: AudioContext, out: AudioNode, at: number) => number> = {
@@ -198,6 +208,26 @@ const cues: Record<Cue, (ctx: AudioContext, out: AudioNode, at: number) => numbe
     tone(ctx, out, { freq: 95, to: 32, at, dur: 0.8, gain: 0.9 });
     return 0.9;
   },
+  // The LCD handheld's piezo: plain square beeps, each rail its own pitch.
+  lcdStep0: (ctx, out, at) => lcdBeep(ctx, out, at, 1046),
+  lcdStep1: (ctx, out, at) => lcdBeep(ctx, out, at, 880),
+  lcdStep2: (ctx, out, at) => lcdBeep(ctx, out, at, 784),
+  lcdStep3: (ctx, out, at) => lcdBeep(ctx, out, at, 659),
+  lcdCatch: (ctx, out, at) => lcdBeep(ctx, out, at, 1568, 0.05),
+  lcdCrash: (ctx, out, at) => lcdBeep(ctx, out, at, 330, 0.16),
+  lcdAlien: (ctx, out, at) => lcdBeep(ctx, out, at, 523, 0.1),
+  lcdPardon: (ctx, out, at) => {
+    notes(ctx, out, at, [784, 988, 1175, 1568], 0.09, 0.08, "square", LCD_GAIN);
+    return 0.45;
+  },
+  lcdStart: (ctx, out, at) => {
+    notes(ctx, out, at, [523, 659, 784], 0.08, 0.07, "square", LCD_GAIN);
+    return 0.3;
+  },
+  lcdOver: (ctx, out, at) => {
+    notes(ctx, out, at, [392, 330, 262, 196], 0.2, 0.18, "square", LCD_GAIN);
+    return 1;
+  },
   yourMove: (ctx, out, at) => {
     notes(ctx, out, at, [784, 1046], 0.13, 0.25);
     return 0.6;
@@ -228,7 +258,8 @@ const cues: Record<Cue, (ctx: AudioContext, out: AudioNode, at: number) => numbe
 const buzz: Partial<Record<Cue, number[]>> = {
   yourMove: [35],
   invite: [35, 60, 35],
-  destroyed: [60, 40, 60]
+  destroyed: [60, 40, 60],
+  lcdCrash: [40]
 };
 
 /** Plays the cues one after another. A no-op while switched off, before the

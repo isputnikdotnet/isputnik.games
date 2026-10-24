@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BellRing, Cpu, Globe, Hourglass, UserPlus, Users, type LucideIcon } from "lucide-react";
-import { GAMES } from "@isputnik/games-engine";
+import { BellRing, Cpu, Globe, Hourglass, Timer, UserPlus, Users, type LucideIcon } from "lucide-react";
 import { answerMatch, fetchMatches, fetchStats, type FamilyStats, type MatchSummary } from "../api";
 import { follow, href, matchHref, navigate } from "../router";
 import { useSession } from "../session";
@@ -10,7 +9,7 @@ import { Avatar } from "../shared/Avatar";
 import { Button } from "../shared/Button";
 import { MessageBox } from "../shared/MessageBox";
 import { useNewcomerCue } from "../shared/useGameSounds";
-import { CATALOG, isNew, type GameMode } from "../games/catalog";
+import { CATALOG, LOBBY_GAME_IDS, isNew, type GameMode } from "../games/catalog";
 import { GamePreview } from "../games/previews";
 import { InviteDialog } from "./InviteDialog";
 import { Leaderboard, YourMonth } from "./LobbyStats";
@@ -24,7 +23,7 @@ function stageLabel(stage: string, t: (key: "lobby.stageAlpha" | "lobby.stageBet
   return stage;
 }
 
-const MODE_ICONS: Record<GameMode, LucideIcon> = { computer: Cpu, local: Users, online: Globe };
+const MODE_ICONS: Record<GameMode, LucideIcon> = { computer: Cpu, local: Users, online: Globe, solo: Timer };
 
 /** How many finished matches the lobby lists. */
 const RECENT = 5;
@@ -210,12 +209,12 @@ export function LobbyPage() {
               <p className="muted">{t("lobby.games.lead")}</p>
             </div>
             <div className="lobby-grid">
-              {GAMES.map((game) => {
-                const entry = CATALOG[game.id];
+              {LOBBY_GAME_IDS.map((gameId) => {
+                const entry = CATALOG[gameId];
                 if (!entry) return null;
-                const to = href(game.id);
+                const to = href(gameId);
                 const resuming = entry.inProgress();
-                const myMoves = mine.filter((m) => m.game === game.id).length;
+                const myMoves = mine.filter((m) => m.game === gameId).length;
                 const pills = (
                   <>
                     {myMoves > 0 && <span className="lobby-pill is-move">{t("lobby.pill.yourMove", { count: myMoves })}</span>}
@@ -223,11 +222,11 @@ export function LobbyPage() {
                   </>
                 );
                 return (
-                  <article key={game.id} className="game-card">
+                  <article key={gameId} className="game-card">
                     {/* The states sit on the picture; on a phone, where the picture
                         is a thumbnail, beside the name instead (the CSS picks one). */}
                     <div className="game-card-art">
-                      <GamePreview game={game.id} />
+                      <GamePreview game={gameId} />
                       <span className="game-card-pills">{pills}</span>
                       {isNew(entry) && <span className="lobby-pill is-new game-card-new">{t("lobby.pill.new")}</span>}
                     </div>
@@ -248,7 +247,7 @@ export function LobbyPage() {
                       </ul>
                       <div className="game-card-actions">
                         {link(to, "primary-button game-card-play", resuming ? t("lobby.continue") : t("lobby.play"))}
-                        {entry.modes.includes("online") && <Button variant="secondary" onClick={() => setInviting({ game: game.id })}>{t("lobby.games.invite")}</Button>}
+                        {entry.modes.includes("online") && <Button variant="secondary" onClick={() => setInviting({ game: gameId })}>{t("lobby.games.invite")}</Button>}
                       </div>
                     </div>
                   </article>

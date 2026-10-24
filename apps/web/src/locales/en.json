@@ -48,7 +48,8 @@
     "modes": {
       "computer": "Computer",
       "local": "One screen",
-      "online": "Online"
+      "online": "Online",
+      "solo": "Solo"
     },
     "recent": {
       "title": "Recent games"

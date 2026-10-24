@@ -4,6 +4,7 @@ import { Sputnik, type SputnikState } from "@isputnik/games-engine";
 import { SputnikPage } from "../src/games/sputnik/SputnikPage";
 import { autopilot, litSegments, type LcdView } from "../src/games/sputnik/lit";
 import { HANDHELD_DELAYS } from "../src/games/sputnik/useArcadeRun";
+import { soundsOf } from "../src/games/sputnik/sounds";
 
 const run = (over: Partial<SputnikState> = {}): SputnikState => ({ ...Sputnik.createRun("A", 1), ...over });
 const view = (over: Partial<LcdView> = {}): LcdView => ({ mode: "play", state: run(), net: 0, blink: false, ...over });
@@ -47,6 +48,28 @@ describe("the LCD's lit segments", () => {
   it("puts the demo's net under the sputnik that lands next", () => {
     expect(autopilot(run({ sputniks: [{ rail: 0, step: 1 }, { rail: 3, step: 4 }] }), 0)).toBe(3);
     expect(autopilot(run({ sputniks: [] }), 2)).toBe(2);
+  });
+});
+
+describe("the handheld's beeps", () => {
+  it("beeps once a tick, the rail's own pitch for a step", () => {
+    expect(soundsOf([{ kind: "step", rail: 2 }, { kind: "launch", rail: 0 }], "play")).toEqual(["lcdStep2"]);
+    expect(soundsOf([{ kind: "belka", out: true }], "play")).toEqual([]);
+  });
+
+  it("puts a crash, the alien and the end before anything else", () => {
+    expect(soundsOf([{ kind: "crash", rail: 1 }], "play")).toEqual(["lcdCrash"]);
+    expect(soundsOf([{ kind: "alien", step: 2 }], "play")).toEqual(["lcdAlien"]);
+    expect(soundsOf([{ kind: "alien", step: 4 }, { kind: "over", caught: 9 }], "play")).toEqual(["lcdOver"]);
+  });
+
+  it("rings a pardon after its catch", () => {
+    expect(soundsOf([{ kind: "catch", rail: 0 }, { kind: "pardon", caught: 200 }, { kind: "step", rail: 1 }], "play")).toEqual(["lcdCatch", "lcdPardon"]);
+    expect(soundsOf([{ kind: "catch", rail: 0 }], "play")).toEqual(["lcdCatch"]);
+  });
+
+  it("keeps the demo silent", () => {
+    expect(soundsOf([{ kind: "catch", rail: 0 }], "demo")).toEqual([]);
   });
 });
 

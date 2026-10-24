@@ -1,18 +1,23 @@
-import { ChessKnight, CircleDot, RectangleVertical, Satellite, type LucideIcon } from "lucide-react";
+import { ChessKnight, CircleDot, Orbit, RectangleVertical, Satellite, type LucideIcon } from "lucide-react";
+import { ARCADE_GAMES, GAMES } from "@isputnik/games-engine";
 import { loadDotsGame } from "./dots/storage";
 import { loadStarBattleGame } from "./starbattle/storage";
 import { loadChessGame } from "./chess/storage";
 import { loadDominoesGame } from "./dominoes/storage";
 
 // What the lobby and the invite dialog show for each game in the engine's
-// registry: an icon and the keys of its name and summary, the ways it can be
+// registries: an icon and the keys of its name and summary, the ways it can be
 // played, and whether a local game of it is in progress on this device. A game
 // without an entry here is not offered, whatever the engine knows.
-export type GameNameKey = "games.dots.name" | "games.starbattle.name" | "games.chess.name" | "games.dominoes.name";
-export type GameSummaryKey = "games.dots.summary" | "games.starbattle.summary" | "games.chess.summary" | "games.dominoes.summary";
+export type GameNameKey = "games.dots.name" | "games.starbattle.name" | "games.chess.name" | "games.dominoes.name" | "games.sputnik.name";
+export type GameSummaryKey = "games.dots.summary" | "games.starbattle.summary" | "games.chess.summary" | "games.dominoes.summary" | "games.sputnik.summary";
 
-/** Against the computer, two people at one screen, two people online. */
-export type GameMode = "computer" | "local" | "online";
+/** Against the computer, two people at one screen, two people online, or one
+ *  person on their own against the clock (an arcade game). */
+export type GameMode = "computer" | "local" | "online" | "solo";
+
+/** The lobby's games in order: the two-player ones, then the arcade. */
+export const LOBBY_GAME_IDS: readonly string[] = [...GAMES, ...ARCADE_GAMES].map((game) => game.id);
 
 export interface CatalogEntry {
   icon: LucideIcon;
@@ -56,6 +61,15 @@ export const CATALOG: Record<string, CatalogEntry> = {
     modes: ["computer", "online"],
     newUntil: "2026-11-24",
     inProgress: () => loadDominoesGame()?.state.status.kind === "playing"
+  },
+  sputnik: {
+    icon: Orbit,
+    name: "games.sputnik.name",
+    summary: "games.sputnik.summary",
+    modes: ["solo"],
+    newUntil: "2026-11-30",
+    // A run is not kept between visits: the handheld starts afresh.
+    inProgress: () => false
   }
 };
 

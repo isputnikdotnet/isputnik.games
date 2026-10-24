@@ -3,14 +3,66 @@ import { pipsOf } from "./dominoes/DominoTile";
 
 // A small picture of each game for its lobby card: a corner of a game under
 // way, drawn as the game itself draws it. Dots follows the theme; Star Battle
-// keeps its space, Chess its wooden board and Dominoes its felt on every theme,
-// as their pages do.
+// keeps its space, Chess its wooden board, Dominoes its felt and Sputnik Catch
+// its handheld on every theme, as their pages do.
 export function GamePreview({ game }: { game: string }) {
   if (game === "dots") return <DotsPreview />;
   if (game === "starbattle") return <StarBattlePreview />;
   if (game === "chess") return <ChessPreview />;
   if (game === "dominoes") return <DominoesPreview />;
+  if (game === "sputnik") return <SputnikPreview />;
   return null;
+}
+
+/** Sputnik Catch: a corner of the handheld's LCD mid-run. */
+function SputnikPreview() {
+  const ink = "#1b2119";
+  const lcd = "#c5cbb2";
+  const sputnik = (x: number, y: number, opacity = 1) => (
+    <g opacity={opacity}>
+      <path d={`M${x - 3},${y - 1} l-8,-5 M${x - 3},${y} l-9,-1 M${x - 3},${y + 1} l-8,3`} stroke={ink} strokeWidth="1.1" strokeLinecap="round" />
+      <circle cx={x} cy={y} r="3.4" fill={lcd} stroke={ink} strokeWidth="1.4" />
+    </g>
+  );
+  return (
+    <svg className="game-preview is-sputnik" viewBox={VIEW} aria-hidden="true" focusable="false">
+      <rect width="200" height="112" fill="#dcd8cd" />
+      <rect x="20" y="6" width="160" height="100" rx="8" fill="#123f3c" />
+      <rect x="24" y="10" width="152" height="92" rx="5" fill={lcd} />
+      <g fill="#5a6976">
+        {[[70, 20], [120, 28], [150, 46], [40, 72], [160, 86], [96, 18]].map(([x, y]) => <circle key={`${x},${y}`} cx={x} cy={y} r="1" />)}
+      </g>
+      <g opacity="0.08" fill={ink}>
+        <rect x="134" y="16" width="7" height="13" rx="1" />
+        <rect x="144" y="16" width="7" height="13" rx="1" />
+      </g>
+      <text x="153" y="29" fill={ink} fontSize="14" fontFamily="'Arial Black', sans-serif">7</text>
+      <rect x="28" y="24" width="28" height="15" rx="3" fill="#b1b79e" stroke="#5a6976" strokeWidth="1.2" />
+      <circle cx="35" cy="31.5" r="3.2" fill="#9fb1b6" stroke="#5a6976" strokeWidth="1" />
+      <path d="M47 27.5l1.2 2.6 2.8.3-2.1 1.9.6 2.8-2.5-1.5-2.5 1.5.6-2.8-2.1-1.9 2.8-.3z" fill="#b8322a" />
+      <line x1="58" y1="37" x2="96" y2="52" stroke="#6f6c62" strokeWidth="2.5" strokeLinecap="round" />
+      <rect x="144" y="60" width="28" height="15" rx="3" fill="#b1b79e" stroke="#5a6976" strokeWidth="1.2" />
+      <line x1="142" y1="73" x2="118" y2="83" stroke="#6f6c62" strokeWidth="2.5" strokeLinecap="round" />
+      {sputnik(70, 37)}
+      {sputnik(88, 44)}
+      <g transform="translate(138 70) scale(-1 1)">{sputnik(0, 0, 0.12)}</g>
+      <g stroke={ink} strokeWidth="1.4" strokeLinejoin="round">
+        <path d="M84 52 Q86 62 92 63 Q98 62 100 52" fill={lcd} />
+        <ellipse cx="92" cy="52" rx="8" ry="2.4" fill="none" strokeWidth="1.8" />
+        <path d="M108 72 L101 64 L99 54" fill="none" strokeWidth="3" strokeLinecap="round" />
+        <path d="M118 46 L120 36" fill="none" />
+        <rect x="104" y="46" width="24" height="18" rx="4" fill={lcd} />
+        <circle cx="111" cy="54" r="3" fill={lcd} />
+        <circle cx="120" cy="54" r="3" fill={lcd} />
+        <rect x="106" y="65" width="20" height="21" rx="3" fill={lcd} />
+      </g>
+      <circle cx="120.5" cy="35" r="2" fill={ink} />
+      <circle cx="110" cy="54.5" r="1.4" fill={ink} />
+      <circle cx="119" cy="54.5" r="1.4" fill={ink} />
+      <path d="M116 70l1 2.2 2.4.2-1.8 1.6.5 2.3-2.1-1.2-2.1 1.2.5-2.3-1.8-1.6 2.4-.2z" fill={ink} />
+      <rect x="103" y="87" width="26" height="8" rx="4" fill={ink} />
+    </svg>
+  );
 }
 
 const VIEW = "0 0 200 112";
