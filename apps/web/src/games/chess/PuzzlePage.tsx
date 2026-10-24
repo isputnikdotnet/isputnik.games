@@ -238,7 +238,7 @@ export function ChessPuzzlePage() {
       <GameStage
         className="chess-stage puzzle-stage"
         title={t("chess.puzzle.title")}
-        board={<ChessTable state={state} orientation={solver} movable={phase === "solving" ? solver : null} onMove={onMove} names={names} hint={hint} />}
+        board={<ChessTable state={state} orientation={solver} movable={phase === "solving" ? solver : null} onMove={onMove} names={names} hint={hint} unmarked={start.state.moves.length} />}
         score={
           <div className="chess-status">
             <p className={`chess-status-line${done ? " is-finished" : ""}`} role="status">{statusLine}</p>

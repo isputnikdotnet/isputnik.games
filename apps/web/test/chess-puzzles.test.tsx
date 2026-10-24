@@ -57,10 +57,16 @@ describe("chess puzzles", () => {
     expect(screen.getByText("Very easy · puzzle rated 700")).toBeInTheDocument();
     // …Nf6 was played: the knight is on f6.
     expect(square("f6")).toHaveAccessibleName(/knight/i);
+    // …and the position opens unmarked: the setup move is not the solver's clue.
+    expect(square("g8")).not.toHaveClass("is-last");
+    expect(square("f6")).not.toHaveClass("is-last");
 
     await user.click(square("h5"));
     await user.click(square("f7"));
     expect(screen.getByRole("status")).toHaveTextContent("Solved!");
+    // The solver's own move is marked as usual.
+    expect(square("h5")).toHaveClass("is-last");
+    expect(square("f7")).toHaveClass("is-last");
     expect(api.reportPuzzleResult).toHaveBeenCalledWith("t1", { solved: true, hints: 0 });
     await waitFor(() => expect(screen.getByText("+12")).toBeInTheDocument());
     expect(screen.getByRole("button", { name: "Next puzzle" })).toBeInTheDocument();

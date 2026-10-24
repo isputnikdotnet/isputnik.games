@@ -13,7 +13,8 @@ export function ChessTable({
   movable,
   onMove,
   names,
-  hint
+  hint,
+  unmarked
 }: {
   state: ChessState;
   orientation: PlayerIndex;
@@ -21,6 +22,7 @@ export function ChessTable({
   onMove: (move: ChessMove) => void;
   names: [string, string];
   hint?: { from: string; to?: string } | null;
+  unmarked?: number;
 }) {
   const { taken, points } = Chess.material(state);
   const turn = state.status.kind === "playing" ? state.status.turn : null;
@@ -37,7 +39,7 @@ export function ChessTable({
     <div className="chess-main">
       {strip(orientation === 0 ? 1 : 0)}
       <div className="chess-board-wrap">
-        <ChessBoard state={state} orientation={orientation} movable={movable} onMove={onMove} hint={hint} />
+        <ChessBoard state={state} orientation={orientation} movable={movable} onMove={onMove} hint={hint} unmarked={unmarked} />
       </div>
       {strip(orientation)}
     </div>

@@ -17,7 +17,8 @@ export function ChessBoard({
   orientation,
   movable,
   onMove,
-  hint
+  hint,
+  unmarked = 0
 }: {
   state: ChessState;
   orientation: PlayerIndex;
@@ -27,6 +28,9 @@ export function ChessBoard({
   onMove: (move: ChessMove) => void;
   /** A puzzle hint: the piece to move, and once asked twice where it goes. */
   hint?: { from: string; to?: string } | null;
+  /** How many of the first moves are never marked as the last one — a
+   *  puzzle's setup move, so the position opens clean. */
+  unmarked?: number;
 }) {
   const { t } = useTranslation();
   // A selection belongs to the position it was made in: once a move is played
@@ -37,7 +41,7 @@ export function ChessBoard({
   const selected = selection && selection.at === at && movable !== null ? selection.square : null;
   const targets = useMemo(() => (selected ? Chess.targetsFrom(state, selected) : []), [state, selected]);
 
-  const last = state.moves.length ? state.moves[state.moves.length - 1] : null;
+  const last = state.moves.length > unmarked ? state.moves[state.moves.length - 1] : null;
   const checked = state.check ? kingSquare(state, state.toMove) : null;
 
   const pieceName = (letter: string) => t(`chess.pieces.${Chess.ownerOf(letter) === 0 ? "white" : "black"}.${letter.toLowerCase() as "p" | "n" | "b" | "r" | "q" | "k"}`);
