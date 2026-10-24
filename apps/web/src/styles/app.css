@@ -1678,9 +1678,19 @@
     display: contents;
   }
 
+  /* One line per game: the name and its pills, then a small Play or Continue
+     at the row's end, sized like the pills rather than the row. */
   .game-card-body {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
     padding: 0;
-    gap: 4px;
+  }
+
+  .game-card-title {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .game-card-body > p,
@@ -1689,13 +1699,17 @@
   }
 
   .game-card-actions {
+    display: flex;
+    flex: none;
     margin: 0;
     padding: 0;
   }
 
-  .game-card-play {
-    flex: 0 0 auto;
-    min-height: 36px;
+  .game-card-actions > .game-card-play {
+    min-height: 32px;
+    padding: 0 var(--space-4);
+    border-radius: 999px;
+    font-size: var(--text-sm);
   }
 }
 
