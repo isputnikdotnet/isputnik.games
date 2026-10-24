@@ -48,6 +48,15 @@ CREATE TABLE IF NOT EXISTS match_messages (
 
 CREATE INDEX IF NOT EXISTS match_messages_match ON match_messages (match_id, id);
 
+-- The seed a match was dealt from, for a game dealt at random (Dominoes). Kept
+-- apart from the match row, which is listed and sent to both players: the
+-- seed decides every hand, so whoever saw it would know the other hand and
+-- the boneyard. Only replay() in matches.ts reads it.
+CREATE TABLE IF NOT EXISTS match_secrets (
+  match_id TEXT PRIMARY KEY REFERENCES matches (id) ON DELETE CASCADE,
+  seed     INTEGER NOT NULL
+);
+
 -- What happened, for the admin: who was refused at the gateway, who invited whom,
 -- how a match ended, which move was thrown out, what broke. Read by the home app
 -- through the gateway (GET /games/api/admin/events) and pruned after a season.

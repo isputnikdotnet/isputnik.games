@@ -55,8 +55,8 @@ export const CATALOG: Record<string, CatalogEntry> = {
     icon: RectangleVertical,
     name: "games.dominoes.name",
     summary: "games.dominoes.summary",
-    // Hands are hidden, so no hot seat; online play comes with the server's seed.
-    modes: ["computer"],
+    // Hands are hidden, so no hot seat.
+    modes: ["computer", "online"],
     newUntil: "2026-11-24",
     inProgress: () => loadDominoesGame()?.state.status.kind === "playing"
   }

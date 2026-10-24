@@ -5,6 +5,7 @@ import { follow, matchHref } from "../router";
 import { useSession } from "../session";
 import { MessageBox } from "../shared/MessageBox";
 import { CATALOG } from "../games/catalog";
+import { scoreText } from "../shared/score";
 
 // What a guest sees instead of the lobby (docs/plan.md → Guests): the one
 // match their link is for, and who they are playing. The server answers the
@@ -60,7 +61,7 @@ export function GuestLobby() {
                   <span className="match-row-game muted">{CATALOG[match.game] ? t(CATALOG[match.game].name) : match.game}</span>
                   <span className="muted">
                     {line(match)}
-                    {match.score && ` · ${match.score[0]} : ${match.score[1]}`}
+                    {match.score && ` · ${scoreText(match, t)}`}
                   </span>
                 </a>
               </li>

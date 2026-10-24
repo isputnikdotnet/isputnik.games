@@ -15,6 +15,7 @@ import { GamePreview } from "../games/previews";
 import { InviteDialog } from "./InviteDialog";
 import { Leaderboard, YourMonth } from "./LobbyStats";
 import { MATCHES_ANCHOR } from "../shared/MobileNav";
+import { scoreText } from "../shared/score";
 
 /** "alpha" / "beta" in the interface language; anything else as the server says it. */
 function stageLabel(stage: string, t: (key: "lobby.stageAlpha" | "lobby.stageBeta") => string): string {
@@ -90,7 +91,7 @@ export function LobbyPage() {
   const opponentOf = (match: MatchSummary) => match.players[mySeat(match) === 0 ? 1 : 0];
   const gameName = (game: string) => (CATALOG[game] ? t(CATALOG[game].name) : game);
   const when = (iso: string) => ago(iso, i18n.language);
-  const scoreOf = (match: MatchSummary) => (match.score ? `${match.score[0]} : ${match.score[1]}` : null);
+  const scoreOf = (match: MatchSummary) => scoreText(match, t);
 
   const list = matches ?? [];
   const received = list.filter((m) => m.status === "invited" && m.createdBy !== myId);

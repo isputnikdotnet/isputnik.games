@@ -16,6 +16,7 @@ import { ChessReviewPage } from "./games/chess/ReviewPage";
 import { MyChessGamesPage } from "./games/chess/MyGamesPage";
 import { ChessMatchPage } from "./games/chess/ChessMatchPage";
 import { DominoesPage } from "./games/dominoes/DominoesPage";
+import { DominoesMatchPage } from "./games/dominoes/DominoesMatchPage";
 
 function Routes() {
   const route = useRoute();
@@ -50,6 +51,7 @@ function Routes() {
     if (route.gameId === "dots") return <DotsMatchPage matchId={route.matchId} />;
     if (route.gameId === "starbattle") return <StarBattleMatchPage matchId={route.matchId} />;
     if (route.gameId === "chess") return <ChessMatchPage matchId={route.matchId} />;
+    if (route.gameId === "dominoes") return <DominoesMatchPage matchId={route.matchId} />;
   }
   return <MessageBox tone="info" title={t("app.notFound")} />;
 }

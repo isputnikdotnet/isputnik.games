@@ -563,7 +563,17 @@ styles like Chess's can come later.
      dialog a game, only for games with `online`. `useFeed` takes the seed.
      Cues: a laid tile ticks like a dot, a draw scrapes (`drawTile`), a hand
      won or lost rings like a capture.
-  4. Online: `match_secrets`, the match page, the score display.
+  4. Online: `match_secrets`, the match page, the score display. **Built 2026-10-23**:
+     every match gets a seed (`crypto.randomInt`) in `match_secrets`, written
+     with the match in one transaction and read only by `replay()`; accepting
+     an invitation now takes the first turn from the dealt game instead of
+     seat 0 (the lowest double leads). The tile that must open the first hand
+     (`mustLead`) is public, as a table announces it. `DominoesMatchPage`
+     reuses the table, panel and summaries; a hand that ends while the page is
+     open is summed up, the ones before it are not. The invite dialog offers
+     Play to (101/51) and no seat. `shared/score.ts` `scoreText()` marks a
+     penalty score in the lobby and the guest lobby ("12 : 54 towards 101,
+     fewer leads"); home's For you rows show no score, so nothing changes there.
   5. Home: name and score.
   6. Release: games minor and home patch.
 

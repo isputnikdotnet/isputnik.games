@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Dots, GAMES, type FleetKind, type PlayerIndex } from "@isputnik/games-engine";
+import { Dominoes, Dots, GAMES, type DominoesTarget, type FleetKind, type PlayerIndex } from "@isputnik/games-engine";
 import { createGuestInvite, createMatch, fetchMembers, type GuestInviteCreated, type MatchSummary, type Member } from "../api";
 import { useSession } from "../session";
 import { Button } from "../shared/Button";
@@ -10,6 +10,7 @@ import { MessageBox } from "../shared/MessageBox";
 import { CATALOG } from "../games/catalog";
 import { loadDotsSetup, saveDotsSetup } from "../games/dots/storage";
 import { loadStarBattleSetup, saveStarBattleSetup } from "../games/starbattle/storage";
+import { loadDominoesSetup, saveDominoesSetup } from "../games/dominoes/storage";
 
 const DOTS_TARGETS: (number | null)[] = [null, 5, 10, 20];
 
@@ -36,6 +37,7 @@ export function InviteDialog({ myId, game: initialGame = "dots", onClose, onSent
   const [size, setSize] = useState<number>(() => loadDotsSetup().size);
   const [target, setTarget] = useState<number | null>(() => loadDotsSetup().targetCaptures);
   const [fleet, setFleet] = useState<FleetKind>(() => loadStarBattleSetup().fleet);
+  const [dominoesTarget, setDominoesTarget] = useState<DominoesTarget>(() => loadDominoesSetup().target);
   const [seat, setSeat] = useState<PlayerIndex>(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,9 +66,10 @@ export function InviteDialog({ myId, game: initialGame = "dots", onClose, onSent
     setBusy(true);
     setError(null);
     try {
-      const options = game === "dots" ? { size, targetCaptures: target } : game === "starbattle" ? { fleet } : {};
+      const options = game === "dots" ? { size, targetCaptures: target } : game === "starbattle" ? { fleet } : game === "dominoes" ? { target: dominoesTarget } : {};
       if (game === "dots") saveDotsSetup({ ...loadDotsSetup(), size, targetCaptures: target });
       else if (game === "starbattle") saveStarBattleSetup({ ...loadStarBattleSetup(), fleet });
+      else if (game === "dominoes") saveDominoesSetup({ ...loadDominoesSetup(), target: dominoesTarget });
       if (guest) {
         setLink(await createGuestInvite({ game, options, seat, guestName: name }));
         setBusy(false);
@@ -201,6 +204,16 @@ export function InviteDialog({ myId, game: initialGame = "dots", onClose, onSent
           <div className="chip-row">
             <Button variant="chip" selected={seat === 0} onClick={() => setSeat(0)}>{t("chess.players.white")}</Button>
             <Button variant="chip" selected={seat === 1} onClick={() => setSeat(1)}>{t("chess.players.black")}</Button>
+          </div>
+        ))}
+        {/* Who leads is the tiles' business, so Dominoes has no seat to pick. */}
+        {game === "dominoes" && row(t("dominoes.setup.target"), (
+          <div className="chip-row">
+            {Dominoes.TARGETS.map((option) => (
+              <Button key={option} variant="chip" selected={dominoesTarget === option} onClick={() => setDominoesTarget(option)}>
+                {t(option === 101 ? "dominoes.setup.target101" : "dominoes.setup.target51")}
+              </Button>
+            ))}
           </div>
         ))}
         {!ready && !guest && members && members.length > 0 && <p className="muted invite-hint">{t("invite.pickSomeone")}</p>}

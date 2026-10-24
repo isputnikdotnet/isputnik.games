@@ -2,6 +2,7 @@
 // the move list, replays it through the engine on every read, and accepts a move
 // only from the seat whose turn it is. Everything here is a plain function over
 // the database so the routes stay thin and the tests need no HTTP.
+import { randomInt } from "node:crypto";
 import { nanoid } from "nanoid";
 import { getGame, otherPlayer, type AnyGame, type GameEvent, type GameStatus, type PlayerIndex } from "@isputnik/games-engine";
 import type { Db } from "./db.js";
@@ -124,9 +125,16 @@ interface Replay {
   feed: GameEvent[];
 }
 
-function replay(row: MatchRow): Replay {
+/** The seed the match was dealt from; undefined for a game that deals nothing
+ *  (or a match from before seeds were kept). Never leaves this module. */
+function seedOf(db: Db, id: string): number | undefined {
+  const row = db.prepare("SELECT seed FROM match_secrets WHERE match_id = ?").get(id) as { seed: number } | undefined;
+  return row?.seed;
+}
+
+function replay(db: Db, row: MatchRow): Replay {
   const game = gameOf(row);
-  let state = game.createGame(JSON.parse(row.options));
+  let state = game.createGame(JSON.parse(row.options), seedOf(db, row.id));
   const feed: GameEvent[] = [];
   for (const move of JSON.parse(row.moves) as unknown[]) {
     const next = game.applyMove(state, move);
@@ -153,7 +161,7 @@ function detailFor(db: Db, row: MatchRow, replayed: Replay, seat: PlayerIndex): 
 
 function summarize(db: Db, row: MatchRow, state?: { status: GameStatus }): MatchSummary {
   const game = gameOf(row);
-  const replayed = state ?? replay(row).state;
+  const replayed = state ?? replay(db, row).state;
   return {
     id: row.id,
     game: row.game,
@@ -205,27 +213,32 @@ export function createMatch(db: Db, me: Member, input: CreateMatchInput): MatchS
   if (input.opponent.id === me.id) throw new MatchError(400, "You cannot invite yourself");
   // Only what the game reads is kept: the client may have sent more, and both
   // players would download it with every poll.
+  // Every match gets a seed; a game that deals nothing ignores it.
+  const seed = randomInt(0, 0x100000000);
   let options: unknown;
   try {
     options = game.parseOptions(input.options);
-    game.createGame(options);
+    game.createGame(options, seed);
   } catch (err) {
     throw new MatchError(400, err instanceof Error ? err.message : "Invalid options");
   }
   rememberIfUnknown(db, input.opponent);
   const id = nanoid(16);
   const [blue, red] = input.seat === 0 ? [me.id, input.opponent.id] : [input.opponent.id, me.id];
-  db.prepare(`
-    INSERT INTO matches (id, game, options, blue_id, red_id, created_by, status)
-    VALUES (?, ?, ?, ?, ?, ?, 'invited')
-  `).run(id, input.game, JSON.stringify(options), blue, red, me.id);
+  db.transaction(() => {
+    db.prepare(`
+      INSERT INTO matches (id, game, options, blue_id, red_id, created_by, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'invited')
+    `).run(id, input.game, JSON.stringify(options), blue, red, me.id);
+    db.prepare("INSERT INTO match_secrets (match_id, seed) VALUES (?, ?)").run(id, seed);
+  })();
   return summarize(db, rowOf(db, id));
 }
 
 export function getMatch(db: Db, userId: string, id: string): MatchDetail {
   const row = rowOf(db, id);
   const seat = seatOf(row, userId);
-  return detailFor(db, row, replay(row), seat);
+  return detailFor(db, row, replay(db, row), seat);
 }
 
 /** `only` narrows the list to one match: a guest's world is the match their link named. */
@@ -277,7 +290,10 @@ export function answerInvitation(db: Db, userId: string, id: string, answer: "ac
   if (row.status !== "invited") throw new MatchError(409, "This invitation has already been answered");
   if (row.created_by === userId) throw new MatchError(403, "You sent this invitation; the other player answers it");
   if (answer === "accept") {
-    db.prepare("UPDATE matches SET status = 'playing', turn = 0, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?").run(id);
+    // Seat 0 moves first in most games; in Dominoes the deal decides (the lowest double leads).
+    const start = replay(db, row).state.status;
+    const turn = start.kind === "playing" ? start.turn : 0;
+    db.prepare("UPDATE matches SET status = 'playing', turn = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?").run(turn, id);
   } else {
     db.prepare("UPDATE matches SET status = 'declined', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?").run(id);
   }
@@ -307,7 +323,7 @@ export function playMove(db: Db, userId: string, id: string, move: unknown, expe
     if (row.move_count !== expectedCount) throw new MatchError(409, "The match has moved on; reload it", "move.refused");
 
     const game = gameOf(row);
-    const before = replay(row);
+    const before = replay(db, row);
     let state = before.state;
     let event: GameEvent | null = null;
     try {
@@ -346,7 +362,7 @@ export function postMessage(db: Db, userId: string, id: string, text: string): M
   if (!line) throw new MatchError(400, "Say something");
   if (line.length > MESSAGE_MAX) throw new MatchError(400, `A message is at most ${MESSAGE_MAX} characters`);
   db.prepare("INSERT INTO match_messages (match_id, author_id, text, after_move) VALUES (?, ?, ?, ?)").run(id, userId, line, row.move_count);
-  return detailFor(db, row, replay(row), seat);
+  return detailFor(db, row, replay(db, row), seat);
 }
 
 export function resign(db: Db, userId: string, id: string): MatchDetail {
@@ -360,6 +376,6 @@ export function resign(db: Db, userId: string, id: string): MatchDetail {
       WHERE id = ?
     `).run(otherPlayer(seat), id);
     const updated = rowOf(db, id);
-    return detailFor(db, updated, replay(updated), seat);
+    return detailFor(db, updated, replay(db, updated), seat);
   })();
 }

@@ -118,7 +118,8 @@
     "version": "iSputnik Games {{version}}",
     "stageAlpha": "alpha",
     "stageBeta": "beta",
-    "puzzles": "Puzzles"
+    "puzzles": "Puzzles",
+    "penaltyScore": "{{a}} : {{b}} towards {{target}}, fewer leads"
   },
   "invite": {
     "title": "Invite to play",
@@ -592,12 +593,14 @@
       "pick": "Your move — tap a lit tile.",
       "pickEnd": "Tap a lit end to lay {{tile}}.",
       "draw": "Nothing fits — draw from the boneyard.",
-      "pass": "Nothing fits and the boneyard is empty — pass."
+      "pass": "Nothing fits and the boneyard is empty — pass.",
+      "theirs": "{{name}} to move."
     },
     "end": {
       "youWin": "You win — the computer is «козёл»",
       "youLose": "You are «козёл» — the computer wins",
-      "draw": "A draw"
+      "draw": "A draw",
+      "resigned": "{{name}} resigned."
     },
     "table": {
       "aria": "Dominoes table",
