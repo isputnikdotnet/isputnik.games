@@ -1,0 +1,764 @@
+<title>Sputnik Catch Mock</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap">
+<style>
+/* Layout: the games app's dark frame (top bar + stage) around one handheld device,
+   with three reference cards under it. Single dark look on purpose, matching
+   isputnik.games' default theme. The device itself wears physical colours. */
+:root {
+  color-scheme: dark;
+  --canvas: #020b0e;
+  --surface: #07191d;
+  --raised: #0d2528;
+  --ink: #f2d9ad;
+  --muted: #b78f5d;
+  --line: rgba(202, 151, 86, 0.28);
+  --accent: #d14b2d;
+
+  --rim: #123f3c;
+  --shell-hi: #f1eee6;
+  --shell-lo: #d4d0c4;
+  --bezel: #c3bfb2;
+  --print: #1f1e1b;
+  --title: #bd3a20;
+  --lcd: #c5cbb2;
+
+  --ui: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --device: "Russo One", "Arial Black", Impact, sans-serif;
+  --mono: "Cascadia Code", "JetBrains Mono", Consolas, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--ui);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ---- app chrome ---- */
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: 0.02em; }
+.brand svg { width: 22px; height: 22px; }
+.crumb { color: var(--muted); }
+.crumb b { color: var(--ink); font-weight: 600; }
+.topbar .spacer { flex: 1; }
+.chip {
+  font: 600 12px/1 var(--ui); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); border: 1px dashed var(--line); border-radius: 999px; padding: 6px 10px;
+}
+.iconbtn {
+  display: inline-grid; place-items: center; width: 34px; height: 34px;
+  border-radius: 8px; border: 1px solid transparent; background: var(--raised); color: var(--ink);
+  cursor: pointer;
+}
+.iconbtn:hover { border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+.iconbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.iconbtn svg { width: 18px; height: 18px; }
+
+main {
+  max-width: 980px; margin: 0 auto;
+  padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 18px;
+}
+.status {
+  min-height: 1.5em; text-align: center; color: var(--muted); font-size: 14px;
+}
+.status b { color: var(--ink); }
+
+/* ---- the handheld ---- */
+.device-wrap { container-type: inline-size; width: 100%; }
+.device {
+  width: 100%; aspect-ratio: 100 / 58;
+  border-radius: 3.4cqw; padding: 1.1cqw;
+  background: linear-gradient(160deg, #1b5752, var(--rim) 55%, #0b2a28);
+  box-shadow: 0 2.4cqw 5cqw rgba(0, 0, 0, 0.55), inset 0 0.2cqw 0 rgba(255,255,255,0.12);
+  user-select: none; -webkit-user-select: none; touch-action: manipulation;
+}
+.face {
+  height: 100%; border-radius: 2.5cqw;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0 0.12cqw, rgba(0,0,0,0.025) 0.12cqw 0.3cqw),
+    linear-gradient(180deg, var(--shell-hi), var(--shell-lo));
+  display: grid; grid-template-columns: 17cqw 1fr 17cqw; grid-template-rows: 1fr auto; gap: 1.4cqw;
+  grid-template-areas: "left screen menu" "left screen rbtn";
+  padding: 2.2cqw 1.8cqw;
+}
+.col { display: flex; flex-direction: column; align-items: center; justify-content: space-between; min-height: 0; }
+.col.left { grid-area: left; }
+.bezel { grid-area: screen; }
+.menu { grid-area: menu; align-self: start; }
+.rpair { grid-area: rbtn; justify-self: center; }
+
+.logo {
+  width: 10.5cqw; aspect-ratio: 1; border-radius: 50%;
+  border: 0.45cqw solid var(--print); display: grid; place-items: center; position: relative;
+}
+.logo svg { width: 80%; height: 80%; }
+
+.sound {
+  display: flex; align-items: center; gap: 0.8cqw;
+  background: none; border: 0; padding: 0.4cqw 0.6cqw; cursor: pointer;
+  font: 1.7cqw/1 var(--device); color: var(--print); letter-spacing: 0.08em;
+  border-radius: 1cqw;
+}
+.sound:focus-visible { outline: 0.3cqw solid var(--accent); }
+.led {
+  width: 1.7cqw; height: 1.7cqw; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #6a6a62, #2c2c28);
+  box-shadow: inset 0 0 0 0.15cqw rgba(0,0,0,0.4);
+}
+.sound[aria-pressed="true"] .led {
+  background: radial-gradient(circle at 40% 35%, #ffd2a0, #ff5a1f 55%, #a52a10);
+  box-shadow: 0 0 1.2cqw #ff6a2a;
+}
+
+.pair { display: grid; gap: 4.2cqw; }
+.big {
+  position: relative; width: 10cqw; aspect-ratio: 1; border-radius: 50%;
+  border: 0; padding: 0; cursor: pointer;
+  background: radial-gradient(circle at 36% 30%, #ff9b7c, #dc3d22 50%, #8f2210 100%);
+  box-shadow: 0 0 0 0.75cqw var(--rim), 0 0 0 0.95cqw rgba(0,0,0,0.25), 0 0.7cqw 0 0.75cqw #0a2422;
+  transition: transform 50ms, box-shadow 50ms;
+}
+.big:active, .big.pressed {
+  transform: translateY(0.45cqw);
+  box-shadow: 0 0 0 0.75cqw var(--rim), 0 0 0 0.95cqw rgba(0,0,0,0.25), 0 0.25cqw 0 0.75cqw #0a2422;
+}
+.big:focus-visible { outline: 0.4cqw solid #f2d9ad; outline-offset: 1.3cqw; }
+.big .arrow {
+  position: absolute; width: 4.2cqw; height: 4.2cqw; pointer-events: none;
+}
+.big .arrow path { fill: var(--print); }
+.col.left .big.up .arrow   { left: -4.6cqw; top: -4cqw; transform: rotate(-45deg); }
+.col.left .big.down .arrow { left: -4.6cqw; bottom: -4cqw; transform: rotate(-135deg); }
+.rpair .big.up .arrow   { right: -4.6cqw; top: -4cqw; transform: rotate(45deg); }
+.rpair .big.down .arrow { right: -4.6cqw; bottom: -4cqw; transform: rotate(135deg); }
+
+.small-stack { display: grid; gap: 1.3cqw; justify-items: center; }
+.small { display: grid; justify-items: center; gap: 0.5cqw; }
+.pill {
+  width: 7.4cqw; height: 3.4cqw; border-radius: 2cqw; border: 0; padding: 0; cursor: pointer;
+  background: linear-gradient(180deg, #ffffff, #c9c7c0 70%, #a9a7a0);
+  box-shadow: 0 0 0 0.5cqw var(--rim), 0 0.45cqw 0 0.5cqw #0a2422;
+  transition: transform 50ms, box-shadow 50ms;
+}
+.pill:active, .pill.pressed { transform: translateY(0.3cqw); box-shadow: 0 0 0 0.5cqw var(--rim), 0 0.15cqw 0 0.5cqw #0a2422; }
+.pill:focus-visible { outline: 0.35cqw solid #f2d9ad; outline-offset: 0.9cqw; }
+.small span { font: 1.75cqw/1 var(--device); color: var(--print); letter-spacing: 0.04em; }
+
+.bezel {
+  align-self: center;
+  border-radius: 2.6cqw; padding: 1.1cqw 1.8cqw 1.2cqw;
+  background: linear-gradient(180deg, #d9d5ca, var(--bezel));
+  box-shadow: inset 0 0.35cqw 0.6cqw rgba(0,0,0,0.18), inset 0 -0.2cqw 0 rgba(255,255,255,0.6);
+  display: grid; gap: 0.9cqw;
+}
+.legend {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1.4cqw;
+}
+.legend::before, .legend::after { content: ""; height: 0.35cqw; background: var(--print); border-radius: 1cqw; }
+.legend b { font: 2.9cqw/1 var(--device); color: var(--title); letter-spacing: 0.06em; white-space: nowrap; }
+.legend small { font: 1.6cqw/1 var(--device); color: var(--print); letter-spacing: 0.18em; white-space: nowrap; }
+.legend .t { display: grid; justify-items: center; gap: 0.5cqw; }
+.lcd-frame {
+  border-radius: 1.4cqw; padding: 0.7cqw;
+  background: linear-gradient(180deg, #2a6d64, var(--rim));
+  box-shadow: 0 0 0 0.25cqw var(--print);
+}
+.lcd {
+  position: relative; border-radius: 0.8cqw; overflow: hidden;
+  background: radial-gradient(120% 90% at 30% 20%, #d3d8c2, var(--lcd) 55%, #b4bba0);
+  box-shadow: inset 0 0.4cqw 0.9cqw rgba(0,0,0,0.35);
+  cursor: pointer;
+}
+.lcd::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(115deg, rgba(255,255,255,0.22) 0 18%, transparent 38%);
+}
+.lcd svg { display: block; width: 100%; height: auto; }
+.seg { opacity: 0.075; transition: opacity 45ms linear; }
+.seg.on { opacity: 0.93; }
+.foot { text-align: center; font: 2.1cqw/1 var(--device); color: var(--print); letter-spacing: 0.22em; }
+
+/* ---- reference cards ---- */
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px 16px 16px; min-width: 0; display: grid; gap: 10px; align-content: start;
+}
+.card h2 {
+  margin: 0; font: 600 12px/1.2 var(--ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+}
+.card p { margin: 0; color: var(--ink); }
+.card p.dim { color: var(--muted); font-size: 13px; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; }
+kbd {
+  font: 600 12px/1 var(--mono); color: var(--ink); background: var(--raised);
+  border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 4px 6px; white-space: nowrap;
+}
+.rules { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.board { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.board th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; padding: 0 0 6px; }
+.board td { padding: 5px 0; border-top: 1px solid var(--line); }
+.board td:last-child, .board th:last-child { text-align: right; }
+.board tr.you td { color: var(--accent); font-weight: 600; }
+.tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
+
+/* Phone held upright: screen on top, menu row, then a thumb-sized pair of
+   buttons under each thumb. Same device, re-arranged like a Game & Watch
+   "multi screen" model. */
+@container (max-width: 560px) {
+  .device { aspect-ratio: auto; border-radius: 6cqw; padding: 2cqw; }
+  .face {
+    border-radius: 4.6cqw; padding: 4cqw 4cqw 8cqw; gap: 6cqw 4cqw;
+    grid-template-columns: 1fr 1fr; grid-template-rows: auto auto auto;
+    grid-template-areas: "screen screen" "menu menu" "left rbtn";
+  }
+  .col.left { justify-content: center; }
+  .col.left .logo, .col.left .sound { display: none; }
+  .pair { gap: 10cqw; }
+  .big { width: 25cqw; box-shadow: 0 0 0 1.6cqw var(--rim), 0 0 0 2cqw rgba(0,0,0,0.25), 0 1.4cqw 0 1.6cqw #0a2422; }
+  .big:active, .big.pressed { transform: translateY(1cqw); box-shadow: 0 0 0 1.6cqw var(--rim), 0 0 0 2cqw rgba(0,0,0,0.25), 0 0.4cqw 0 1.6cqw #0a2422; }
+  .big .arrow { width: 7cqw; height: 7cqw; }
+  .col.left .big.up .arrow   { left: -8.5cqw; top: -7cqw; }
+  .col.left .big.down .arrow { left: -8.5cqw; bottom: -7cqw; }
+  .rpair .big.up .arrow   { right: -8.5cqw; top: -7cqw; }
+  .rpair .big.down .arrow { right: -8.5cqw; bottom: -7cqw; }
+  .menu { grid-auto-flow: column; justify-content: center; gap: 8cqw; align-self: center; }
+  .pill { width: 16cqw; height: 7.4cqw; border-radius: 4cqw; box-shadow: 0 0 0 1cqw var(--rim), 0 0.9cqw 0 1cqw #0a2422; }
+  .pill:active, .pill.pressed { transform: translateY(0.6cqw); box-shadow: 0 0 0 1cqw var(--rim), 0 0.3cqw 0 1cqw #0a2422; }
+  .small { gap: 1.6cqw; }
+  .small span { font-size: 3.4cqw; }
+  .bezel { border-radius: 4cqw; padding: 2.4cqw 3cqw 2.6cqw; gap: 2cqw; }
+  .legend { gap: 2.6cqw; }
+  .legend::before, .legend::after { height: 0.7cqw; }
+  .legend b { font-size: 6cqw; }
+  .legend small { font-size: 3cqw; }
+  .lcd-frame { border-radius: 2.6cqw; padding: 1.4cqw; box-shadow: 0 0 0 0.5cqw var(--print); }
+  .lcd { border-radius: 1.6cqw; }
+  .foot { font-size: 3.6cqw; }
+}
+
+@media (max-width: 760px) {
+  .cards { grid-template-columns: 1fr; }
+  .crumb { display: none; }
+  main { padding-block: 16px 32px; }
+}
+/* Phone turned sideways: size the device by the screen's height so the
+   whole handheld fits without scrolling. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .topbar { padding-block: 6px; }
+  main { padding-block: 8px 24px; gap: 10px; }
+  .device-wrap { width: min(100%, calc((100dvh - 64px) * 1.72)); margin-inline: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .seg, .big, .pill { transition: none; }
+}
+</style>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="#d14b2d"/><path d="M15.5 8.5 21 3M8.5 15.5 3 21M15.5 15.5 21 21M8.5 8.5 3 3" stroke="#c89d62" stroke-width="1.6" stroke-linecap="round"/></svg>
+    isputnik
+  </div>
+  <div class="crumb">Games / <b>Sputnik Catch</b></div>
+  <div class="spacer"></div>
+  <span class="chip">Mock</span>
+  <button class="iconbtn" id="mute" type="button" aria-label="Mute sound" title="Mute sound">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="x" d="M17 9l5 6M22 9l-5 6" hidden/></svg>
+  </button>
+</header>
+
+<main>
+  <div class="device-wrap">
+    <div class="device" role="application" aria-label="Sputnik Catch handheld">
+      <div class="face">
+        <div class="col left">
+          <div class="logo" aria-hidden="true">
+            <svg viewBox="0 0 40 40">
+              <circle cx="20" cy="17" r="6.5" fill="#1f1e1b"/>
+              <circle cx="18" cy="15" r="2" fill="#f1eee6"/>
+              <path d="M24.5 21.5 35 32M15.5 21.5 5 32M24 22.5 30 35M16 22.5 10 35" stroke="#1f1e1b" stroke-width="1.6" stroke-linecap="round"/>
+              <text x="20" y="8" text-anchor="middle" font-family="Russo One, Arial Black, sans-serif" font-size="6.5" fill="#bd3a20">ИС-01</text>
+            </svg>
+          </div>
+          <button class="sound" id="soundBtn" type="button" aria-pressed="true" aria-label="Sound">
+            <span class="led"></span>ЗВУК
+          </button>
+          <div class="pair">
+            <button class="big up" type="button" data-ramp="0" aria-label="Upper left (Q)">
+              <svg class="arrow" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 0 10 9 5 7 0 9z"/></svg>
+            </button>
+            <button class="big down" type="button" data-ramp="1" aria-label="Lower left (A)">
+              <svg class="arrow" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 0 10 9 5 7 0 9z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="bezel">
+          <div class="legend"><div class="t"><b>ЛОВИ СПУТНИК!</b><small>SPUTNIK CATCH</small></div></div>
+          <div class="lcd-frame"><div class="lcd" id="lcd"></div></div>
+          <div class="foot">iSPUTNIK · 1957</div>
+        </div>
+
+        <div class="small-stack menu">
+          <div class="small"><button class="pill" id="btnA" type="button" aria-label="Game A"></button><span>ИГРА А</span></div>
+          <div class="small"><button class="pill" id="btnB" type="button" aria-label="Game B"></button><span>ИГРА Б</span></div>
+          <div class="small"><button class="pill" id="btnP" type="button" aria-label="Pause"></button><span>ПАУЗА</span></div>
+        </div>
+        <div class="pair rpair">
+          <button class="big up" type="button" data-ramp="2" aria-label="Upper right (P)">
+            <svg class="arrow" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 0 10 9 5 7 0 9z"/></svg>
+          </button>
+          <button class="big down" type="button" data-ramp="3" aria-label="Lower right (L)">
+            <svg class="arrow" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 0 10 9 5 7 0 9z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status" id="status" aria-live="polite">Demo running. Press <b>Game A</b> to play.</div>
+
+  <section class="cards">
+    <div class="card">
+      <h2>Controls</h2>
+      <div class="keys">
+        <span><kbd>Q</kbd> <kbd>A</kbd></span><span>Upper / lower left</span>
+        <span><kbd>P</kbd> <kbd>L</kbd></span><span>Upper / lower right</span>
+        <span><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd></span><span>Move the basket</span>
+        <span><kbd>1</kbd> <kbd>2</kbd></span><span>Game A / Game B</span>
+        <span><kbd>Space</kbd></span><span>Pause</span>
+      </div>
+      <p class="dim">On a phone held upright, the screen sits on top with a pair of big buttons under each thumb. Turned sideways, it is the whole handheld. Tapping a corner of the screen also works.</p>
+    </div>
+    <div class="card">
+      <h2>Rules</h2>
+      <ol class="rules">
+        <li>Four station modules launch sputniks down their rails. Robot РОБ-1 catches each one in his net.</li>
+        <li>A missed sputnik crashes and a little alien climbs out and runs off. Three aliens loose and the game is over.</li>
+        <li>While Belka the space dog watches from the porthole, a crash costs only half an alien.</li>
+        <li>At 200 and 500 points every alien is rounded up again.</li>
+        <li>Game B starts faster with more sputniks.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h2>Family scores</h2>
+      <table class="board">
+        <thead><tr><th>Player</th><th>A</th><th>B</th></tr></thead>
+        <tbody>
+          <tr><td>Grandpa<span class="tag">example</span></td><td>412</td><td>188</td></tr>
+          <tr><td>Masha<span class="tag">example</span></td><td>287</td><td>96</td></tr>
+          <tr class="you"><td>You, this device</td><td id="bestA">0</td><td id="bestB">0</td></tr>
+        </tbody>
+      </table>
+      <p class="dim">In the real build these come from the games server, per member.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const SEG = '#1b2119', BG = '#c5cbb2', INK = '#5a6976', STEEL = '#6f6c62', HULL = '#b1b79e', GLASS = '#9fb1b6', RED = '#b8322a';
+  const W = 480, H = 300;
+
+  // Launch-rail geometry: 0 upper-left, 1 lower-left, 2 upper-right, 3 lower-right.
+  const RAMPS = [
+    { x1: 72, y1: 92, x2: 165, y2: 128 },
+    { x1: 72, y1: 168, x2: 165, y2: 204 },
+    { x1: 408, y1: 92, x2: 315, y2: 128 },
+    { x1: 408, y1: 168, x2: 315, y2: 204 },
+  ];
+  const STEPS = 5;
+
+  const seg = (id, inner) => `<g class="seg" id="${id}">${inner}</g>`;
+  const mirror = inner => `<g transform="translate(${W},0) scale(-1,1)">${inner}</g>`;
+  // LCD drawing vocabulary: dark outline over a "clear" fill, thin dark detail lines,
+  // and a tube (outlined stroke) for arms and columns.
+  const OUT = `fill="${BG}" stroke="${SEG}" stroke-width="2.3" stroke-linejoin="round"`;
+  const line = (w = 1.6) => `fill="none" stroke="${SEG}" stroke-width="${w}" stroke-linecap="round"`;
+  const LINE = line();
+  const tube = (d, w) => `<path d="${d}" fill="none" stroke="${SEG}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${d}" fill="none" stroke="${BG}" stroke-width="${w - 4.4}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const starPath = (x, y, r) => {
+    let d = '';
+    for (let i = 0; i < 10; i++) {
+      const a = (-90 + i * 36) * Math.PI / 180, rr = i % 2 ? r * 0.42 : r;
+      d += `${i ? 'L' : 'M'}${(x + Math.cos(a) * rr).toFixed(1)},${(y + Math.sin(a) * rr).toFixed(1)} `;
+    }
+    return d + 'Z';
+  };
+  const twinkle = (x, y, r) => `<path d="M${x},${y-r} L${x+r*0.25},${y-r*0.25} L${x+r},${y} L${x+r*0.25},${y+r*0.25} L${x},${y+r} L${x-r*0.25},${y+r*0.25} L${x-r},${y} L${x-r*0.25},${y-r*0.25} Z" fill="${INK}"/>`;
+
+  // ---- printed backdrop: station modules, rails, Moon, stars, lunar ground
+  function module(y) {
+    return `
+      <line x1="18" y1="${y-30}" x2="18" y2="${y-40}" stroke="${INK}" stroke-width="2"/>
+      <rect x="4" y="${y-48}" width="30" height="9" fill="${GLASS}" stroke="${INK}" stroke-width="1.6"/>
+      <path d="M11.5,${y-48} v9 M19,${y-48} v9 M26.5,${y-48} v9" stroke="${INK}" stroke-width="1"/>
+      <rect x="6" y="${y-30}" width="54" height="32" rx="7" fill="${HULL}" stroke="${INK}" stroke-width="2"/>
+      <path d="M60,${y-22} L73,${y-16} L73,${y-6} L60,${y-1}" fill="${HULL}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="22" cy="${y-14}" r="7" fill="${GLASS}" stroke="${INK}" stroke-width="2"/>
+      <path d="M18,${y-17} q3,-3 7,-1" stroke="#e8ede0" stroke-width="1.5" fill="none"/>
+      <path d="${starPath(44, y - 14, 7.5)}" fill="${RED}"/>`;
+  }
+  let print = '';
+  for (const [x, y, r] of [[172, 76, 4], [300, 82, 3.5], [392, 16, 3.5], [468, 74, 3], [176, 22, 3], [296, 50, 2.6], [88, 236, 3], [394, 238, 3], [190, 104, 2.4]]) print += twinkle(x, y, r);
+  print += `<circle cx="446" cy="28" r="14" fill="#dcdfcb" stroke="${INK}" stroke-width="1.6"/><circle cx="440" cy="24" r="13" fill="${BG}"/>`;
+  print += `<circle cx="130" cy="40" r="25" fill="none" stroke="${STEEL}" stroke-width="4"/>`;
+  for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; print += `<circle cx="${(130 + Math.cos(a) * 25).toFixed(1)}" cy="${(40 + Math.sin(a) * 25).toFixed(1)}" r="1.6" fill="${BG}"/>`; }
+  print += module(92) + module(168) + mirror(module(92) + module(168));
+  for (const r of RAMPS) {
+    print += `<line x1="${r.x1}" y1="${r.y1}" x2="${r.x2}" y2="${r.y2}" stroke="${STEEL}" stroke-width="4.5" stroke-linecap="round"/>`;
+    print += `<line x1="${r.x1}" y1="${r.y1 + 4}" x2="${r.x2}" y2="${r.y2 + 4}" stroke="${STEEL}" stroke-width="1.5" stroke-dasharray="2 7"/>`;
+  }
+  print += `<path d="M0,288 Q120,281 240,286 T480,285" stroke="${INK}" stroke-width="1.5" fill="none"/>`;
+  for (const [x, rx] of [[48, 10], [158, 7], [318, 13], [440, 8]]) print += `<ellipse cx="${x}" cy="294" rx="${rx}" ry="2.4" fill="none" stroke="${INK}" stroke-width="1.2"/>`;
+
+  // ---- segments
+  let segs = '';
+  segs += seg('gA', `<text x="186" y="298" font-family="Russo One, Arial Black, sans-serif" font-size="11" fill="${SEG}">ИГРА А</text>`);
+  segs += seg('gB', `<text x="250" y="298" font-family="Russo One, Arial Black, sans-serif" font-size="11" fill="${SEG}">ИГРА Б</text>`);
+
+  // score: four seven-segment digits
+  const DIGIT_SEGS = { a:[2,0,12,3.4], b:[12.6,1.6,3.4,11.6], c:[12.6,14.8,3.4,11.6], d:[2,24.6,12,3.4], e:[0,14.8,3.4,11.6], f:[0,1.6,3.4,11.6], g:[2,12.3,12,3.4] };
+  for (let i = 0; i < 4; i++) {
+    const x = 204 + i * 20;
+    let g = '';
+    for (const [k, [sx, sy, sw, sh]] of Object.entries(DIGIT_SEGS)) g += seg(`d${i}${k}`, `<rect x="${sx}" y="${sy}" width="${sw}" height="${sh}" rx="1.2" fill="${SEG}"/>`);
+    segs += `<g transform="translate(${x},12) skewX(-6)">${g}</g>`;
+  }
+
+  // a little alien, the one that gets loose when a sputnik crashes
+  const chick = (cx, cy, dir, step = 0) => {
+    const legs = step % 2 ? `M${cx-2},${cy+6} l-4,6 M${cx+2},${cy+6} l4,5` : `M${cx-2},${cy+6} l2,6 M${cx+2},${cy+6} l-2,6`;
+    return `
+      <path d="M${cx-2},${cy-14} l-3,-6 M${cx+2},${cy-14} l3,-6" ${LINE}/>
+      <circle cx="${cx-5}" cy="${cy-20.5}" r="1.7" fill="${SEG}"/><circle cx="${cx+5}" cy="${cy-20.5}" r="1.7" fill="${SEG}"/>
+      <ellipse cx="${cx}" cy="${cy-7}" rx="6.5" ry="7" ${OUT}/>
+      <ellipse cx="${cx+dir*2.6}" cy="${cy-8}" rx="1.7" ry="2.6" fill="${SEG}"/><ellipse cx="${cx-dir*2.2}" cy="${cy-8}" rx="1.5" ry="2.4" fill="${SEG}"/>
+      <rect x="${cx-3.5}" y="${cy-0.5}" width="7" height="7" rx="2" fill="${SEG}"/>
+      <path d="${legs}" stroke="${SEG}" stroke-width="1.8" stroke-linecap="round"/>`;
+  };
+  for (let i = 0; i < 3; i++) segs += seg(`m${i}`, chick(330 + i * 22, 38, 1));
+
+  // Belka the space dog in the porthole: while she watches, a crash costs half
+  segs += seg('owl', `
+    <path d="M117,56 Q130,63 143,56" stroke="${SEG}" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+    <path d="M121,35 L117,23 L127,31 Z M139,35 L143,23 L133,31 Z" fill="${SEG}"/>
+    <ellipse cx="130" cy="41" rx="10.5" ry="9.5" ${OUT}/>
+    <ellipse cx="130" cy="47" rx="5.5" ry="3.8" ${OUT}/>
+    <ellipse cx="130" cy="44.6" rx="2.2" ry="1.6" fill="${SEG}"/>
+    <circle cx="126" cy="38.5" r="1.7" fill="${SEG}"/><circle cx="134" cy="38.5" r="1.7" fill="${SEG}"/>
+    <path d="M126.5,33 q-3,0 -4,2" ${LINE}/>
+    <circle cx="130" cy="40" r="18" fill="none" stroke="${SEG}" stroke-width="1.6"/>
+    <path d="M118,31 q4,-6 11,-7" stroke="${SEG}" stroke-width="1.2" fill="none" stroke-linecap="round"/>`);
+
+  // sputniks on the rails: a ball with four antennae trailing behind it
+  for (let r = 0; r < 4; r++) {
+    const R = RAMPS[r], dx = R.x2 - R.x1, dy = R.y2 - R.y1, len = Math.hypot(dx, dy);
+    const nx = dx > 0 ? dy / len : -dy / len, ny = dx > 0 ? -dx / len : dx / len;
+    const trail = Math.atan2(-dy, -dx) * 180 / Math.PI;
+    for (let p = 0; p < STEPS; p++) {
+      const t = 0.1 + p * 0.2;
+      const x = R.x1 + dx * t + nx * 9, y = R.y1 + dy * t + ny * 9;
+      const wob = p % 2 ? 8 : -8;
+      let d = '';
+      for (const off of [-30, -11, 11, 30]) {
+        const a = (trail + off + wob) * Math.PI / 180;
+        d += `M${(x + Math.cos(a) * 5).toFixed(1)},${(y + Math.sin(a) * 5).toFixed(1)} L${(x + Math.cos(a) * 17).toFixed(1)},${(y + Math.sin(a) * 17).toFixed(1)} `;
+      }
+      segs += seg(`e${r}${p}`, `<path d="${d}" ${LINE}/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6" ${OUT}/><path d="M${(x-3.4).toFixed(1)},${(y-1.2).toFixed(1)} q2,-3 5,-2.4" ${line(1.1)}/>`);
+    }
+  }
+
+  // РОБ-1, drawn facing left; the right-facing pose is its mirror
+  const foxBody = `
+    ${tube('M262,194 L276,208 L272,224', 7.5)}
+    <path d="M270,224 l-4,6 M274,224 l4,6" ${LINE}/>
+    <rect x="212" y="258" width="62" height="20" rx="10" fill="${SEG}"/>
+    ${[224, 237, 250, 263].map(x => `<circle cx="${x}" cy="268" r="4.6" ${OUT}/>`).join('')}
+    ${tube('M243,236 L243,259', 13)}
+    <path d="M238,243 H248 M238,249 H248 M238,255 H248" ${LINE}/>
+    <rect x="220" y="178" width="46" height="60" rx="8" ${OUT}/>
+    <circle cx="243" cy="201" r="12" ${OUT}/>
+    <path d="${starPath(243, 202, 9)}" fill="${SEG}"/>
+    <path d="M227,222 H259 M227,227 H259 M227,232 H259" ${LINE}/>
+    <rect x="237" y="168" width="12" height="11" ${OUT}/>
+    <path d="M232,126 L228,113 M249,126 L253,103" ${line(2)}/>
+    <circle cx="228" cy="111" r="2.6" fill="${SEG}"/><circle cx="253.5" cy="100" r="4.2" fill="${SEG}"/>
+    <rect x="262" y="139" width="8" height="18" rx="2" fill="${SEG}"/>
+    <rect x="216" y="126" width="50" height="44" rx="10" ${OUT}/>
+    <circle cx="230" cy="144" r="7.5" ${OUT}/><circle cx="249" cy="144" r="7.5" ${OUT}/>
+    <circle cx="227" cy="145" r="3.2" fill="${SEG}"/><circle cx="246" cy="145" r="3.2" fill="${SEG}"/>
+    <rect x="224" y="157" width="28" height="8" rx="2" ${OUT}/>
+    <path d="M231,157 v8 M238,157 v8 M245,157 v8" ${LINE}/>`;
+  // a butterfly net instead of a basket
+  const basket = (cx, cy) => `
+    <path d="M${cx-15},${cy-6} Q${cx-12},${cy+12} ${cx},${cy+15} Q${cx+12},${cy+12} ${cx+15},${cy-6}" ${OUT}/>
+    <path d="M${cx-7},${cy-5} L${cx-4},${cy+12} M${cx},${cy-4} V${cy+15} M${cx+7},${cy-5} L${cx+4},${cy+12} M${cx-13},${cy+3} H${cx+13}" stroke="${SEG}" stroke-width="1" fill="none"/>
+    <ellipse cx="${cx}" cy="${cy-6}" rx="15" ry="4.5" fill="none" stroke="${SEG}" stroke-width="2.6"/>`;
+  const arm = (ex, ey, hx, hy) => `
+    ${tube(`M224,192 L${ex},${ey} L${hx},${hy}`, 8)}
+    <circle cx="${ex}" cy="${ey}" r="3.6" fill="${SEG}"/>
+    <path d="M${hx-1},${hy-2} l-5,-3 M${hx-1},${hy+2} l-5,3" ${line(2)}/>`;
+  const armUp = arm(206, 174, 190, 142) + basket(172, 146);
+  const armDown = arm(205, 208, 190, 216) + basket(172, 222);
+  segs += seg('foxL', foxBody) + seg('foxR', mirror(foxBody));
+  segs += seg('arm0', armUp) + seg('arm1', armDown) + seg('arm2', mirror(armUp)) + seg('arm3', mirror(armDown));
+
+  // a crashed sputnik, antennae flung about
+  const broken = cx => `
+    <path d="M${cx-18},285 l4,-6 l3,4 l4,-8 l3,6 l4,-5 l3,7 l4,-6 l3,8" ${LINE}/>
+    <path d="M${cx-7},279 l-12,-6 M${cx+7},279 l12,-7 M${cx-4},270 l-7,-11 M${cx+5},270 l8,-10" ${line(1.8)}/>
+    <circle cx="${cx}" cy="275" r="6.5" ${OUT}/>
+    <path d="M${cx-3},271 l3,4 l3,-3" ${LINE}/>`;
+  segs += seg('bL', broken(136)) + seg('bR', broken(344));
+  const CHICK_X = [106, 82, 58, 34];
+  CHICK_X.forEach((x, i) => {
+    segs += seg(`cL${i}`, chick(x, 279, -1, i));
+    segs += seg(`cR${i}`, chick(W - x, 279, 1, i));
+  });
+
+  const lcd = document.getElementById('lcd');
+  lcd.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Game screen">${print}${segs}</svg>`;
+  const segEls = new Map([...lcd.querySelectorAll('.seg')].map(el => [el.id, el]));
+
+  // ---- sound
+  let ac = null, soundOn = true;
+  function ensureAudio() {
+    try {
+      if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === 'suspended') ac.resume();
+    } catch { ac = null; }
+  }
+  function beep(freq, dur = 0.035, at = 0, vol = 0.05) {
+    if (!soundOn || !ac || state.mode === 'demo') return;
+    const t = ac.currentTime + at;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'square'; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
+  }
+  const RAMP_PITCH = [1046, 880, 784, 659];
+
+  // ---- state
+  const state = {
+    mode: 'demo', game: 'A', score: 0, halves: 0, eggs: [], basket: 0,
+    owl: { on: false, left: 0, cooldown: 30 }, chick: null, broken: null, allOn: true,
+  };
+  let timer = null;
+  const best = { A: 0, B: 0 };
+  try { Object.assign(best, JSON.parse(localStorage.getItem('eggcatch-best') || '{}')); } catch {}
+
+  const statusEl = document.getElementById('status');
+  function say(html) { statusEl.innerHTML = html; }
+  function showBest() {
+    document.getElementById('bestA').textContent = best.A;
+    document.getElementById('bestB').textContent = best.B;
+  }
+
+  function period() {
+    if (state.chick) return 240;
+    if (state.mode === 'demo') return 480;
+    const base = state.game === 'A' ? 620 : 460;
+    const s = state.score;
+    return Math.max(210, base - (s % 100) * 2.4 - Math.floor(s / 100) * 40);
+  }
+  function maxEggs() {
+    if (state.mode === 'demo') return 3;
+    return Math.min(state.game === 'A' ? 4 : 5, (state.game === 'A' ? 1 : 2) + Math.floor(state.score / 20));
+  }
+
+  function step() {
+    if (state.chick) {
+      state.chick.step++;
+      beep([660, 587, 523, 440][Math.min(state.chick.step, 3)], 0.11);
+      if (state.chick.step >= CHICK_X.length) {
+        state.chick = null; state.broken = null;
+        if (state.halves >= 6) return gameOver();
+      }
+      return;
+    }
+
+    for (const e of state.eggs) e.p++;
+    const landed = state.eggs.find(e => e.p >= STEPS);
+    state.eggs = state.eggs.filter(e => e.p < STEPS);
+    if (state.mode === 'demo') {
+      const lead = [...state.eggs, ...(landed ? [landed] : [])].sort((a, b) => b.p - a.p)[0];
+      if (lead) state.basket = lead.r;
+    }
+    if (landed) {
+      if (state.basket === landed.r) {
+        state.score = (state.score + 1) % 10000;
+        beep(1568, 0.05);
+        if (state.score === 200 || state.score === 500) {
+          state.halves = 0;
+          [784, 988, 1175, 1568].forEach((f, i) => beep(f, 0.08, 0.1 + i * 0.09));
+        }
+      } else {
+        state.halves += state.owl.on ? 1 : 2;
+        const side = landed.r < 2 ? 'L' : 'R';
+        state.broken = side; state.chick = { side, step: 0 }; state.eggs = [];
+        beep(330, 0.16);
+        return;
+      }
+    } else if (state.eggs.length) {
+      const lead = state.eggs.reduce((a, b) => (b.p > a.p ? b : a));
+      beep(RAMP_PITCH[lead.r], 0.03);
+    }
+
+    // spawn: at most one per tick, so two eggs never land on the same tick
+    if (state.eggs.length < maxEggs() && Math.random() < 0.6) {
+      const free = [0, 1, 2, 3].filter(r => !state.eggs.some(e => e.r === r && e.p <= 1));
+      if (free.length) state.eggs.push({ r: free[Math.floor(Math.random() * free.length)], p: 0 });
+    }
+
+    const owl = state.owl;
+    if (owl.on) { if (--owl.left <= 0) { owl.on = false; owl.cooldown = 40 + Math.floor(Math.random() * 60); } }
+    else if (--owl.cooldown <= 0) { owl.on = true; owl.left = 16 + Math.floor(Math.random() * 16); }
+  }
+
+  function loop() {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (state.mode !== 'play' && state.mode !== 'demo') return;
+      step(); render();
+      if (state.mode === 'play' || state.mode === 'demo') loop();
+    }, period());
+  }
+
+  function render() {
+    const on = new Set();
+    if (state.allOn) { segEls.forEach((el, id) => on.add(id)); }
+    else {
+      for (const e of state.eggs) on.add(`e${e.r}${e.p}`);
+      on.add(state.basket < 2 ? 'foxL' : 'foxR');
+      on.add(`arm${state.basket}`);
+      const digits = String(state.score).padStart(4, ' ');
+      const MAP = { 0:'abcdef', 1:'bc', 2:'abged', 3:'abgcd', 4:'fgbc', 5:'afgcd', 6:'afgedc', 7:'abc', 8:'abcdefg', 9:'abcdfg' };
+      [...digits].forEach((ch, i) => { if (ch !== ' ') for (const k of MAP[ch]) on.add(`d${i}${k}`); });
+      const full = Math.floor(state.halves / 2), half = state.halves % 2;
+      const blink = Math.floor(performance.now() / 280) % 2 === 0;
+      for (let i = 0; i < Math.min(full, 3); i++) on.add(`m${i}`);
+      if (half && full < 3 && blink) on.add(`m${full}`);
+      if (state.owl.on) on.add('owl');
+      if (state.broken) on.add(`b${state.broken}`);
+      if (state.chick) on.add(`c${state.chick.side}${Math.min(state.chick.step, CHICK_X.length - 1)}`);
+      if (state.mode !== 'demo') on.add(state.game === 'A' ? 'gA' : 'gB');
+      if (state.mode === 'over' && !blink) { on.delete('foxL'); on.delete('foxR'); on.delete(`arm${state.basket}`); }
+    }
+    segEls.forEach((el, id) => el.classList.toggle('on', on.has(id)));
+  }
+
+  function resetBoard() {
+    state.score = 0; state.halves = 0; state.eggs = []; state.chick = null; state.broken = null;
+    state.owl = { on: false, left: 0, cooldown: 25 + Math.floor(Math.random() * 30) };
+  }
+
+  function startGame(game) {
+    ensureAudio();
+    resetBoard();
+    state.game = game; state.mode = 'play'; state.basket = 0; state.allOn = false;
+    say(`Playing <b>Game ${game === 'A' ? 'A' : 'B'}</b>. Catch every sputnik.`);
+    [523, 659, 784].forEach((f, i) => beep(f, 0.07, i * 0.08));
+    render();
+    clearTimeout(timer);
+    timer = setTimeout(loop, 500);
+  }
+
+  function gameOver() {
+    state.mode = 'over';
+    clearTimeout(timer);
+    let msg = `Game over with <b>${state.score}</b>.`;
+    if (state.score > best[state.game]) {
+      best[state.game] = state.score;
+      try { localStorage.setItem('eggcatch-best', JSON.stringify(best)); } catch {}
+      showBest();
+      msg += ' New best on this device.';
+    }
+    say(msg + ' Press <b>Game A</b> or <b>Game B</b> to play again.');
+    [392, 330, 262, 196].forEach((f, i) => beep(f, 0.18, i * 0.2, 0.06));
+  }
+
+  function togglePause() {
+    if (state.mode === 'play') {
+      state.mode = 'paused'; clearTimeout(timer);
+      say('Paused. Press <b>Pause</b> again to carry on.');
+    } else if (state.mode === 'paused') {
+      state.mode = 'play'; say(`Playing <b>Game ${state.game}</b>.`); loop();
+    }
+  }
+
+  function move(ramp) {
+    ensureAudio();
+    if (state.mode === 'play') { state.basket = ramp; render(); }
+    else if (state.mode === 'demo') say('This is the demo. Press <b>Game A</b> to play.');
+  }
+
+  function flash(el) { el.classList.add('pressed'); setTimeout(() => el.classList.remove('pressed'), 110); }
+  const bigs = [...document.querySelectorAll('.big')];
+  const bigFor = r => bigs.find(b => +b.dataset.ramp === r);
+  bigs.forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); move(+b.dataset.ramp); }));
+  bigs.forEach(b => b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); flash(b); move(+b.dataset.ramp); } }));
+  const btnA = document.getElementById('btnA'), btnB = document.getElementById('btnB'), btnP = document.getElementById('btnP');
+  btnA.addEventListener('click', () => startGame('A'));
+  btnB.addEventListener('click', () => startGame('B'));
+  btnP.addEventListener('click', togglePause);
+
+  lcd.addEventListener('pointerdown', e => {
+    const r = lcd.getBoundingClientRect();
+    const right = e.clientX - r.left > r.width / 2, low = e.clientY - r.top > r.height / 2;
+    const ramp = (right ? 2 : 0) + (low ? 1 : 0);
+    flash(bigFor(ramp)); move(ramp);
+  });
+
+  const KEY_RAMP = { KeyQ: 0, KeyA: 1, KeyP: 2, KeyL: 3 };
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    let ramp = KEY_RAMP[e.code];
+    const b = state.basket;
+    if (e.code === 'ArrowLeft') ramp = b % 2;
+    if (e.code === 'ArrowRight') ramp = 2 + (b % 2);
+    if (e.code === 'ArrowUp') ramp = b < 2 ? 0 : 2;
+    if (e.code === 'ArrowDown') ramp = b < 2 ? 1 : 3;
+    if (ramp !== undefined) { e.preventDefault(); flash(bigFor(ramp)); move(ramp); return; }
+    if (e.code === 'Digit1') { flash(btnA); startGame('A'); }
+    else if (e.code === 'Digit2') { flash(btnB); startGame('B'); }
+    else if (e.code === 'Space' && document.activeElement?.tagName !== 'BUTTON') { e.preventDefault(); flash(btnP); togglePause(); }
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && state.mode === 'play') togglePause(); });
+
+  // sound toggles: the device LED and the app's top-bar mute stay in step
+  const soundBtn = document.getElementById('soundBtn'), muteBtn = document.getElementById('mute');
+  function setSound(onOff) {
+    soundOn = onOff;
+    soundBtn.setAttribute('aria-pressed', String(onOff));
+    muteBtn.setAttribute('aria-label', onOff ? 'Mute sound' : 'Turn sound on');
+    muteBtn.title = muteBtn.getAttribute('aria-label');
+    muteBtn.querySelector('.wave').toggleAttribute('hidden', !onOff);
+    muteBtn.querySelector('.x').toggleAttribute('hidden', onOff);
+    if (onOff) ensureAudio();
+  }
+  soundBtn.addEventListener('click', () => setSound(!soundOn));
+  muteBtn.addEventListener('click', () => setSound(!soundOn));
+
+  // blink for half-chicks and game over
+  setInterval(() => { if (!state.allOn) render(); }, 140);
+
+  showBest();
+  render();
+  setTimeout(() => { state.allOn = false; state.eggs = [{ r: 0, p: 2 }, { r: 3, p: 0 }]; state.score = 0; render(); loop(); }, 900);
+})();
+</script>

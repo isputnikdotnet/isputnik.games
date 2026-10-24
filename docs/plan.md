@@ -577,6 +577,100 @@ styles like Chess's can come later.
   5. Home: name and score.
   6. Release: games minor and home patch.
 
+### Sputnik Catch («Лови спутник!») — planned 2026-10-23
+
+The first game here for one player: a Soviet LCD handheld in the spirit of the
+«Электроника ИМ-02» egg-catcher, redrawn in the iSputnik theme. Game id
+`sputnik`. The owner settled it on a playable mock
+(`docs/mocks/sputnik-catch-mock.html`; its sprites, rules and phone layouts
+are the source for the build). Decisions (owner, 2026-10-23):
+
+- **Our own art, not the cartoon's.** A Wolf and Hare version was drawn and
+  dropped: Soyuzmultfilm's characters cannot ship in a public repo and the
+  Unraid listing. In their place: robot РОБ-1 with a butterfly net, four
+  station modules launching sputniks down steel rails, a little alien that
+  climbs out of a crashed sputnik, and Belka the space dog at a porthole.
+- **It looks like an LCD.** Every sprite is always drawn, faint (the "ghost"
+  segments), and the live ones darken. Printed backdrop (modules with red
+  stars, rails, Moon, stars, lunar ground) in colour under it.
+- **Rules (as in the mock).**
+  - The game runs in ticks. Each tick every sputnik moves one of 5 steps down
+    its rail; off the end it lands in the net (+1) or crashes.
+  - At most one sputnik launches per tick, so no two ever land on the same
+    tick. A rail does not launch while its own last sputnik is still in its
+    first two steps.
+  - A crash: the alien runs off over four slow ticks, the rails clear, play
+    resumes. Three aliens loose ends the game. While Belka is at the porthole
+    a crash counts half an alien (the half blinks).
+  - Every alien is rounded up again at 200 and 500.
+  - Game A starts at 620 ms a tick with one sputnik in flight, Game B at
+    460 ms with two; one more in flight per 20 points (A up to 4, B up to 5).
+    The tick shortens 2.4 ms per point within each hundred and 40 ms per
+    hundred, never below 210 ms.
+  - The score counts to 9999 and wraps, as the real thing did.
+- **Controls.** Q / A / P / L (by key position, so the Russian layout works),
+  arrows to move the net, 1 / 2 for Game A / B, Space to pause. On a touch
+  screen: the four red buttons, or a tap on a quarter of the screen.
+- **Phone.** Held upright, the screen goes full width with Game A · Game B ·
+  Pause under it and one pair of big buttons under each thumb. Sideways, the
+  whole handheld is sized to the screen's height. The game pauses when the
+  page is hidden and asks for a screen wake lock while a run is on.
+- **Not in this version:** online play and an AI opponent (there is none to
+  have). A "race" (two members on the same seed at once) is a later idea.
+
+#### Where it sits: an arcade game is not a `GameDefinition`
+
+Everything so far is two seats taking turns; `GameDefinition` and the match
+tables are built on that. Sputnik Catch is one person against a clock, so it
+gets its own small contract instead of bending the old one:
+
+- **Engine:** `packages/engine/src/arcade/` with an `ArcadeDefinition`:
+  `createRun(variant, seed)`, `tick(state, net)` (pure, returns the next state
+  and the cues it caused: `step`, `catch`, `crash`, `bonus`, `over`),
+  `periodOf(state)` for the next tick's length, `scoreOf(state)`. Randomness is
+  `seededRandom(seed)` carried in the state, like Dominoes, so a run replays
+  exactly. `ARCADE_GAMES = [sputnik]` is a list of its own: `GAMES` and
+  `GAME_IDS` stay two-player, so the match routes can never be handed an
+  arcade id.
+- **Score is the replay.** A finished run is reported as its seed, variant and
+  input log: `[tick, net]` pairs, one per change of the net. The server replays
+  it through the engine and keeps the score it computes, never one the browser
+  sends, which is the same rule `game_records` follows for chess. Wall-clock
+  time plays no part in the rules, so the replay is exact.
+
+#### Build steps
+
+  1. **Engine.** `arcade/game.ts` (the contract) and `arcade/sputnik/` (rules,
+     variants, the speed and count curves). Tests: a catch and a crash, a crash
+     with Belka out, never two landings on one tick, the 200 and 500 pardons,
+     the three-alien end, the speed floor, the wrap at 9999, and a seeded run
+     replayed from its input log giving the same score.
+  2. **Web — the handheld.** Routes `/games/sputnik`: `App.tsx` learns arcade
+     ids beside `getGame`. `games/sputnik/`: `Handheld` (shell, buttons, both
+     phone layouts by container query), `LcdScreen` (the mock's sprites as one
+     SVG; segments switched by id each tick), `useArcadeRun` (the tick loop on
+     `periodOf`, pause on hide, wake lock, input log), keyboard and touch
+     input. The demo plays itself until Game A or B is pressed. Device best per
+     variant in localStorage.
+  3. **Web — sound and lobby.** New cues in `shared/sound.ts`: a square-wave
+     blip per rail pitch, catch, crash (four falling notes with the alien),
+     bonus, game over, start. They obey the top bar's switch; the handheld's
+     «ЗВУК» lamp shows that switch rather than a second one. Catalog entry
+     with a new mode `solo` (the lobby offers Play, no Invite), a preview in
+     `previews.tsx`, en + ru keys.
+  4. **Server — scores.** New table `arcade_scores` (id, member_id, game,
+     variant, score, seed, inputs JSON, ticks, game_key, finished_at;
+     UNIQUE (member_id, game_key)) in `schema.sql`, no migration. `POST
+     /games/api/arcade/scores` checks the game and variant, caps the log and
+     ticks, replays, stores the computed score; a resend changes nothing.
+     Members only (a guest's identity is scoped to one match). Event
+     `arcade.score` for the admin's log.
+  5. **Leaderboard.** A Sputnik Catch board in `LobbyStats`: each member's
+     best Game A and Game B, this month and all time, and "your best" on the
+     handheld page from the same answer.
+  6. **Release:** games minor (0.17.0). The home app needs nothing: it only
+     shows invitations and your-move cards, and an arcade game makes neither.
+
 ## Guests — playing by link (built 2026-10-23)
 
 A member can invite someone with no account here — a friend, a cousin abroad —
