@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { CircleHelp } from "lucide-react";
 import type { ArcadeCue, SputnikRail, SputnikVariant } from "@isputnik/games-engine";
+import { Button } from "../../shared/Button";
+import { Dialog } from "../../shared/Dialog";
 import { GameStage } from "../../shared/GameStage";
 import { play } from "../../shared/sound";
 import { PHONE, useMediaQuery } from "../../shared/useMediaQuery";
@@ -18,14 +21,16 @@ const FLASH_MS = 110;
 // Sputnik Catch, the first one-player game: a handheld in the spirit of the
 // Электроника LCD games (docs/plan.md → Sputnik Catch). The handheld is the
 // board; the panel beside it keeps the device's best scores, what the
-// handheld is doing, and how to play. Keys go by position (event.code), so
-// Q/A/P/L work on a Russian layout too.
+// handheld is doing, and the keys, always in view (a phone gets a line on its
+// buttons instead). The rules wait behind How to play, which pauses a run.
+// Keys go by position (event.code), so Q/A/P/L work on a Russian layout too.
 export function SputnikPage() {
   const { t } = useTranslation();
   const run = useArcadeRun(sound);
   const report = useArcadeReport("sputnik", run.finished);
   const phone = useMediaQuery(PHONE);
   const [flash, setFlash] = useState<HandheldControl | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const { move, togglePause, net } = run;
   const startRun = run.start;
@@ -99,7 +104,46 @@ export function SputnikPage() {
   }
   if (run.mode === "over" && run.finished && report?.status === "failed") saved = t("sputnik.saved.failed");
 
+  // The keys, always in view: on a phone the screen's own buttons are the controls.
+  const keys = phone ? (
+    <p className="sputnik-touch muted">{t("sputnik.keys.touch")}</p>
+  ) : (
+    <section className="sputnik-keys" aria-labelledby="sputnik-keys-title">
+      <h2 id="sputnik-keys-title">{t("sputnik.keys.title")}</h2>
+      <dl>
+        <div><dt><kbd>Q</kbd></dt><dd>{t("sputnik.keys.upperLeft")}</dd></div>
+        <div><dt><kbd>P</kbd></dt><dd>{t("sputnik.keys.upperRight")}</dd></div>
+        <div><dt><kbd>A</kbd></dt><dd>{t("sputnik.keys.lowerLeft")}</dd></div>
+        <div><dt><kbd>L</kbd></dt><dd>{t("sputnik.keys.lowerRight")}</dd></div>
+        <div className="is-wide"><dt><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd></dt><dd>{t("sputnik.keys.arrows")}</dd></div>
+        <div><dt><kbd>1</kbd></dt><dd>{t("sputnik.gameA")}</dd></div>
+        <div><dt><kbd>2</kbd></dt><dd>{t("sputnik.gameB")}</dd></div>
+        <div className="is-wide"><dt><kbd>{t("sputnik.keys.space")}</kbd></dt><dd>{t("sputnik.keys.pause")}</dd></div>
+      </dl>
+    </section>
+  );
+
+  const openHelp = () => {
+    // Reading the rules is no time to lose a sputnik.
+    if (run.mode === "play") togglePause();
+    setHelpOpen(true);
+  };
+
   return (
+    <>
+    {helpOpen && (
+      <Dialog title={t("sputnik.help.title")} cancelLabel={t("sputnik.help.close")} onClose={() => setHelpOpen(false)}>
+        <div className="sputnik-help">
+          <ul>
+            <li>{t("sputnik.help.rules.catch")}</li>
+            <li>{t("sputnik.help.rules.crash")}</li>
+            <li>{t("sputnik.help.rules.belka")}</li>
+            <li>{t("sputnik.help.rules.pardon")}</li>
+            <li>{t("sputnik.help.rules.gameB")}</li>
+          </ul>
+        </div>
+      </Dialog>
+    )}
     <GameStage
       className="is-sputnik"
       title={t("games.sputnik.name")}
@@ -122,25 +166,13 @@ export function SputnikPage() {
           {phone && best}
         </>
       }
-      log={
-        <div className="sputnik-help">
-          <h2>{t("sputnik.help.rulesTitle")}</h2>
-          <ul>
-            <li>{t("sputnik.help.rules.catch")}</li>
-            <li>{t("sputnik.help.rules.crash")}</li>
-            <li>{t("sputnik.help.rules.belka")}</li>
-            <li>{t("sputnik.help.rules.pardon")}</li>
-            <li>{t("sputnik.help.rules.gameB")}</li>
-          </ul>
-          <h2>{t("sputnik.help.controlsTitle")}</h2>
-          <ul>
-            <li>{t("sputnik.help.controls.rails")}</li>
-            <li>{t("sputnik.help.controls.arrows")}</li>
-            <li>{t("sputnik.help.controls.games")}</li>
-            <li>{t("sputnik.help.controls.touch")}</li>
-          </ul>
-        </div>
+      log={keys}
+      actions={
+        <Button variant="secondary" onClick={openHelp}>
+          <CircleHelp size={16} aria-hidden="true" /> {t("sputnik.help.open")}
+        </Button>
       }
     />
+    </>
   );
 }

@@ -12,9 +12,9 @@ import { loadDominoesGame } from "./dominoes/storage";
 export type GameNameKey = "games.dots.name" | "games.starbattle.name" | "games.chess.name" | "games.dominoes.name" | "games.sputnik.name";
 export type GameSummaryKey = "games.dots.summary" | "games.starbattle.summary" | "games.chess.summary" | "games.dominoes.summary" | "games.sputnik.summary";
 
-/** Against the computer, two people at one screen, two people online, or one
- *  person on their own against the clock (an arcade game). */
-export type GameMode = "computer" | "local" | "online" | "solo";
+/** Against the computer, two people at one screen, two people online, or an
+ *  arcade game: one person against the clock. */
+export type GameMode = "computer" | "local" | "online" | "arcade";
 
 /** The lobby's games in order: the two-player ones, then the arcade. */
 export const LOBBY_GAME_IDS: readonly string[] = [...GAMES, ...ARCADE_GAMES].map((game) => game.id);
@@ -66,7 +66,7 @@ export const CATALOG: Record<string, CatalogEntry> = {
     icon: Orbit,
     name: "games.sputnik.name",
     summary: "games.sputnik.summary",
-    modes: ["solo"],
+    modes: ["arcade"],
     newUntil: "2026-11-30",
     // A run is not kept between visits: the handheld starts afresh.
     inProgress: () => false

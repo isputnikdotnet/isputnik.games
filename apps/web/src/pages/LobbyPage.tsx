@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BellRing, Cpu, Globe, Hourglass, Timer, UserPlus, Users, type LucideIcon } from "lucide-react";
+import { BellRing, Cpu, Globe, Hourglass, Joystick, UserPlus, Users, type LucideIcon } from "lucide-react";
 import { answerMatch, fetchMatches, fetchStats, type FamilyStats, type MatchSummary } from "../api";
 import { follow, href, matchHref, navigate } from "../router";
 import { useSession } from "../session";
@@ -23,7 +23,7 @@ function stageLabel(stage: string, t: (key: "lobby.stageAlpha" | "lobby.stageBet
   return stage;
 }
 
-const MODE_ICONS: Record<GameMode, LucideIcon> = { computer: Cpu, local: Users, online: Globe, solo: Timer };
+const MODE_ICONS: Record<GameMode, LucideIcon> = { computer: Cpu, local: Users, online: Globe, arcade: Joystick };
 
 /** How many finished matches the lobby lists. */
 const RECENT = 5;

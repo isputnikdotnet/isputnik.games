@@ -49,7 +49,7 @@
       "computer": "Computer",
       "local": "One screen",
       "online": "Online",
-      "solo": "Solo"
+      "arcade": "Arcade"
     },
     "recent": {
       "title": "Recent games"
@@ -773,26 +773,32 @@
       "gameB": "Best, Game B"
     },
     "help": {
-      "rulesTitle": "How it works",
+      "open": "How to play",
+      "title": "How to play Sputnik Catch",
+      "close": "Close",
       "rules": {
         "catch": "Four station modules launch sputniks down their rails. Hold the net at the foot of the rail where one is about to land.",
         "crash": "A missed sputnik crashes and a little alien climbs out and runs off. Three aliens loose and the game is over.",
         "belka": "While Belka the space dog watches from her porthole, a crash costs only half an alien.",
         "pardon": "At 200 and 500 every alien is rounded up again.",
         "gameB": "It speeds up as you score. Game B starts faster, with more sputniks in flight."
-      },
-      "controlsTitle": "Controls",
-      "controls": {
-        "rails": "Q and A: upper and lower left. P and L: upper and lower right.",
-        "arrows": "The arrow keys move the net too.",
-        "games": "1 and 2 start Game A and Game B. Space pauses.",
-        "touch": "On a touch screen, press the red buttons or tap a corner of the screen."
       }
     },
     "saved": {
       "saving": "Saving to the family board…",
       "saved": "On the family board. Your best at {{game}}: {{best}}.",
       "failed": "This score could not be saved to the family board."
+    },
+    "keys": {
+      "title": "Keys",
+      "upperLeft": "Upper left",
+      "lowerLeft": "Lower left",
+      "upperRight": "Upper right",
+      "lowerRight": "Lower right",
+      "arrows": "Move the net",
+      "space": "Space",
+      "pause": "Pause",
+      "touch": "Press the red buttons, or tap a corner of the screen, to move the net."
     }
   }
 }

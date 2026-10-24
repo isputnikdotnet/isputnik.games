@@ -131,6 +131,27 @@ describe("SputnikPage", () => {
     expect(screen.getByText("Game B: catch every sputnik.")).toBeInTheDocument();
   });
 
+  it("keeps the keys in view, and the rules behind How to play, which pauses a run", () => {
+    render(<SputnikPage />);
+    const keys = screen.getByRole("region", { name: "Keys" });
+    for (const label of ["Upper left", "Lower left", "Upper right", "Lower right", "Move the net"]) {
+      expect(keys).toHaveTextContent(label);
+    }
+    expect(screen.queryByText(/Belka the space dog/)).toBeNull();
+
+    act(() => vi.advanceTimersByTime(HANDHELD_DELAYS.test));
+    fireEvent.click(screen.getByRole("button", { name: "Start Game A" }));
+    fireEvent.click(screen.getByRole("button", { name: "How to play" }));
+    const dialog = screen.getByRole("dialog", { name: "How to play Sputnik Catch" });
+    expect(dialog).toHaveTextContent(/Belka the space dog/);
+    expect(screen.getByText(/^Paused/)).toBeInTheDocument();
+    // Keys pressed inside the dialog are the dialog's, not the handheld's.
+    fireEvent.keyDown(dialog, { code: "KeyL", key: "l" });
+    expect(document.querySelector('[data-seg="net3"]')?.classList.contains("is-on")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("runs to the end when nobody plays, and keeps the device's best", () => {
     render(<SputnikPage />);
     act(() => vi.advanceTimersByTime(HANDHELD_DELAYS.test));

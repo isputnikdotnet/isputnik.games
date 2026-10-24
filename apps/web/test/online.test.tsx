@@ -99,7 +99,7 @@ describe("lobby, online section", () => {
     withSession(<LobbyPage />);
     const games = await screen.findByRole("region", { name: "Choose a game" });
     const card = within(games).getByRole("heading", { name: "Sputnik Catch" }).closest("article")!;
-    expect(within(card).getByText("Solo")).toBeInTheDocument();
+    expect(within(card).getByText("Arcade")).toBeInTheDocument();
     expect(within(card).getByRole("link", { name: "Play" })).toHaveAttribute("href", "/games/sputnik");
     expect(within(card).queryByRole("button", { name: "Invite" })).toBeNull();
   });
