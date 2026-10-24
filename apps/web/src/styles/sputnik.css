@@ -373,60 +373,63 @@
   text-align: center;
 }
 
-/* A phone held upright: the screen across the top, the menu row under it,
-   then a pair of big buttons under each thumb. Upright only: turned sideways
-   the handheld is sized by the screen's height and may be as narrow, but
-   there the whole device fits and is the better shape. */
+/* A phone held upright: a slim row of Game A · Game B · Pause along the top,
+   the screen as wide as the face allows under it, then a pair of red buttons
+   under each thumb. Upright only: turned sideways the handheld is sized by
+   the screen's height and may be as narrow, but there the whole device fits
+   and is the better shape. */
 @media (orientation: portrait) {
 @container (max-width: 560px) {
-  .hh-device { aspect-ratio: auto; padding: 2cqw; border-radius: 6cqw; }
+  .hh-device { aspect-ratio: auto; padding: 1.6cqw; border-radius: 6cqw; }
   .hh-face {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto auto;
-    grid-template-areas: "screen screen" "menu menu" "left rbtn";
-    gap: 5cqw 4cqw;
-    padding: 4cqw 4cqw 6cqw;
+    grid-template-areas: "menu menu" "screen screen" "left rbtn";
+    gap: 3.4cqw 4cqw;
+    padding: 3cqw 2.4cqw 5cqw;
     border-radius: 4.6cqw;
   }
   .hh-left { justify-content: center; }
   .hh-logo, .hh-sound.bare-button { display: none; }
-  .hh-pair { gap: 7cqw; }
+  .hh-pair { gap: 5cqw; }
   .hh-big.bare-button {
-    width: 25cqw;
-    box-shadow: 0 0 0 1.6cqw var(--hh-rim), 0 0 0 2cqw rgba(0, 0, 0, 0.25), 0 1.4cqw 0 1.6cqw var(--hh-rim-dark);
+    width: 19cqw;
+    box-shadow: 0 0 0 1.3cqw var(--hh-rim), 0 0 0 1.6cqw rgba(0, 0, 0, 0.25), 0 1.1cqw 0 1.3cqw var(--hh-rim-dark);
   }
   .hh-big.bare-button:active,
   .hh-big.is-pressed {
-    transform: translateY(1cqw);
-    box-shadow: 0 0 0 1.6cqw var(--hh-rim), 0 0 0 2cqw rgba(0, 0, 0, 0.25), 0 0.4cqw 0 1.6cqw var(--hh-rim-dark);
+    transform: translateY(0.8cqw);
+    box-shadow: 0 0 0 1.3cqw var(--hh-rim), 0 0 0 1.6cqw rgba(0, 0, 0, 0.25), 0 0.3cqw 0 1.3cqw var(--hh-rim-dark);
   }
-  .hh-arrow { width: 7cqw; height: 7cqw; }
-  .hh-left .hh-big.is-up .hh-arrow { left: -8.5cqw; top: -7cqw; }
-  .hh-left .hh-big.is-down .hh-arrow { left: -8.5cqw; bottom: -7cqw; }
-  .hh-right .hh-big.is-up .hh-arrow { right: -8.5cqw; top: -7cqw; }
-  .hh-right .hh-big.is-down .hh-arrow { right: -8.5cqw; bottom: -7cqw; }
-  .hh-menu { grid-auto-flow: column; justify-content: center; align-self: center; gap: 8cqw; }
+  .hh-arrow { width: 5.5cqw; height: 5.5cqw; }
+  .hh-left .hh-big.is-up .hh-arrow { left: -6.5cqw; top: -5.5cqw; }
+  .hh-left .hh-big.is-down .hh-arrow { left: -6.5cqw; bottom: -5.5cqw; }
+  .hh-right .hh-big.is-up .hh-arrow { right: -6.5cqw; top: -5.5cqw; }
+  .hh-right .hh-big.is-down .hh-arrow { right: -6.5cqw; bottom: -5.5cqw; }
+  /* The menu: each pill with its name beside it, the three in one slim row. */
+  .hh-menu { grid-auto-flow: column; justify-content: center; align-self: center; gap: 6cqw; }
+  .hh-small { grid-auto-flow: column; align-items: center; gap: 1.6cqw; }
   .hh-pill.bare-button {
-    width: 16cqw;
-    height: 7.4cqw;
-    border-radius: 4cqw;
-    box-shadow: 0 0 0 1cqw var(--hh-rim), 0 0.9cqw 0 1cqw var(--hh-rim-dark);
+    width: 9cqw;
+    height: 4.2cqw;
+    border-radius: 2.4cqw;
+    box-shadow: 0 0 0 0.7cqw var(--hh-rim), 0 0.6cqw 0 0.7cqw var(--hh-rim-dark);
   }
   .hh-pill.bare-button:active,
   .hh-pill.is-pressed {
-    transform: translateY(0.6cqw);
-    box-shadow: 0 0 0 1cqw var(--hh-rim), 0 0.3cqw 0 1cqw var(--hh-rim-dark);
+    transform: translateY(0.4cqw);
+    box-shadow: 0 0 0 0.7cqw var(--hh-rim), 0 0.2cqw 0 0.7cqw var(--hh-rim-dark);
   }
-  .hh-small { gap: 1.6cqw; }
-  .hh-small span { font-size: 3.4cqw; }
-  .hh-bezel { gap: 2cqw; padding: 2.4cqw 3cqw 2.6cqw; border-radius: 4cqw; }
-  .hh-legend { gap: 2.6cqw; }
-  .hh-legend::before, .hh-legend::after { height: 0.7cqw; }
-  .hh-legend b { font-size: 6cqw; }
-  .hh-legend small { font-size: 3cqw; }
-  .hh-lcd-frame { padding: 1.4cqw; border-radius: 2.6cqw; box-shadow: 0 0 0 0.5cqw var(--hh-print); }
-  .hh-lcd { border-radius: 1.6cqw; }
-  .hh-foot { font-size: 3.6cqw; }
+  .hh-small span { font-size: 2.7cqw; }
+  .hh-bezel { gap: 1.4cqw; padding: 1.6cqw 1.8cqw 1.8cqw; border-radius: 3.4cqw; }
+  .hh-legend { gap: 2.2cqw; }
+  .hh-legend::before, .hh-legend::after { height: 0.6cqw; }
+  .hh-legend > div { gap: 0.8cqw; }
+  .hh-legend b { font-size: 5cqw; }
+  .hh-legend small { font-size: 2.6cqw; }
+  .hh-lcd-frame { padding: 1cqw; border-radius: 2.2cqw; box-shadow: 0 0 0 0.5cqw var(--hh-print); }
+  .hh-lcd { border-radius: 1.4cqw; }
+  .hh-foot { font-size: 3cqw; }
 }
 }
 
