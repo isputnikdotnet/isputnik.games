@@ -128,3 +128,23 @@ CREATE TABLE IF NOT EXISTS game_records (
 );
 
 CREATE INDEX IF NOT EXISTS game_records_member ON game_records (member_id, finished_at DESC);
+
+-- A finished run of a game for one player (arcade.ts). The score is what the
+-- server's own replay of seed + inputs came to, never a number the browser
+-- sent; the inputs are kept so the run can be replayed again. game_key is the
+-- browser's id for the run, so a resend changes nothing.
+CREATE TABLE IF NOT EXISTS arcade_scores (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  member_id   TEXT NOT NULL,
+  game        TEXT NOT NULL,
+  variant     TEXT NOT NULL,
+  score       INTEGER NOT NULL,
+  seed        INTEGER NOT NULL,
+  inputs      TEXT NOT NULL,                   -- JSON [[tick, input], …]
+  ticks       INTEGER NOT NULL,
+  game_key    TEXT NOT NULL,
+  finished_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  UNIQUE (member_id, game_key)
+);
+
+CREATE INDEX IF NOT EXISTS arcade_scores_board ON arcade_scores (game, variant, score DESC);

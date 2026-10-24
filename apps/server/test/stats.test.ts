@@ -140,7 +140,7 @@ describe("stats API", () => {
   it("answers a member, from the month start they send", async () => {
     const reply = await app.inject({ method: "GET", url: "/games/api/stats?since=2026-10-01T05:00:00.000Z", headers: as("mum", "Мама") });
     expect(reply.statusCode).toBe(200);
-    expect(reply.json()).toEqual({ since: "2026-10-01T05:00:00.000Z", month: [], all: [], streak: 0, computer: { month: [], all: [] }, puzzles: [], chessRatings: [] });
+    expect(reply.json()).toEqual({ since: "2026-10-01T05:00:00.000Z", month: [], all: [], streak: 0, computer: { month: [], all: [] }, puzzles: [], chessRatings: [], arcade: { month: [], all: [] } });
   });
 
   it("refuses a bad date, a guest, and nobody at all", async () => {

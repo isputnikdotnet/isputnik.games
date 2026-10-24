@@ -12,6 +12,7 @@ import type { Db } from "./db.js";
 import { isGuestId } from "./identity.js";
 import { chessRatingRows, type ChessRatingRow } from "./chess-rating.js";
 import { puzzleStats, type PuzzleRow } from "./puzzles.js";
+import { arcadeStats, type ArcadeRow } from "./arcade.js";
 
 export interface StatsRow {
   id: string;
@@ -35,6 +36,8 @@ export interface FamilyStats {
   puzzles: PuzzleRow[];
   /** Chess ratings (chess-rating.ts): all time only — a rating has no month. */
   chessRatings: ChessRatingRow[];
+  /** Games for one player (arcade.ts): each member's best and runs, per game and variant. */
+  arcade: { month: ArcadeRow[]; all: ArcadeRow[] };
 }
 
 export interface ComputerRow {
@@ -114,7 +117,8 @@ export function familyStats(db: Db, userId: string, since: string = monthStart()
     streak,
     computer: computerStats(db, names, since),
     puzzles: puzzleStats(db, names, since),
-    chessRatings: chessRatingRows(db, names)
+    chessRatings: chessRatingRows(db, names),
+    arcade: arcadeStats(db, names, since)
   };
 }
 

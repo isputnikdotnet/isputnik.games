@@ -7,6 +7,7 @@ import { PHONE, useMediaQuery } from "../../shared/useMediaQuery";
 import { Handheld, type HandheldControl } from "./Handheld";
 import type { HandheldMode } from "./lit";
 import { soundsOf } from "./sounds";
+import { useArcadeReport } from "./useArcadeReport";
 import { useArcadeRun } from "./useArcadeRun";
 
 const sound = (cues: ArcadeCue[], mode: HandheldMode) => play(...soundsOf(cues, mode));
@@ -22,6 +23,7 @@ const FLASH_MS = 110;
 export function SputnikPage() {
   const { t } = useTranslation();
   const run = useArcadeRun(sound);
+  const report = useArcadeReport("sputnik", run.finished);
   const phone = useMediaQuery(PHONE);
   const [flash, setFlash] = useState<HandheldControl | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -90,6 +92,13 @@ export function SputnikPage() {
   else if (run.mode === "over") status = t("sputnik.status.over", { count: run.state.caught });
   else status = t("sputnik.status.demo");
 
+  let saved: string | null = null;
+  if (run.mode === "over" && run.finished && report?.status === "saving") saved = t("sputnik.saved.saving");
+  if (run.mode === "over" && run.finished && report?.status === "saved") {
+    saved = t("sputnik.saved.saved", { best: report.answer.best, game: run.finished.variant === "A" ? t("sputnik.gameA") : t("sputnik.gameB") });
+  }
+  if (run.mode === "over" && run.finished && report?.status === "failed") saved = t("sputnik.saved.failed");
+
   return (
     <GameStage
       className="is-sputnik"
@@ -109,6 +118,7 @@ export function SputnikPage() {
       notices={
         <>
           <p className="sputnik-status" aria-live="polite">{status}</p>
+          {saved && <p className="sputnik-saved muted">{saved}</p>}
           {phone && best}
         </>
       }

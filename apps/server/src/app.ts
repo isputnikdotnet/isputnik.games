@@ -1,7 +1,8 @@
 import fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest, type FastifyServerOptions } from "fastify";
 import staticFiles from "@fastify/static";
 import { z } from "zod";
-import { AI_LEVELS, Chess, GAME_IDS, type AiLevel, type PuzzleLevel, type PuzzleType } from "@isputnik/games-engine";
+import { AI_LEVELS, ARCADE_IDS, Chess, GAME_IDS, type AiLevel, type PuzzleLevel, type PuzzleType } from "@isputnik/games-engine";
+import { ARCADE_BODY_LIMIT, saveArcadeScore } from "./arcade.js";
 import { BASE_PATH } from "./config.js";
 import { openDatabase } from "./db.js";
 import {
@@ -96,6 +97,16 @@ const computerResultSchema = z.object({
   level: z.enum(AI_LEVELS as [AiLevel, ...AiLevel[]]),
   result: z.enum(["won", "lost", "drawn"]),
   key: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/)
+});
+
+// A finished run of a game for one player. Only its shape is checked here:
+// arcade.ts replays it, and that is what decides whether it is a real run.
+const arcadeScoreSchema = z.object({
+  game: z.string().refine((game) => ARCADE_IDS.includes(game), "unknown game"),
+  variant: z.string().max(8),
+  seed: z.number().int(),
+  key: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),
+  log: z.array(z.unknown())
 });
 
 // A chess puzzle: the next one at a level ("auto" — near the member's
@@ -330,6 +341,16 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     // A chess game moves the chess rating: the answer carries where it stands now.
     const chessRating = input.game === "chess" ? chessRatingOf(db, request.identity!.id) : undefined;
     return reply.code(recorded ? 201 : 200).send({ recorded, chessRating });
+  });
+
+  // A finished run of a game for one player, for the leaderboard. The body may
+  // be long: a good run logs every move of the net.
+  app.post(`${API}/arcade/scores`, { preHandler: requireIdentity, bodyLimit: ARCADE_BODY_LIMIT }, async (request, reply) => {
+    if (request.identity!.role === "guest") return reply.code(403).send({ error: "Guests have no family results" });
+    const input = arcadeScoreSchema.parse(request.body ?? {});
+    const answer = saveArcadeScore(db, request.identity!.id, input);
+    if (answer.recorded) note(request, "info", "arcade.score", { detail: `${input.game} ${input.variant}: ${answer.score}` });
+    return reply.code(answer.recorded ? 201 : 200).send(answer);
   });
 
   // Chess puzzles, for members: a guest is here for one match.

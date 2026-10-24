@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChartColumn, Flame, Gamepad2, Trophy } from "lucide-react";
 import { GAMES, type AiLevel } from "@isputnik/games-engine";
-import type { ChessRatingRow, ComputerRow, FamilyStats, PuzzleRow, StatsRow } from "../api";
+import type { ArcadeRow, ChessRatingRow, ComputerRow, FamilyStats, PuzzleRow, StatsRow } from "../api";
 import { Avatar } from "../shared/Avatar";
 import { Button } from "../shared/Button";
 import { CATALOG } from "../games/catalog";
@@ -12,10 +12,13 @@ import { CATALOG } from "../games/catalog";
 // the member's own month. The leaderboard has four boards: Each other, the
 // online games between members; vs Computer, the games each member finished
 // against the computer, scored by the level beaten; Chess rating, each
-// member's chess rating; and Puzzles, the members' chess puzzle ratings. Each footnote says what its board counts.
+// member's chess rating; Puzzles, the members' chess puzzle ratings; and
+// Sputnik Catch, each member's best run at Game A or B. Each footnote says
+// what its board counts.
 
 type Period = "month" | "all";
-type Board = "each" | "computer" | "rating" | "puzzles";
+type Board = "each" | "computer" | "rating" | "puzzles" | "arcade";
+type Variant = "A" | "B";
 
 interface Standing {
   id: string;
@@ -76,20 +79,28 @@ export function ratingStandings(rows: ChessRatingRow[]): ChessRatingRow[] {
   return [...rows].sort((a, b) => b.rating - a.rating || Number(a.provisional) - Number(b.provisional) || b.games - a.games || a.name.localeCompare(b.name));
 }
 
+/** The Sputnik Catch board: the highest best first; between equals, fewer runs. */
+export function arcadeStandings(rows: ArcadeRow[], variant: Variant): ArcadeRow[] {
+  return rows.filter((row) => row.game === "sputnik" && row.variant === variant)
+    .sort((a, b) => b.best - a.best || a.played - b.played || a.name.localeCompare(b.name));
+}
+
 const gamesOffered = () => GAMES.filter((game) => CATALOG[game.id]);
 
 const TAB_LABEL = {
   each: "lobby.board.tabEach",
   computer: "lobby.board.tabComputer",
   rating: "lobby.board.tabRating",
-  puzzles: "lobby.board.tabPuzzles"
+  puzzles: "lobby.board.tabPuzzles",
+  arcade: "lobby.board.tabArcade"
 } as const;
 
 const NOTE = {
   each: "lobby.board.note",
   computer: "lobby.board.computerNote",
   rating: "lobby.board.ratingNote",
-  puzzles: "lobby.board.puzzlesNote"
+  puzzles: "lobby.board.puzzlesNote",
+  arcade: "lobby.board.arcadeNote"
 } as const;
 
 export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: string }) {
@@ -97,11 +108,14 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
   const [board, setBoard] = useState<Board>("each");
   const [period, setPeriod] = useState<Period>("month");
   const [game, setGame] = useState<string | null>(null);
+  const [variant, setVariant] = useState<Variant>("A");
   const each = stats && board === "each" ? standings(stats[period], game) : [];
   const computer = stats && board === "computer" ? computerStandings(stats.computer[period], game) : [];
   const puzzles = stats && board === "puzzles" ? puzzleStandings(stats.puzzles ?? [], period) : [];
   const ratings = stats && board === "rating" ? ratingStandings(stats.chessRatings ?? []) : [];
-  const empty = stats && (board === "each" ? each.length === 0 : board === "computer" ? computer.length === 0 : board === "rating" ? ratings.length === 0 : puzzles.length === 0);
+  const arcade = stats && board === "arcade" ? arcadeStandings(stats.arcade?.[period] ?? [], variant) : [];
+  const shown = { each: each.length, computer: computer.length, rating: ratings.length, puzzles: puzzles.length, arcade: arcade.length };
+  const empty = stats && shown[board] === 0;
   const player = (id: string, name: string) => (id === myId ? t("lobby.board.you", { name }) : name);
   // The top three wear medals; the rest a plain number.
   const rank = (index: number) => <span className={`board-rank-badge${index < 3 ? ` is-${index + 1}` : ""}`}>{index + 1}</span>;
@@ -116,7 +130,7 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
         <p className="lobby-panel-note muted">{t(NOTE[board])}</p>
       </div>
       <div className="board-tabs" role="tablist" aria-label={t("lobby.board.whose")}>
-        {(["each", "computer", "rating", "puzzles"] as const).map((which) => (
+        {(["each", "computer", "rating", "puzzles", "arcade"] as const).map((which) => (
           <Button
             key={which}
             variant="bare"
@@ -145,6 +159,12 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
         ))}
       </div>
       )}
+      {board === "arcade" && (
+      <div className="chip-row lobby-board-games" role="group" aria-label={t("lobby.board.variant")}>
+        <Button variant="chip" selected={variant === "A"} onClick={() => setVariant("A")}>{t("sputnik.gameA")}</Button>
+        <Button variant="chip" selected={variant === "B"} onClick={() => setVariant("B")}>{t("sputnik.gameB")}</Button>
+      </div>
+      )}
       {empty && (
         <p className="muted">
           {board === "each"
@@ -153,7 +173,9 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
               ? (period === "month" ? t("lobby.board.computerEmptyMonth") : t("lobby.board.computerEmpty"))
               : board === "rating"
                 ? t("lobby.board.ratingEmpty")
-                : (period === "month" ? t("lobby.board.puzzlesEmptyMonth") : t("lobby.board.puzzlesEmpty"))}
+                : board === "arcade"
+                  ? (period === "month" ? t("lobby.board.arcadeEmptyMonth") : t("lobby.board.arcadeEmpty"))
+                  : (period === "month" ? t("lobby.board.puzzlesEmptyMonth") : t("lobby.board.puzzlesEmpty"))}
         </p>
       )}
       {each.length > 0 && (
@@ -269,6 +291,33 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
                 </td>
                 <td className="is-number"><span className="board-num">{row.rating}</span></td>
                 <td className="is-number muted">{period === "month" ? row.solvedSince : row.solved}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {arcade.length > 0 && (
+        <table className="board-table">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">{t("lobby.board.player")}</th>
+              <th scope="col" className="is-number">{t("lobby.board.bestScore")}</th>
+              <th scope="col" className="is-number">{t("lobby.board.runs")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {arcade.map((row, index) => (
+              <tr key={row.id} className={row.id === myId ? "is-me" : undefined}>
+                <td className="board-rank">{rank(index)}</td>
+                <td>
+                  <span className="board-player">
+                    <Avatar id={row.id} name={row.name} size={30} />
+                    <span>{player(row.id, row.name)}</span>
+                  </span>
+                </td>
+                <td className="is-number"><span className="board-num">{row.best}</span></td>
+                <td className="is-number muted">{row.played}</td>
               </tr>
             ))}
           </tbody>

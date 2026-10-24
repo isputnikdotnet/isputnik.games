@@ -92,7 +92,14 @@
       "games": "Games",
       "provisional": "Provisional",
       "ratingEmpty": "No rated chess games yet.",
-      "ratingNote": "Chess against the computer counts as a game against a rated player (Easy 600, Normal 1100, Hard 1500), and online games between members count for both. Two at one screen doesn’t count. Provisional for the first 10 games."
+      "ratingNote": "Chess against the computer counts as a game against a rated player (Easy 600, Normal 1100, Hard 1500), and online games between members count for both. Two at one screen doesn’t count. Provisional for the first 10 games.",
+      "tabArcade": "Sputnik Catch",
+      "arcadeNote": "Each member's best run at Sputnik Catch, Game A or Game B.",
+      "arcadeEmpty": "Nobody has finished a run yet.",
+      "arcadeEmptyMonth": "Nobody has finished a run this month yet.",
+      "variant": "Which game",
+      "bestScore": "Best",
+      "runs": "Runs"
     },
     "month": {
       "title": "Your month",
@@ -781,6 +788,11 @@
         "games": "1 and 2 start Game A and Game B. Space pauses.",
         "touch": "On a touch screen, press the red buttons or tap a corner of the screen."
       }
+    },
+    "saved": {
+      "saving": "Saving to the family board…",
+      "saved": "On the family board. Your best at {{game}}: {{best}}.",
+      "failed": "This score could not be saved to the family board."
     }
   }
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { FamilyStats } from "../src/api";
-import { Leaderboard, YourMonth, computerStandings, puzzleStandings, ratingStandings, standings } from "../src/pages/LobbyStats";
+import { Leaderboard, YourMonth, arcadeStandings, computerStandings, puzzleStandings, ratingStandings, standings } from "../src/pages/LobbyStats";
 
 const stats: FamilyStats = {
   since: "2026-10-01T05:00:00.000Z",
@@ -38,7 +38,18 @@ const stats: FamilyStats = {
     { id: "kid", name: "Kid", rating: 1080, games: 4, provisional: true, change: 12 },
     { id: "dad", name: "Dad", rating: 1080, games: 25, provisional: false, change: -6 },
     { id: "mum", name: "Мама", rating: 1150, games: 14, provisional: false, change: 9 }
-  ]
+  ],
+  arcade: {
+    month: [
+      { id: "kid", name: "Kid", game: "sputnik", variant: "A", best: 212, played: 9 },
+      { id: "dad", name: "Dad", game: "sputnik", variant: "A", best: 212, played: 3 },
+      { id: "mum", name: "Мама", game: "sputnik", variant: "B", best: 40, played: 1 }
+    ],
+    all: [
+      { id: "kid", name: "Kid", game: "sputnik", variant: "A", best: 212, played: 12 },
+      { id: "mum", name: "Мама", game: "sputnik", variant: "A", best: 305, played: 20 }
+    ]
+  }
 };
 
 // The player cell is the avatar's initial, then the name: read the name.
@@ -159,6 +170,35 @@ describe("the Puzzles board", () => {
     await user.click(within(panel).getByRole("button", { name: "All time" }));
     expect(names(within(panel).getByRole("table"))).toEqual(["Dad", "Мама (you)", "Kid"]);
     expect(panel).toHaveTextContent("Chess puzzle ratings.");
+  });
+});
+
+describe("the Sputnik Catch board", () => {
+  it("ranks one variant by best run, fewer runs breaking a tie", () => {
+    expect(arcadeStandings(stats.arcade!.month, "A").map((row) => row.id)).toEqual(["dad", "kid"]);
+    expect(arcadeStandings(stats.arcade!.month, "B").map((row) => row.id)).toEqual(["mum"]);
+  });
+
+  it("is the last tab, with Game A or B, the month or all time", async () => {
+    const user = userEvent.setup();
+    render(<Leaderboard stats={stats} myId="mum" />);
+    const panel = screen.getByRole("region", { name: /Family leaderboard/ });
+    await user.click(within(panel).getByRole("tab", { name: "Sputnik Catch" }));
+    const table = within(panel).getByRole("table");
+    expect(within(table).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["#", "Player", "Best", "Runs"]);
+    expect(names(table)).toEqual(["Dad", "Kid"]);
+    await user.click(within(within(panel).getByRole("group", { name: "Which game" })).getByRole("button", { name: "Game B" }));
+    expect(names(within(panel).getByRole("table"))).toEqual(["Мама (you)"]);
+    await user.click(within(panel).getByRole("button", { name: "All time" }));
+    expect(within(panel).queryByRole("table")).not.toBeInTheDocument();
+    expect(panel).toHaveTextContent("Nobody has finished a run yet.");
+  });
+
+  it("is empty, not broken, when an older server sends no arcade results", async () => {
+    const user = userEvent.setup();
+    render(<Leaderboard stats={{ ...stats, arcade: undefined }} myId="mum" />);
+    await user.click(screen.getByRole("tab", { name: "Sputnik Catch" }));
+    expect(screen.getByText("Nobody has finished a run this month yet.")).toBeInTheDocument();
   });
 });
 

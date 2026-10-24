@@ -577,7 +577,7 @@ styles like Chess's can come later.
   5. Home: name and score.
   6. Release: games minor and home patch.
 
-### Sputnik Catch («Лови спутник!») — planned 2026-10-23
+### Sputnik Catch («Лови спутник!») — planned 2026-10-23, built 2026-10-24 (steps 1–5)
 
 The first game here for one player: a Soviet LCD handheld in the spirit of the
 «Электроника ИМ-02» egg-catcher, redrawn in the iSputnik theme. Game id

@@ -1,10 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { Sputnik, type SputnikState } from "@isputnik/games-engine";
+import { Sputnik, replayRun, sputnik, type SputnikRail, type SputnikState } from "@isputnik/games-engine";
 import { SputnikPage } from "../src/games/sputnik/SputnikPage";
 import { autopilot, litSegments, type LcdView } from "../src/games/sputnik/lit";
 import { HANDHELD_DELAYS } from "../src/games/sputnik/useArcadeRun";
 import { soundsOf } from "../src/games/sputnik/sounds";
+import { SessionContext } from "../src/session";
+
+vi.mock("../src/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../src/api")>()),
+  reportArcadeScore: vi.fn()
+}));
+import * as api from "../src/api";
+
+const member = { status: "ready" as const, user: { id: "kid", name: "Kid", role: "member" as const, lang: "en", theme: "minimalist" }, guests: true, version: "test", stage: null };
 
 const run = (over: Partial<SputnikState> = {}): SputnikState => ({ ...Sputnik.createRun("A", 1), ...over });
 const view = (over: Partial<LcdView> = {}): LcdView => ({ mode: "play", state: run(), net: 0, blink: false, ...over });
@@ -133,5 +142,25 @@ describe("SputnikPage", () => {
     // A key at the end moves nothing: the run is over.
     fireEvent.keyDown(window, { code: "KeyP", key: "p" });
     expect(isOn("net2")).toBe(false);
+    // Nobody signed in as a member here: nothing went to the server.
+    expect(api.reportArcadeScore).not.toHaveBeenCalled();
+  });
+
+  it("sends a member's finished run to be replayed, and says where it stands", async () => {
+    vi.mocked(api.reportArcadeScore).mockResolvedValue({ recorded: true, score: 3, best: 57 });
+    render(<SessionContext.Provider value={member}><SputnikPage /></SessionContext.Provider>);
+    act(() => vi.advanceTimersByTime(HANDHELD_DELAYS.test));
+    fireEvent.click(screen.getByRole("button", { name: "Start Game B" }));
+    fireEvent.keyDown(window, { code: "KeyA", key: "a" });
+    for (let i = 0; i < 400 && !screen.queryByText(/^Game over/); i++) act(() => vi.advanceTimersByTime(700));
+    await act(async () => undefined);
+    expect(api.reportArcadeScore).toHaveBeenCalledTimes(1);
+    const sent = vi.mocked(api.reportArcadeScore).mock.calls[0][0];
+    expect(sent).toMatchObject({ game: "sputnik", variant: "B", log: [[0, 1]] });
+    expect(Number.isInteger(sent.seed)).toBe(true);
+    // The seed and log are the whole run: replayed here, they end where the page did.
+    const caught = replayRun(sputnik, "B", sent.seed, sent.log as [number, SputnikRail][], 1_000_000).caught;
+    expect(screen.getByText(new RegExp(`^Game over with ${caught} sputniks?\\.`))).toBeInTheDocument();
+    expect(screen.getByText("On the family board. Your best at Game B: 57.")).toBeInTheDocument();
   });
 });

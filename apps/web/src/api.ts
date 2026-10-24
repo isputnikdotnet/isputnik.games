@@ -138,6 +138,18 @@ export interface FamilyStats {
   puzzles: PuzzleRow[];
   /** Chess ratings, all time (the leaderboard's Chess rating tab). */
   chessRatings: ChessRatingRow[];
+  /** Games for one player: each member's best and runs per variant. Absent from an older server. */
+  arcade?: { month: ArcadeRow[]; all: ArcadeRow[] };
+}
+
+/** One member's runs at one game for one player, in one variant (Game A or B). */
+export interface ArcadeRow {
+  id: string;
+  name: string;
+  game: string;
+  variant: string;
+  best: number;
+  played: number;
 }
 
 /** A chess rating: games against the computer (its levels rated) and online games with members. */
@@ -193,6 +205,27 @@ export interface ComputerResult {
 /** A game against the computer has ended on this device. */
 export function reportComputerResult(result: ComputerResult): Promise<{ recorded: boolean; chessRating?: ChessRating }> {
   return post<{ recorded: boolean; chessRating?: ChessRating }>("/computer-results", result);
+}
+
+/** A finished run of a game for one player: the server replays it and keeps the score it comes to. */
+export interface ArcadeRun {
+  game: string;
+  variant: string;
+  seed: number;
+  /** The run's own id: the server keeps one score per key. */
+  key: string;
+  log: [number, number][];
+}
+
+export interface ArcadeScoreAnswer {
+  recorded: boolean;
+  score: number;
+  /** The member's best at this game and variant, across devices. */
+  best: number;
+}
+
+export function reportArcadeScore(run: ArcadeRun): Promise<ArcadeScoreAnswer> {
+  return post<ArcadeScoreAnswer>("/arcade/scores", run);
 }
 
 // ── Game review ─────────────────────────────────────────────────────────────
