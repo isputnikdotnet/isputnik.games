@@ -14,3 +14,8 @@ export type { ChessPuzzle, PuzzleLevel, PuzzleType, PuzzleAnswer } from "./chess
 export * as Dominoes from "./dominoes/index.js";
 export { dominoes } from "./dominoes/index.js";
 export type { DominoesMove, DominoesOptions, DominoesState, Tile, LaidTile, HandResult, End, Target as DominoesTarget } from "./dominoes/rules.js";
+export * from "./arcade/game.js";
+export * from "./arcade/registry.js";
+export * as Sputnik from "./arcade/sputnik/index.js";
+export { sputnik } from "./arcade/sputnik/index.js";
+export type { SputnikState, SputnikVariant, Rail as SputnikRail, Side as SputnikSide } from "./arcade/sputnik/rules.js";
