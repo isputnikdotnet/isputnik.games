@@ -707,6 +707,12 @@
   gap: var(--space-6);
 }
 
+/* The lobby takes more of a wide screen than a form page: two game cards
+   abreast with the family's results beside them. */
+.app-main:has(> .lobby) {
+  max-width: 1440px;
+}
+
 .lobby-head {
   display: flex;
   flex-wrap: wrap;
@@ -788,13 +794,47 @@
 
 /* ── Waiting for you ─────────────────────────────────────────────────── */
 
+/* Your turn: a card of its own, tinted with the accent, an icon beside it. */
 .lobby-waiting {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  align-items: flex-start;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
 }
 
-.lobby-waiting > .muted {
+.lobby-waiting.is-due {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+}
+
+.lobby-waiting-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+
+.lobby-waiting.is-due .lobby-waiting-icon {
+  background: var(--accent);
+  color: var(--canvas);
+}
+
+.lobby-waiting-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.lobby-waiting-body > .muted {
   margin: 0;
 }
 
@@ -885,8 +925,9 @@
 
 .lobby-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: var(--space-4);
+  /* Two abreast: four games make a square, and each picture gets room. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
 }
 
 .game-card {
@@ -894,12 +935,17 @@
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 16px;
   background: var(--surface);
+  box-shadow: 0 1px 3px var(--shadow);
 }
 
+/* The picture sits inset in the card, its own rounded frame. */
 .game-card-art {
   position: relative;
+  margin: var(--space-3) var(--space-3) 0;
+  overflow: hidden;
+  border-radius: 12px;
   line-height: 0;
 }
 
@@ -937,17 +983,18 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4) var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5);
 }
 
 .game-card-body h3 {
   margin: 0;
-  font-size: var(--text-lg);
+  font-size: var(--text-xl);
 }
 
 .game-card-body > p {
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
 }
 
 .game-card-modes {
@@ -962,24 +1009,26 @@
 .lobby-tag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 1px 6px;
-  border-radius: 6px;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
   background: var(--surface-2);
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: var(--weight-medium);
 }
 
+/* Play and Invite share the row half and half. */
 .game-card-actions {
-  display: flex;
-  gap: var(--space-2);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--space-3);
   margin-top: auto;
-  padding-top: var(--space-1);
+  padding-top: var(--space-2);
 }
 
-.game-card-play {
-  flex: 1 1 auto;
+.game-card-actions > * {
+  min-height: 42px;
 }
 
 /* The pictures: Dots on the theme's own paper, Chess on its wooden board. */
@@ -1076,8 +1125,9 @@
 
 .lobby-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: var(--space-5);
+  /* Wide enough at full width for the board's four tabs on one row. */
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 31%, 440px);
+  gap: var(--space-6);
   align-items: start;
 }
 
@@ -1116,19 +1166,22 @@
 .lobby-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
+  gap: var(--space-4);
+  padding: var(--space-5);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 16px;
   background: var(--surface);
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
+.lobby-panel .lobby-section-title {
+  font-size: var(--text-xl);
 }
 
 .lobby-panel-head {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .lobby-panel > .muted {
@@ -1136,8 +1189,9 @@
 }
 
 .lobby-panel-note {
-  margin: auto 0 0;
-  font-size: var(--text-xs);
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
 }
 
 .lobby-board-trophy {
@@ -1152,17 +1206,19 @@
 
 /* Each other │ vs Computer: one segmented row over the board's switches. */
 .board-tabs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 2px;
   padding: 3px;
   border-radius: 10px;
   background: var(--surface-2);
 }
 
-/* Four boards: one row where the panel is wide, two where it is not. */
+/* Four boards on one row, each as wide as its name needs; a row more only
+   where the panel is too narrow for them. */
 .board-tab {
-  min-height: 32px;
+  flex: 1 1 auto;
+  min-height: 34px;
   padding: 0 var(--space-2);
   white-space: nowrap;
   border-radius: 8px;
@@ -1221,10 +1277,45 @@
   background: var(--surface-2);
 }
 
+.board-table tr.is-me td:first-child {
+  border-radius: 10px 0 0 10px;
+}
+
+.board-table tr.is-me td:last-child {
+  border-radius: 0 10px 10px 0;
+}
+
 .board-rank {
-  width: 1.5em;
+  width: 2.2em;
   color: var(--muted);
   font-weight: var(--weight-bold);
+}
+
+.board-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: var(--text-xs);
+}
+
+/* Gold, silver, bronze — the medal colours, the same in every theme. */
+.board-rank-badge.is-1 { background: #f2c14e; color: #4a3500; }
+.board-rank-badge.is-2 { background: #cfd5da; color: #2f3a42; }
+.board-rank-badge.is-3 { background: #d99a6c; color: #4a2410; }
+
+/* A board's headline number, in a soft pill of the accent. */
+.board-num {
+  display: inline-block;
+  min-width: 2.6em;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  color: var(--accent);
+  font-weight: var(--weight-bold);
+  text-align: center;
 }
 
 .board-player {
@@ -1240,39 +1331,99 @@
   gap: var(--space-3);
 }
 
+.lobby-month-head {
+  align-items: flex-start;
+}
+
+.lobby-month-icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
 .lobby-month-when {
   font-size: var(--text-sm);
+}
+
+.month-me {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.month-me-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.month-me-text .muted {
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
 }
 
 .month-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-2);
+  gap: var(--space-3);
   margin: 0;
 }
 
 .month-stats > div {
   display: flex;
   flex-direction: column;
+  gap: var(--space-1);
   padding: var(--space-3);
-  border-radius: 10px;
-  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-raised);
 }
 
 .month-stats dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   color: var(--muted);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
 }
+
+.month-stats dt .is-played { color: var(--accent); }
+.month-stats dt .is-won { color: var(--gold); }
+.month-stats dt .is-streak { color: var(--amber); }
 
 .month-stats dd {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   margin: 0;
-  font-size: var(--text-2xl);
-  font-weight: var(--weight-bold);
-  line-height: 1.15;
+  font-size: 2rem;
+  font-weight: var(--weight-heavy);
+  line-height: 1.1;
 }
 
-.month-stats .muted {
+.month-stat-rate,
+.month-stat-note {
   font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+}
+
+.month-stat-bar {
+  height: 6px;
+  margin-top: auto;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--surface-2);
+}
+
+.month-stat-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--gold);
 }
 
 .month-games {
@@ -1334,7 +1485,136 @@
    beside the name, the long summary left to the game's own page. */
 @media (max-width: 740px) {
   .lobby {
-    gap: var(--space-5);
+    gap: var(--space-4);
+  }
+
+  /* Less to read on a phone: the greeting, the leads and the boards' footnotes
+     go; the names, numbers and buttons stay. */
+  .lobby-lead,
+  .lobby-games-head p,
+  .lobby-panel-note,
+  .game-card-modes,
+  .month-me,
+  .month-stat-note {
+    display: none;
+  }
+
+  .lobby-head {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .lobby-head h1 {
+    font-size: var(--text-2xl);
+  }
+
+  .lobby-head > .primary-button {
+    min-height: 36px;
+    padding: 0 var(--space-3);
+    font-size: var(--text-sm);
+  }
+
+  .lobby-section-title,
+  .lobby-panel .lobby-section-title {
+    font-size: var(--text-base);
+  }
+
+  .lobby-waiting {
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: 12px;
+  }
+
+  .lobby-waiting-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .lobby-waiting-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .lobby-waiting-body {
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+  }
+
+  .lobby-body {
+    gap: var(--space-4);
+  }
+
+  .lobby-panel {
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: 12px;
+    box-shadow: none;
+  }
+
+  .board-tab,
+  .lobby-board .chip-button {
+    min-height: 28px;
+    font-size: var(--text-xs);
+  }
+
+  /* The four boards share one row equally. */
+  .board-tabs {
+    flex-wrap: nowrap;
+  }
+
+  .board-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Period and game filters: one row each, swiped sideways when long. */
+  .lobby-board .chip-row {
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .lobby-board .chip-button {
+    flex: none;
+    padding: 0 10px;
+  }
+
+  .board-table {
+    font-size: var(--text-xs);
+  }
+
+  .board-table td {
+    padding: 6px 4px;
+  }
+
+  .board-rank-badge {
+    width: 22px;
+    height: 22px;
+  }
+
+  .month-me {
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .month-stats {
+    gap: var(--space-2);
+  }
+
+  .month-stats > div {
+    padding: var(--space-2);
+  }
+
+  .month-stats dt {
+    font-size: var(--text-xs);
+  }
+
+  .month-stats dd {
+    font-size: 1.35rem;
   }
 
   .waiting-list {
@@ -1358,9 +1638,23 @@
     flex-direction: row;
     align-items: center;
     gap: var(--space-3);
-    padding: var(--space-3);
+    padding: var(--space-2) var(--space-3);
     border: 0;
     border-radius: 0;
+    box-shadow: none;
+  }
+
+  .game-card-body h3 {
+    font-size: var(--text-base);
+  }
+
+  .lobby-tag {
+    padding: 1px 6px;
+    font-size: 10px;
+  }
+
+  .game-card-actions > * {
+    min-height: 34px;
   }
 
   .lobby-grid .game-card + .game-card {
@@ -1369,7 +1663,8 @@
 
   .game-card-art {
     flex: none;
-    width: 88px;
+    width: 72px;
+    margin: 0;
     overflow: hidden;
     border-radius: 8px;
   }

@@ -26,7 +26,7 @@
     "waitingCount_one": "One game is waiting on you.",
     "waitingCount_other": "{{count}} games are waiting on you.",
     "waiting": {
-      "title": "Waiting for you",
+      "title": "Your turn",
       "none": "Nothing is waiting on you right now.",
       "theirs": "Their move:",
       "vs": "{{game}} vs {{name}}",

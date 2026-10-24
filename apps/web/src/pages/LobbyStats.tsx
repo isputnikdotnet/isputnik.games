@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Trophy } from "lucide-react";
+import { ChartColumn, Flame, Gamepad2, Trophy } from "lucide-react";
 import { GAMES, type AiLevel } from "@isputnik/games-engine";
 import type { ChessRatingRow, ComputerRow, FamilyStats, PuzzleRow, StatsRow } from "../api";
 import { Avatar } from "../shared/Avatar";
@@ -103,13 +103,17 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
   const ratings = stats && board === "rating" ? ratingStandings(stats.chessRatings ?? []) : [];
   const empty = stats && (board === "each" ? each.length === 0 : board === "computer" ? computer.length === 0 : board === "rating" ? ratings.length === 0 : puzzles.length === 0);
   const player = (id: string, name: string) => (id === myId ? t("lobby.board.you", { name }) : name);
+  // The top three wear medals; the rest a plain number.
+  const rank = (index: number) => <span className={`board-rank-badge${index < 3 ? ` is-${index + 1}` : ""}`}>{index + 1}</span>;
 
   return (
     <section className="lobby-panel lobby-board" aria-labelledby="lobby-board-title">
       <div className="lobby-panel-head">
         <h2 id="lobby-board-title" className="lobby-section-title">
-          <Trophy size={18} aria-hidden="true" className="lobby-board-trophy" /> {t("lobby.board.title")}
+          <Trophy size={20} aria-hidden="true" className="lobby-board-trophy" /> {t("lobby.board.title")}
         </h2>
+        {/* What the board counts, under its title: it changes with the tab. */}
+        <p className="lobby-panel-note muted">{t(NOTE[board])}</p>
       </div>
       <div className="board-tabs" role="tablist" aria-label={t("lobby.board.whose")}>
         {(["each", "computer", "rating", "puzzles"] as const).map((which) => (
@@ -165,14 +169,14 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
           <tbody>
             {each.map((row, index) => (
               <tr key={row.id} className={row.id === myId ? "is-me" : undefined}>
-                <td className="board-rank">{index + 1}</td>
+                <td className="board-rank">{rank(index)}</td>
                 <td>
                   <span className="board-player">
                     <Avatar id={row.id} name={row.name} size={30} />
                     <span>{player(row.id, row.name)}</span>
                   </span>
                 </td>
-                <td className="is-number"><strong>{row.won}</strong></td>
+                <td className="is-number"><span className="board-num">{row.won}</span></td>
                 <td className="is-number muted">{row.played}</td>
               </tr>
             ))}
@@ -192,7 +196,7 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
           <tbody>
             {computer.map((row, index) => (
               <tr key={row.id} className={row.id === myId ? "is-me" : undefined}>
-                <td className="board-rank">{index + 1}</td>
+                <td className="board-rank">{rank(index)}</td>
                 <td>
                   <span className="board-player">
                     <Avatar id={row.id} name={row.name} size={30} />
@@ -206,7 +210,7 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
                     </span>
                   </span>
                 </td>
-                <td className="is-number"><strong>{row.score}</strong></td>
+                <td className="is-number"><span className="board-num">{row.score}</span></td>
                 <td className="is-number muted">{t("lobby.board.wonOf", { won: row.won, played: row.played })}</td>
               </tr>
             ))}
@@ -226,7 +230,7 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
           <tbody>
             {ratings.map((row, index) => (
               <tr key={row.id} className={row.id === myId ? "is-me" : undefined}>
-                <td className="board-rank">{index + 1}</td>
+                <td className="board-rank">{rank(index)}</td>
                 <td>
                   <span className="board-player">
                     <Avatar id={row.id} name={row.name} size={30} />
@@ -236,7 +240,7 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
                     </span>
                   </span>
                 </td>
-                <td className="is-number"><strong>{row.rating}</strong></td>
+                <td className="is-number"><span className="board-num">{row.rating}</span></td>
                 <td className="is-number muted">{row.games}</td>
               </tr>
             ))}
@@ -256,21 +260,20 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
           <tbody>
             {puzzles.map((row, index) => (
               <tr key={row.id} className={row.id === myId ? "is-me" : undefined}>
-                <td className="board-rank">{index + 1}</td>
+                <td className="board-rank">{rank(index)}</td>
                 <td>
                   <span className="board-player">
                     <Avatar id={row.id} name={row.name} size={30} />
                     <span>{player(row.id, row.name)}</span>
                   </span>
                 </td>
-                <td className="is-number"><strong>{row.rating}</strong></td>
+                <td className="is-number"><span className="board-num">{row.rating}</span></td>
                 <td className="is-number muted">{period === "month" ? row.solvedSince : row.solved}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
-      <p className="lobby-panel-note muted">{t(NOTE[board])}</p>
     </section>
   );
 }
@@ -289,31 +292,42 @@ export function YourMonth({ stats, myId, myName }: { stats: FamilyStats | null; 
   return (
     <section className="lobby-panel lobby-month" aria-labelledby="lobby-month-title">
       <div className="lobby-month-head">
-        <Avatar id={myId} name={myName || "?"} size={44} />
+        <ChartColumn size={22} aria-hidden="true" className="lobby-month-icon" />
         <div>
           <h2 id="lobby-month-title" className="lobby-section-title">{t("lobby.month.title")}</h2>
           <span className="muted lobby-month-when">{t("lobby.month.when", { month })}</span>
+        </div>
+      </div>
+      {/* Whose month it is, and — before the first game — what it is waiting for. */}
+      <div className="month-me">
+        <Avatar id={myId} name={myName || "?"} size={48} />
+        <div className="month-me-text">
+          <strong>{myName}</strong>
+          {stats && played === 0 && <span className="muted">{t("lobby.month.empty")}</span>}
         </div>
       </div>
       {stats && (
         <>
           <dl className="month-stats">
             <div>
-              <dt>{t("lobby.month.played")}</dt>
+              <dt><Gamepad2 size={16} aria-hidden="true" className="is-played" /> {t("lobby.month.played")}</dt>
               <dd>{played}</dd>
             </div>
             <div>
-              <dt>{t("lobby.month.won")}</dt>
+              <dt><Trophy size={16} aria-hidden="true" className="is-won" /> {t("lobby.month.won")}</dt>
               <dd>{won}</dd>
-              {played > 0 && <span className="muted">{Math.round((won / played) * 100)}%</span>}
+              {played > 0 && <span className="muted month-stat-rate">{Math.round((won / played) * 100)}%</span>}
+              {/* The win rate as a bar: empty until there is a game to measure. */}
+              <span className="month-stat-bar" aria-hidden="true">
+                <span style={{ width: `${played > 0 ? Math.round((won / played) * 100) : 0}%` }} />
+              </span>
             </div>
             <div>
-              <dt>{t("lobby.month.streak")}</dt>
+              <dt><Flame size={16} aria-hidden="true" className="is-streak" /> {t("lobby.month.streak")}</dt>
               <dd>{stats.streak}</dd>
-              <span className="muted">{t("lobby.month.streakWins", { count: stats.streak })}</span>
+              <span className="muted month-stat-note">{t("lobby.month.streakWins", { count: stats.streak })}</span>
             </div>
           </dl>
-          {played === 0 && <p className="muted">{t("lobby.month.empty")}</p>}
           {byGame.length > 0 && (
             <div className="month-games">
               <span className="month-games-title muted">{t("lobby.month.byGame")}</span>

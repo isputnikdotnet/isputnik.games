@@ -69,7 +69,7 @@ describe("lobby, online section", () => {
     const user = userEvent.setup();
     withSession(<LobbyPage />);
 
-    const waiting = await screen.findByRole("region", { name: /^Waiting for you/ });
+    const waiting = await screen.findByRole("region", { name: /^Your turn/ });
     await within(waiting).findByText("Dad invites you");
     expect(screen.getByText(/2 games are waiting on you\./)).toBeInTheDocument();
     const cards = within(waiting).getAllByRole("listitem");

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Cpu, Globe, UserPlus, Users, type LucideIcon } from "lucide-react";
+import { BellRing, Cpu, Globe, Hourglass, UserPlus, Users, type LucideIcon } from "lucide-react";
 import { GAMES } from "@isputnik/games-engine";
 import { answerMatch, fetchMatches, fetchStats, type FamilyStats, type MatchSummary } from "../api";
 import { follow, href, matchHref, navigate } from "../router";
@@ -122,7 +122,7 @@ export function LobbyPage() {
       <header className="lobby-head">
         <div className="page-head">
           <h1>{t("lobby.title")}</h1>
-          <p className="muted">
+          <p className="muted lobby-lead">
             {myName && `${t(greeting, { name: myName })} `}
             {waiting > 0 ? t("lobby.waitingCount", { count: waiting }) : t("lobby.lead")}
           </p>
@@ -134,67 +134,74 @@ export function LobbyPage() {
 
       <div className="lobby-body">
         <div className="lobby-main">
-          <section className="lobby-waiting" id={MATCHES_ANCHOR} aria-labelledby="lobby-waiting-title">
-            <h2 id="lobby-waiting-title" className="lobby-section-title">
-              {t("lobby.waiting.title")}
-              {waiting > 0 && <span className="lobby-count">{waiting}</span>}
-            </h2>
-            {failed && <MessageBox tone="error" title={t("lobby.online.loadFailed")} />}
-            {matches && waiting === 0 && !failed && (
-              <p className="muted">{list.length === 0 ? t("lobby.online.empty") : t("lobby.waiting.none")}</p>
-            )}
-            {waiting > 0 && (
-              <ul className="waiting-list">
-                {received.map((match) => (
-                  <li key={match.id} className="waiting-card">
-                    <Avatar id={opponentOf(match).id} name={opponentOf(match).name} />
-                    {link(matchHref(match.game, match.id), "waiting-card-main", (
-                      <>
-                        <span className="waiting-card-kind">
-                          <span className="lobby-pill is-invite">{t("lobby.pill.invitation")}</span> {gameName(match.game)}
-                        </span>
-                        <strong>{t("lobby.online.from", { name: opponentOf(match).name })}</strong>
-                        <span className="muted">{when(match.createdAt)}</span>
-                      </>
-                    ))}
-                    <span className="waiting-card-actions">
-                      <Button variant="primary" onClick={() => void answer(match, "accept")}>{t("lobby.online.accept")}</Button>
-                      <Button variant="secondary" onClick={() => void answer(match, "decline")}>{t("lobby.online.decline")}</Button>
+          {/* One card, lit while something waits: the hourglass when nothing
+              does, the bell when an invitation or a move is the member's. */}
+          <section className={`lobby-waiting${waiting > 0 ? " is-due" : ""}`} id={MATCHES_ANCHOR} aria-labelledby="lobby-waiting-title">
+            <span className="lobby-waiting-icon" aria-hidden="true">
+              {waiting > 0 ? <BellRing size={22} /> : <Hourglass size={22} />}
+            </span>
+            <div className="lobby-waiting-body">
+              <h2 id="lobby-waiting-title" className="lobby-section-title">
+                {t("lobby.waiting.title")}
+                {waiting > 0 && <span className="lobby-count">{waiting}</span>}
+              </h2>
+              {failed && <MessageBox tone="error" title={t("lobby.online.loadFailed")} />}
+              {matches && waiting === 0 && !failed && (
+                <p className="muted">{list.length === 0 ? t("lobby.online.empty") : t("lobby.waiting.none")}</p>
+              )}
+              {waiting > 0 && (
+                <ul className="waiting-list">
+                  {received.map((match) => (
+                    <li key={match.id} className="waiting-card">
+                      <Avatar id={opponentOf(match).id} name={opponentOf(match).name} />
+                      {link(matchHref(match.game, match.id), "waiting-card-main", (
+                        <>
+                          <span className="waiting-card-kind">
+                            <span className="lobby-pill is-invite">{t("lobby.pill.invitation")}</span> {gameName(match.game)}
+                          </span>
+                          <strong>{t("lobby.online.from", { name: opponentOf(match).name })}</strong>
+                          <span className="muted">{when(match.createdAt)}</span>
+                        </>
+                      ))}
+                      <span className="waiting-card-actions">
+                        <Button variant="primary" onClick={() => void answer(match, "accept")}>{t("lobby.online.accept")}</Button>
+                        <Button variant="secondary" onClick={() => void answer(match, "decline")}>{t("lobby.online.decline")}</Button>
+                      </span>
+                    </li>
+                  ))}
+                  {mine.map((match) => (
+                    <li key={match.id} className="waiting-card">
+                      <Avatar id={opponentOf(match).id} name={opponentOf(match).name} />
+                      {link(matchHref(match.game, match.id), "waiting-card-main", (
+                        <>
+                          <span className="waiting-card-kind">
+                            <span className="lobby-pill is-move">{t("lobby.pill.yourMove", { count: 1 })}</span> {gameName(match.game)}
+                          </span>
+                          <strong>{t("lobby.online.vs", { name: opponentOf(match).name })}</strong>
+                          <span className="muted">{[scoreOf(match), when(match.updatedAt)].filter(Boolean).join(" · ")}</span>
+                        </>
+                      ))}
+                      <span className="waiting-card-actions">
+                        {link(matchHref(match.game, match.id), "primary-button", t("lobby.play"))}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {theirs.length + sent.length > 0 && (
+                <p className="lobby-theirs muted">
+                  {t("lobby.waiting.theirs")}{" "}
+                  {[...theirs, ...sent].map((match, index) => (
+                    <span key={match.id}>
+                      {index > 0 && " · "}
+                      {link(matchHref(match.game, match.id), "lobby-theirs-link", match.status === "invited"
+                        ? t("lobby.waiting.sent", { game: gameName(match.game), name: opponentOf(match).name })
+                        : t("lobby.waiting.vs", { game: gameName(match.game), name: opponentOf(match).name }))}
                     </span>
-                  </li>
-                ))}
-                {mine.map((match) => (
-                  <li key={match.id} className="waiting-card">
-                    <Avatar id={opponentOf(match).id} name={opponentOf(match).name} />
-                    {link(matchHref(match.game, match.id), "waiting-card-main", (
-                      <>
-                        <span className="waiting-card-kind">
-                          <span className="lobby-pill is-move">{t("lobby.pill.yourMove", { count: 1 })}</span> {gameName(match.game)}
-                        </span>
-                        <strong>{t("lobby.online.vs", { name: opponentOf(match).name })}</strong>
-                        <span className="muted">{[scoreOf(match), when(match.updatedAt)].filter(Boolean).join(" · ")}</span>
-                      </>
-                    ))}
-                    <span className="waiting-card-actions">
-                      {link(matchHref(match.game, match.id), "primary-button", t("lobby.play"))}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {theirs.length + sent.length > 0 && (
-              <p className="lobby-theirs muted">
-                {t("lobby.waiting.theirs")}{" "}
-                {[...theirs, ...sent].map((match, index) => (
-                  <span key={match.id}>
-                    {index > 0 && " · "}
-                    {link(matchHref(match.game, match.id), "lobby-theirs-link", match.status === "invited"
-                      ? t("lobby.waiting.sent", { game: gameName(match.game), name: opponentOf(match).name })
-                      : t("lobby.waiting.vs", { game: gameName(match.game), name: opponentOf(match).name }))}
-                  </span>
-                ))}
-              </p>
-            )}
+                  ))}
+                </p>
+              )}
+            </div>
           </section>
 
           <section className="lobby-games" aria-labelledby="lobby-games-title">

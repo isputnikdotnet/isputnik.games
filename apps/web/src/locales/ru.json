@@ -28,7 +28,7 @@
     "waitingCount_many": "Вас ждут {{count}} игр.",
     "waitingCount_other": "Вас ждут {{count}} игры.",
     "waiting": {
-      "title": "Ждут вас",
+      "title": "Ваш ход",
       "none": "Сейчас вас ничего не ждёт.",
       "theirs": "Ход соперника:",
       "vs": "{{game}} — {{name}}",
