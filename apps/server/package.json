@@ -1,7 +1,7 @@
 {
   "name": "@isputnik/games-server",
   "private": true,
-  "version": "0.17.2",
+  "version": "0.17.3",
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@fastify/static": "^10.1.6",
-    "@isputnik/games-engine": "0.17.2",
+    "@isputnik/games-engine": "0.17.3",
     "better-sqlite3": "^13.0.3",
     "fastify": "^5.12.7",
     "nanoid": "^6.0.2",
