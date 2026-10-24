@@ -1,0 +1,439 @@
+/* ── Sputnik Catch ─────────────────────────────────────────────────────── */
+/* The handheld (games/sputnik/Handheld.tsx), after the owner's mock
+   (docs/mocks/sputnik-catch-mock.html). It is a physical object, so it wears
+   its own colours on every theme: a silver face in a teal rim, red buttons, a
+   grey-green LCD. Everything inside is sized in cqw of the handheld, so it
+   scales as one piece; a container query rearranges it for a phone held
+   upright. */
+
+/* The stage: the handheld is wide, not square, so its column is sized from
+   the window's height through the device's aspect ratio (100 : 58). */
+.game-stage.is-sputnik:not(.is-phone) {
+  --hh-w: min(1000px, 100vw - var(--stage-panel) - 3 * var(--space-4) - 16px, (100dvh - var(--stage-chrome)) * 1.72);
+  grid-template-columns: var(--hh-w) var(--stage-panel);
+  grid-template-rows: auto;
+  align-items: start;
+}
+
+/* The panel is as tall as what it holds, so the help keeps its own height
+   instead of sharing out a fixed one as a game's log does. */
+.game-stage.is-sputnik .game-stage-log {
+  flex: none;
+}
+
+/* The handheld measures itself (container-type), so it has no width of its
+   own to offer: its column must give it one. */
+.game-stage.is-sputnik .game-stage-board {
+  width: 100%;
+}
+
+@media (max-width: 960px) {
+  .game-stage.is-sputnik:not(.is-phone) {
+    --hh-w: min(100vw - 2 * var(--space-4) - 16px, (100dvh - var(--stage-chrome) - 40px) * 1.72);
+    grid-template-columns: var(--hh-w);
+  }
+}
+
+.sputnik-best {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.sputnik-best > div {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+
+.sputnik-best dt {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.sputnik-best dd {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.sputnik-status {
+  margin: 0;
+  color: var(--muted);
+}
+
+.sputnik-help {
+  overflow-y: auto;
+  color: var(--ink);
+}
+
+.sputnik-help h2 {
+  margin: var(--space-3) 0 var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sputnik-help h2:first-child {
+  margin-top: 0;
+}
+
+.sputnik-help ul {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+/* ── The device ── */
+.handheld {
+  --hh-rim: #123f3c;
+  --hh-rim-dark: #0a2422;
+  --hh-shell-hi: #f1eee6;
+  --hh-shell-lo: #d4d0c4;
+  --hh-bezel: #c3bfb2;
+  --hh-print: #1f1e1b;
+  --hh-title: #bd3a20;
+  --hh-lcd: #c5cbb2;
+  --hh-font: "Russo One", "Arial Black", "Segoe UI Black", Impact, sans-serif;
+  container-type: inline-size;
+  width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hh-device {
+  aspect-ratio: 100 / 58;
+  padding: 1.1cqw;
+  border-radius: 3.4cqw;
+  background: linear-gradient(160deg, #1b5752, var(--hh-rim) 55%, #0b2a28);
+  box-shadow: 0 2.4cqw 5cqw rgba(0, 0, 0, 0.45), inset 0 0.2cqw 0 rgba(255, 255, 255, 0.12);
+}
+
+.hh-face {
+  display: grid;
+  grid-template-columns: 17cqw minmax(0, 1fr) 17cqw;
+  grid-template-rows: 1fr auto;
+  grid-template-areas: "left screen menu" "left screen rbtn";
+  gap: 1.4cqw;
+  height: 100%;
+  padding: 2.2cqw 1.8cqw;
+  border-radius: 2.5cqw;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 0.12cqw, rgba(0, 0, 0, 0.025) 0.12cqw 0.3cqw),
+    linear-gradient(180deg, var(--hh-shell-hi), var(--hh-shell-lo));
+}
+
+.hh-left {
+  grid-area: left;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 0;
+}
+
+.hh-menu {
+  grid-area: menu;
+  align-self: start;
+  display: grid;
+  justify-items: center;
+  gap: 1.3cqw;
+}
+
+.hh-right {
+  grid-area: rbtn;
+  justify-self: center;
+}
+
+.hh-logo {
+  display: grid;
+  place-items: center;
+  width: 10.5cqw;
+  aspect-ratio: 1;
+  border: 0.45cqw solid var(--hh-print);
+  border-radius: 50%;
+}
+
+.hh-logo svg {
+  width: 80%;
+  height: 80%;
+}
+
+.hh-logo .hh-ink {
+  fill: var(--hh-print);
+}
+
+.hh-logo .hh-shine {
+  fill: var(--hh-shell-hi);
+}
+
+.hh-logo .hh-ink-line {
+  stroke: var(--hh-print);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.hh-logo text {
+  fill: var(--hh-title);
+  font: 6.5px var(--hh-font);
+}
+
+.hh-sound.bare-button {
+  display: flex;
+  align-items: center;
+  gap: 0.8cqw;
+  padding: 0.4cqw 0.6cqw;
+  border-radius: 1cqw;
+  color: var(--hh-print);
+  font: 1.7cqw/1 var(--hh-font);
+  letter-spacing: 0.08em;
+}
+
+.hh-led {
+  width: 1.7cqw;
+  height: 1.7cqw;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #6a6a62, #2c2c28);
+  box-shadow: inset 0 0 0 0.15cqw rgba(0, 0, 0, 0.4);
+}
+
+.hh-sound[aria-pressed="true"] .hh-led {
+  background: radial-gradient(circle at 40% 35%, #ffd2a0, #ff5a1f 55%, #a52a10);
+  box-shadow: 0 0 1.2cqw #ff6a2a;
+}
+
+.hh-pair {
+  display: grid;
+  gap: 4.2cqw;
+}
+
+.hh-big.bare-button {
+  position: relative;
+  width: 10cqw;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #ff9b7c, #dc3d22 50%, #8f2210 100%);
+  box-shadow: 0 0 0 0.75cqw var(--hh-rim), 0 0 0 0.95cqw rgba(0, 0, 0, 0.25), 0 0.7cqw 0 0.75cqw var(--hh-rim-dark);
+  transition: transform 50ms, box-shadow 50ms;
+}
+
+.hh-big.bare-button:active,
+.hh-big.is-pressed {
+  transform: translateY(0.45cqw);
+  box-shadow: 0 0 0 0.75cqw var(--hh-rim), 0 0 0 0.95cqw rgba(0, 0, 0, 0.25), 0 0.25cqw 0 0.75cqw var(--hh-rim-dark);
+}
+
+.hh-big:focus-visible,
+.hh-pill:focus-visible,
+.hh-sound:focus-visible {
+  outline: 0.35cqw solid var(--accent, #d14b2d);
+  outline-offset: 1cqw;
+}
+
+.hh-arrow {
+  position: absolute;
+  width: 4.2cqw;
+  height: 4.2cqw;
+  pointer-events: none;
+}
+
+.hh-arrow path {
+  fill: var(--hh-print);
+}
+
+.hh-left .hh-big.is-up .hh-arrow { left: -4.6cqw; top: -4cqw; transform: rotate(-45deg); }
+.hh-left .hh-big.is-down .hh-arrow { left: -4.6cqw; bottom: -4cqw; transform: rotate(-135deg); }
+.hh-right .hh-big.is-up .hh-arrow { right: -4.6cqw; top: -4cqw; transform: rotate(45deg); }
+.hh-right .hh-big.is-down .hh-arrow { right: -4.6cqw; bottom: -4cqw; transform: rotate(135deg); }
+
+.hh-small {
+  display: grid;
+  justify-items: center;
+  gap: 0.5cqw;
+}
+
+.hh-small span {
+  color: var(--hh-print);
+  font: 1.75cqw/1 var(--hh-font);
+  letter-spacing: 0.04em;
+}
+
+.hh-pill.bare-button {
+  width: 7.4cqw;
+  height: 3.4cqw;
+  border-radius: 2cqw;
+  background: linear-gradient(180deg, #fff, #c9c7c0 70%, #a9a7a0);
+  box-shadow: 0 0 0 0.5cqw var(--hh-rim), 0 0.45cqw 0 0.5cqw var(--hh-rim-dark);
+  transition: transform 50ms, box-shadow 50ms;
+}
+
+.hh-pill.bare-button:active,
+.hh-pill.is-pressed {
+  transform: translateY(0.3cqw);
+  box-shadow: 0 0 0 0.5cqw var(--hh-rim), 0 0.15cqw 0 0.5cqw var(--hh-rim-dark);
+}
+
+.hh-bezel {
+  grid-area: screen;
+  align-self: center;
+  display: grid;
+  gap: 0.9cqw;
+  padding: 1.1cqw 1.8cqw 1.2cqw;
+  border-radius: 2.6cqw;
+  background: linear-gradient(180deg, #d9d5ca, var(--hh-bezel));
+  box-shadow: inset 0 0.35cqw 0.6cqw rgba(0, 0, 0, 0.18), inset 0 -0.2cqw 0 rgba(255, 255, 255, 0.6);
+}
+
+.hh-legend {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1.4cqw;
+}
+
+.hh-legend::before,
+.hh-legend::after {
+  content: "";
+  height: 0.35cqw;
+  border-radius: 1cqw;
+  background: var(--hh-print);
+}
+
+.hh-legend > div {
+  display: grid;
+  justify-items: center;
+  gap: 0.5cqw;
+}
+
+.hh-legend b {
+  color: var(--hh-title);
+  font: 2.9cqw/1 var(--hh-font);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.hh-legend small {
+  color: var(--hh-print);
+  font: 1.6cqw/1 var(--hh-font);
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+}
+
+.hh-lcd-frame {
+  padding: 0.7cqw;
+  border-radius: 1.4cqw;
+  background: linear-gradient(180deg, #2a6d64, var(--hh-rim));
+  box-shadow: 0 0 0 0.25cqw var(--hh-print);
+}
+
+.hh-lcd {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.8cqw;
+  background: radial-gradient(120% 90% at 30% 20%, #d3d8c2, var(--hh-lcd) 55%, #b4bba0);
+  box-shadow: inset 0 0.4cqw 0.9cqw rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+}
+
+.hh-lcd::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.22) 0 18%, transparent 38%);
+}
+
+.hh-lcd svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* An unlit segment stays faintly there: that is what reads as an LCD. */
+.lcd-seg {
+  opacity: 0.075;
+  transition: opacity 45ms linear;
+}
+
+.lcd-seg.is-on {
+  opacity: 0.93;
+}
+
+.hh-foot {
+  color: var(--hh-print);
+  font: 2.1cqw/1 var(--hh-font);
+  letter-spacing: 0.22em;
+  text-align: center;
+}
+
+/* A phone held upright: the screen across the top, the menu row under it,
+   then a pair of big buttons under each thumb. Upright only: turned sideways
+   the handheld is sized by the screen's height and may be as narrow, but
+   there the whole device fits and is the better shape. */
+@media (orientation: portrait) {
+@container (max-width: 560px) {
+  .hh-device { aspect-ratio: auto; padding: 2cqw; border-radius: 6cqw; }
+  .hh-face {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    grid-template-areas: "screen screen" "menu menu" "left rbtn";
+    gap: 5cqw 4cqw;
+    padding: 4cqw 4cqw 6cqw;
+    border-radius: 4.6cqw;
+  }
+  .hh-left { justify-content: center; }
+  .hh-logo, .hh-sound.bare-button { display: none; }
+  .hh-pair { gap: 7cqw; }
+  .hh-big.bare-button {
+    width: 25cqw;
+    box-shadow: 0 0 0 1.6cqw var(--hh-rim), 0 0 0 2cqw rgba(0, 0, 0, 0.25), 0 1.4cqw 0 1.6cqw var(--hh-rim-dark);
+  }
+  .hh-big.bare-button:active,
+  .hh-big.is-pressed {
+    transform: translateY(1cqw);
+    box-shadow: 0 0 0 1.6cqw var(--hh-rim), 0 0 0 2cqw rgba(0, 0, 0, 0.25), 0 0.4cqw 0 1.6cqw var(--hh-rim-dark);
+  }
+  .hh-arrow { width: 7cqw; height: 7cqw; }
+  .hh-left .hh-big.is-up .hh-arrow { left: -8.5cqw; top: -7cqw; }
+  .hh-left .hh-big.is-down .hh-arrow { left: -8.5cqw; bottom: -7cqw; }
+  .hh-right .hh-big.is-up .hh-arrow { right: -8.5cqw; top: -7cqw; }
+  .hh-right .hh-big.is-down .hh-arrow { right: -8.5cqw; bottom: -7cqw; }
+  .hh-menu { grid-auto-flow: column; justify-content: center; align-self: center; gap: 8cqw; }
+  .hh-pill.bare-button {
+    width: 16cqw;
+    height: 7.4cqw;
+    border-radius: 4cqw;
+    box-shadow: 0 0 0 1cqw var(--hh-rim), 0 0.9cqw 0 1cqw var(--hh-rim-dark);
+  }
+  .hh-pill.bare-button:active,
+  .hh-pill.is-pressed {
+    transform: translateY(0.6cqw);
+    box-shadow: 0 0 0 1cqw var(--hh-rim), 0 0.3cqw 0 1cqw var(--hh-rim-dark);
+  }
+  .hh-small { gap: 1.6cqw; }
+  .hh-small span { font-size: 3.4cqw; }
+  .hh-bezel { gap: 2cqw; padding: 2.4cqw 3cqw 2.6cqw; border-radius: 4cqw; }
+  .hh-legend { gap: 2.6cqw; }
+  .hh-legend::before, .hh-legend::after { height: 0.7cqw; }
+  .hh-legend b { font-size: 6cqw; }
+  .hh-legend small { font-size: 3cqw; }
+  .hh-lcd-frame { padding: 1.4cqw; border-radius: 2.6cqw; box-shadow: 0 0 0 0.5cqw var(--hh-print); }
+  .hh-lcd { border-radius: 1.6cqw; }
+  .hh-foot { font-size: 3.6cqw; }
+}
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lcd-seg,
+  .hh-big.bare-button,
+  .hh-pill.bare-button {
+    transition: none;
+  }
+}
