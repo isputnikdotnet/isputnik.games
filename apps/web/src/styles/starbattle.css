@@ -3,15 +3,14 @@
    data-arena="star" (useArena) and everything below the app bar takes these
    colours. The dialogs keep the app's. */
 :root {
-  --star-space: #0b1026;
-  --star-space-enemy: #160f2e;
-  --star-line: rgba(176, 196, 255, 0.16);
-  --star-label: rgba(196, 210, 255, 0.7);
-  --star-star: rgba(255, 255, 255, 0.55);
+  --star-space: rgba(8, 14, 40, 0.38);
+  --star-space-enemy: rgba(14, 10, 42, 0.32);
+  --star-line: rgba(150, 175, 255, 0.24);
+  --star-label: rgba(206, 218, 255, 0.85);
   --star-craft: #8fc1ff;
   --star-cockpit: #e8f3ff;
   --star-hit: #ff9f43;
-  --star-miss: rgba(196, 210, 255, 0.65);
+  --star-miss: #3fe3f5;
   --star-last: #ffd166;
   --star-aim: #7ee8fa;
   --arena-bg: #060b1c;
@@ -19,7 +18,8 @@
   --arena-muted: #9db4e8;
   --arena-line: rgba(140, 170, 255, 0.2);
   --arena-panel: rgba(9, 16, 38, 0.82);
-  --arena-panel-enemy: rgba(22, 12, 46, 0.82);
+  /* The board's own panel lets the backdrop through: the sector is space. */
+  --arena-panel-enemy: rgba(14, 10, 40, 0.28);
   --arena-accent: #22d3ee;
   --arena-them: #b48cff;
   --arena-danger: #ff4d5a;
@@ -32,6 +32,23 @@ body[data-arena="star"] {
     radial-gradient(ellipse 700px 500px at 92% 18%, rgba(120, 70, 220, 0.22), transparent 70%),
     radial-gradient(ellipse 900px 300px at 50% 100%, rgba(30, 90, 200, 0.14), transparent 70%),
     var(--arena-bg);
+}
+
+/* The space backdrop (a nebula, a rocket at the pad, the planet's rim),
+   pinned to the window behind everything. A fixed layer, not
+   background-attachment: fixed, which phones ignore or repaint badly. The
+   body isolates so the layer lands over its background, under its content. */
+body[data-arena="star"] {
+  isolation: isolate;
+}
+
+body[data-arena="star"]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: url("./starbattle-space.webp") center / cover no-repeat var(--arena-bg);
+  pointer-events: none;
 }
 
 body[data-arena="star"] .app-main {
@@ -411,10 +428,6 @@ body[data-arena="star"] .game-stage-head {
   fill: var(--star-space-enemy);
 }
 
-.star-stars circle {
-  fill: var(--star-star);
-}
-
 .star-grid line {
   stroke: var(--star-line);
   stroke-width: 0.03;
@@ -432,6 +445,9 @@ body[data-arena="star"] .game-stage-head {
   font-size: 0.5px;
   font-weight: 600;
   font-family: inherit;
+  paint-order: stroke;
+  stroke: rgba(4, 8, 24, 0.7);
+  stroke-width: 0.08px;
 }
 
 .star-vessel rect {
@@ -445,14 +461,17 @@ body[data-arena="star"] .game-stage-head {
   fill: var(--star-cockpit);
 }
 
+/* A wreck: a smoky hull under its bursts, outlined so the whole craft reads
+   as one destroyed thing, apart from a hit still waiting for its neighbours. */
 .star-vessel.is-destroyed rect {
-  fill: #5a4a6e;
-  fill-opacity: 0.7;
-  stroke: #9a7fb5;
+  fill: #6a5590;
+  fill-opacity: 0.45;
+  stroke: #b79be0;
+  stroke-opacity: 0.6;
 }
 
 .star-vessel.is-destroyed .star-cockpit {
-  fill: #9a7fb5;
+  display: none;
 }
 
 .star-ghost {
@@ -478,28 +497,56 @@ body[data-arena="star"] .game-stage-head {
   stroke: var(--star-hit);
 }
 
+/* A square known to be empty: a ringed beacon, bright enough to read at a
+   glance which squares are spent. */
 .star-miss {
+  filter: drop-shadow(0 0 0.06px var(--star-miss));
+}
+
+.star-miss-ring {
+  fill: rgba(63, 227, 245, 0.08);
+  stroke: var(--star-miss);
+  stroke-width: 0.045;
+}
+
+.star-miss-dot {
   fill: var(--star-miss);
+}
+
+.star-board.is-own .star-miss-ring {
+  stroke-opacity: 0.7;
+}
+
+/* A hit lights its square, so a damaged craft's run stands out to finish. */
+.star-hit-cell {
+  fill: var(--star-hit);
+  fill-opacity: 0.16;
+  stroke: var(--star-hit);
+  stroke-opacity: 0.4;
+  stroke-width: 0.03;
 }
 
 .star-hit {
   fill: var(--star-hit);
   stroke: #fff1d6;
-  stroke-width: 0.03;
+  stroke-width: 0.035;
   stroke-linejoin: round;
+  filter: drop-shadow(0 0 0.08px var(--star-hit));
 }
 
 .star-last {
-  fill: none;
+  fill: rgba(255, 209, 102, 0.08);
   stroke: var(--star-last);
   stroke-width: 0.08;
+  filter: drop-shadow(0 0 0.1px var(--star-last));
 }
 
 .star-aim {
   fill: var(--star-aim);
-  fill-opacity: 0.2;
+  fill-opacity: 0.14;
   stroke: var(--star-aim);
-  stroke-width: 0.06;
+  stroke-width: 0.07;
+  filter: drop-shadow(0 0 0.1px var(--star-aim));
   pointer-events: none;
 }
 

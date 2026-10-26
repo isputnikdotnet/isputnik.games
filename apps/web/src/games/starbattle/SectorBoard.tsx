@@ -1,10 +1,12 @@
-import { useMemo, useRef, useState, type PointerEvent } from "react";
-import { StarBattle, seededRandom, type Vessel } from "@isputnik/games-engine";
+import { useRef, useState, type PointerEvent } from "react";
+import { StarBattle, type Vessel } from "@isputnik/games-engine";
 
-// One sector of the star chart as an SVG: a dark field with a scatter of stars
-// behind the grid, lettered columns and numbered rows, craft as capsules with
-// a cockpit at the nose, a faint dot for a shot into empty space, a burst for a
-// hit, a dimmed hull for a destroyed craft. The same component draws the
+// One sector of the star chart as an SVG: a veil over the arena's space
+// backdrop behind the grid, lettered columns and numbered rows, craft as
+// capsules with a cockpit at the nose, a ringed beacon on a square known to be
+// empty (a shot into space, or the debris field around a destroyed craft), a
+// burst on a lit square for a hit, a dimmed hull for a destroyed craft. The
+// same component draws the
 // viewer's own sector (every craft, the other side's shots on it) and the
 // enemy's (only the shots fired so far and the craft already destroyed).
 // Coordinates are board units with one unit of margin for the labels, so it
@@ -16,16 +18,6 @@ export interface Cell {
 
 export function cellName(x: number, y: number, columns: string): string {
   return `${columns[x] ?? "?"}${y + 1}`;
-}
-
-/** A fixed scatter of stars, the same for every board of a size. */
-function starfield(size: number): { x: number; y: number; r: number }[] {
-  const random = seededRandom(size * 7919);
-  const stars: { x: number; y: number; r: number }[] = [];
-  for (let i = 0; i < size * size * 0.6; i++) {
-    stars.push({ x: random() * (size + 1), y: random() * (size + 1), r: 0.03 + random() * 0.05 });
-  }
-  return stars;
 }
 
 /** An eight-point burst around a centre, for a hit. */
@@ -79,7 +71,6 @@ export function SectorBoard({
   // start of a swipe between the boards if it travelled.
   const touch = useRef<{ id: number; x: number; y: number } | null>(null);
   const span = size + 1;
-  const stars = useMemo(() => starfield(size), [size]);
 
   const cellFrom = (event: PointerEvent<SVGSVGElement>): Cell | null => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -112,9 +103,19 @@ export function SectorBoard({
     const cx = x + 1.5;
     const cy = y + 1.5;
     if (shots[i] === StarBattle.MISS) {
-      marks.push(<circle key={`m${i}`} className="star-miss" cx={cx} cy={cy} r={0.13} />);
+      marks.push(
+        <g key={`m${i}`} className="star-miss">
+          <circle className="star-miss-ring" cx={cx} cy={cy} r={0.19} />
+          <circle className="star-miss-dot" cx={cx} cy={cy} r={0.055} />
+        </g>
+      );
     } else if (shots[i] === StarBattle.HIT) {
-      marks.push(<polygon key={`h${i}`} className="star-hit" points={burst(cx, cy, 0.4, 0.17)} />);
+      marks.push(
+        <g key={`h${i}`}>
+          <rect className="star-hit-cell" x={x + 1.04} y={y + 1.04} width={0.92} height={0.92} rx={0.12} />
+          <polygon className="star-hit" points={burst(cx, cy, 0.42, 0.19)} />
+        </g>
+      );
     }
   }
 
@@ -164,11 +165,8 @@ export function SectorBoard({
         touch.current = null;
       }}
     >
-      {/* The field covers the labels too, so they read on a light page. */}
-      <rect className="star-bg" x={0} y={0} width={span} height={span} rx={0.3} />
-      <g className="star-stars" aria-hidden="true">
-        {stars.map((star, index) => <circle key={index} cx={star.x} cy={star.y} r={star.r} />)}
-      </g>
+      {/* A veil over the grid only; the labels sit on the arena's backdrop. */}
+      <rect className="star-bg" x={1} y={1} width={size} height={size} />
       <g className="star-labels" aria-hidden="true">
         {Array.from({ length: size }, (_, i) => (
           <text key={`c${i}`} x={i + 1.5} y={0.72} textAnchor="middle">{columns[i] ?? ""}</text>
@@ -190,8 +188,8 @@ export function SectorBoard({
         {ghost && craft(ghost, `star-ghost${ghostValid ? "" : " is-invalid"}`, "ghost")}
       </g>
       <g className="star-marks">{marks}</g>
-      {lastShot && <rect className="star-last" x={lastShot.x + 1.06} y={lastShot.y + 1.06} width={0.88} height={0.88} rx={0.15} />}
-      {hover && <rect className="star-aim" x={hover.x + 1.06} y={hover.y + 1.06} width={0.88} height={0.88} rx={0.15} />}
+      {lastShot && <rect className="star-last" x={lastShot.x + 1.08} y={lastShot.y + 1.08} width={0.84} height={0.84} rx={0.14} />}
+      {hover && <rect className="star-aim" x={hover.x + 1.08} y={hover.y + 1.08} width={0.84} height={0.84} rx={0.14} />}
     </svg>
   );
 }
