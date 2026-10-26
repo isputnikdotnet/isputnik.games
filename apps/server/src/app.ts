@@ -463,6 +463,22 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     };
   });
 
+  // The whole database, for the home server's backups (the home repository's
+  // docs/apps-platform-plan.md → Backups): it asks for this before a full or
+  // minimal backup and stores the answer as apps/games.sqlite in its zip.
+  // serialize() is a consistent copy taken in one step, so a move landing
+  // meanwhile is either all in it or not at all. The event is written after
+  // the copy, so a snapshot never carries the line about itself.
+  app.get(`${API}/admin/backup`, { preHandler: requireAdmin }, async (request, reply) => {
+    const bytes = db.serialize();
+    note(request, "info", "backup.taken", { detail: `Database handed over for a backup (${bytes.length} bytes)` });
+    return reply
+      .type("application/vnd.sqlite3")
+      .header("Cache-Control", "no-store")
+      .header("X-Isputnik-Backup-Version", options.version)
+      .send(bytes);
+  });
+
   if (options.staticPath) {
     await app.register(staticFiles, {
       root: options.staticPath,

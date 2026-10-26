@@ -276,7 +276,14 @@ server; the home server asks, through the gateway, on an admin's behalf.
   `GET /games/api/admin/log`, the newest lines of the server log from an
   in-memory ring buffer (500 lines) that pino writes through on its way to
   stdout — what `docker logs` would show, without a shell on the host.
-- **The home app shows both** on Control panel → Settings → Games, under the
+- **Backups (2026-10-25).** `GET /games/api/admin/backup` hands an admin the
+  whole database as one consistent `db.serialize()` copy
+  (`application/vnd.sqlite3`, `X-Isputnik-Backup-Version`), for the home
+  server's full and minimal backups, which store it as `apps/games.sqlite`
+  (home's `docs/apps-platform-plan.md` → Backups). A `backup.taken` event is
+  written after the copy, so the copy never holds it.
+- **The home app shows both** on Control panel → Apps (Events, Logs; it was
+  Settings → Games until home 4.38), under the
   status it already had: a Recent events table with a level filter, and a
   Server log panel with Refresh and Copy. Nothing about them is stored in the
   home database; the page calls the games routes through the gateway.

@@ -2,6 +2,7 @@
 // the refused callers, and the log tail — all behind the gateway's admin role.
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
+import Database from "better-sqlite3";
 import { BODY_LIMIT, buildApp } from "../src/app.js";
 import { createLogBuffer } from "../src/log-buffer.js";
 
@@ -130,6 +131,31 @@ describe("admin routes", () => {
     await post("/games/api/matches", mum, { game: "dots" });
     const page = await events("?event=request.invalid");
     expect(page.events[0]).toMatchObject({ level: "warn", actorId: "mum", detail: "POST /games/api/matches: options, opponent" });
+  });
+
+  it("hand the whole database over for the home server's backup, to an admin only", async () => {
+    await post("/games/api/matches", mum, {
+      game: "dots", options: { size: 10, targetCaptures: null }, opponent: { id: "dad", name: "Dad" }, seat: 0
+    });
+    expect((await get("/games/api/admin/backup", {})).statusCode).toBe(401);
+    expect((await get("/games/api/admin/backup", mum)).statusCode).toBe(403);
+
+    const res = await get("/games/api/admin/backup", admin);
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-type"]).toBe("application/vnd.sqlite3");
+    expect(res.headers["x-isputnik-backup-version"]).toBe("0.0.0-test");
+    expect(res.headers["cache-control"]).toBe("no-store");
+    // A real SQLite file, holding the match made above.
+    const bytes = res.rawPayload;
+    expect(bytes.subarray(0, 16).toString("latin1")).toBe("SQLite format 3\0");
+    const copy = new Database(bytes);
+    expect((copy.prepare("SELECT COUNT(*) AS n FROM matches").get() as { n: number }).n).toBe(1);
+    // The event about the copy is written after it, so it is not inside it.
+    expect((copy.prepare("SELECT COUNT(*) AS n FROM events WHERE event = 'backup.taken'").get() as { n: number }).n).toBe(0);
+    copy.close();
+    const taken = (await events("?event=backup.taken")).events;
+    expect(taken).toHaveLength(1);
+    expect(taken[0]).toMatchObject({ actorId: "admin", level: "info" });
   });
 
   it("hand out the log tail, with who and where on every line", async () => {
