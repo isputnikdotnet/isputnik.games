@@ -93,13 +93,16 @@
       "provisional": "Provisional",
       "ratingEmpty": "No rated chess games yet.",
       "ratingNote": "Chess against the computer counts as a game against a rated player (Easy 600, Normal 1100, Hard 1500), and online games between members count for both. Two at one screen doesn’t count. Provisional for the first 10 games.",
-      "tabArcade": "Sputnik Catch",
-      "arcadeNote": "Each member's best run at Sputnik Catch, Game A or Game B.",
+      "tabArcade": "Arcade",
+      "arcadeNote": "Each member's best run at a game for one player: Sputnik Catch (Game A or B) or Torpedo Run.",
       "arcadeEmpty": "Nobody has finished a run yet.",
       "arcadeEmptyMonth": "Nobody has finished a run this month yet.",
       "variant": "Which game",
       "bestScore": "Best",
-      "runs": "Runs"
+      "runs": "Runs",
+      "arcadeSputnikA": "Sputnik Catch A",
+      "arcadeSputnikB": "Sputnik Catch B",
+      "arcadeTorpedo": "Torpedo Run"
     },
     "month": {
       "title": "Your month",
@@ -190,6 +193,10 @@
     "sputnik": {
       "name": "Sputnik Catch",
       "summary": "An LCD handheld from the space age: robot РОБ-1 nets the sputniks before they crash."
+    },
+    "torpedo": {
+      "name": "Torpedo Run",
+      "summary": "Up periscope at dusk: lead the passing ships with slow torpedoes. Ten a round — score 1 500 for a bonus round."
     }
   },
   "dots": {
@@ -800,6 +807,96 @@
       "pause": "Pause",
       "touch": "Press the red buttons, or tap a corner of the screen, to move the net.",
       "rotate": "Turn your phone sideways for the wide screen."
+    },
+    "fullscreen": {
+      "enter": "Full screen",
+      "exit": "Leave full screen"
+    }
+  },
+  "torpedo": {
+    "lens": {
+      "label": "Periscope view, bearing {{bearing}}",
+      "hit": "HIT · +{{points}}",
+      "miss": "MISS",
+      "bonus": "BONUS ROUND EARNED",
+      "start": "PRESS FIRE TO START",
+      "paused": "PAUSED"
+    },
+    "hud": {
+      "torpedoes": "Torpedoes · {{left}} of {{of}}",
+      "torpedoesLabel_one": "{{count}} torpedo left",
+      "torpedoesLabel_other": "{{count}} torpedoes left",
+      "time": "{{seconds}} s",
+      "score": "Score",
+      "bonusAt": "Bonus round at",
+      "bonusRound": "Bonus round",
+      "round": "Round {{round}}"
+    },
+    "controls": {
+      "left": "Turn the periscope left",
+      "right": "Turn the periscope right",
+      "fire": "Fire",
+      "start": "Start",
+      "bonus": "Bonus round",
+      "pause": "Pause",
+      "resume": "Carry on"
+    },
+    "status": {
+      "demo": "The periscope is on watch by itself. Press Fire to play.",
+      "playing": "Ten torpedoes: lead the ships and fire.",
+      "bonusRound": "The bonus round: ten more torpedoes.",
+      "paused": "Paused. Press Carry on, or P, to go on.",
+      "bonus": "Bonus round earned. Fire it in when you are ready.",
+      "over": "Run over with {{score}}. Press Fire to play again.",
+      "overBest": "Run over with {{score}}: a new best on this device."
+    },
+    "best": {
+      "score": "Score",
+      "device": "Best on this device"
+    },
+    "ships": {
+      "tanker": "Tanker",
+      "cargo": "Cargo ship",
+      "destroyer": "Destroyer",
+      "patrol": "Patrol boat"
+    },
+    "contacts": {
+      "title": "Contacts",
+      "tanker": "Slow · near",
+      "cargo": "Steady · mid",
+      "destroyer": "Fast · far",
+      "patrol": "Very fast · changes speed"
+    },
+    "rules": {
+      "title": "How a round goes",
+      "torpedoes": "Ten torpedoes a round, one in the water at a time.",
+      "lead": "The wake lights up lamp by lamp: it takes time to get there, so aim where the ship will be.",
+      "points": "Far and fast ships score more. A nearer ship in the way takes the torpedo.",
+      "bonus": "Reach {{score}} and the next round is on the house.",
+      "clock": "A round lasts ninety seconds at most."
+    },
+    "keys": {
+      "desktop": "Space fires · ← → or A D turn the periscope · P pauses.",
+      "touch": "Drag across the view, or hold the arrows, to turn the periscope."
+    },
+    "card": {
+      "roundOver": "Round over",
+      "bonusOver": "Bonus round over",
+      "hits_one": "{{count}} hit from {{fired}} torpedoes",
+      "hits_other": "{{count}} hits from {{fired}} torpedoes",
+      "bonusTitle": "Bonus round earned",
+      "bonusBody": "You passed {{score}} — the next ten torpedoes are free.",
+      "row": "{{ship}} × {{count}}",
+      "noHits": "No hits this round",
+      "rounds": "First round {{first}} · bonus {{bonus}}",
+      "newBest": "A new best on this device.",
+      "playBonus": "Play bonus round",
+      "again": "Play again"
+    },
+    "saved": {
+      "saving": "Saving to the family board…",
+      "saved": "On the family board. Your best: {{best}}.",
+      "failed": "This score could not be saved to the family board."
     },
     "fullscreen": {
       "enter": "Full screen",

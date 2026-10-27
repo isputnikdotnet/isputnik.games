@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 
 // The games' sounds, made on the spot with Web Audio rather than shipped as
 // files: a soft wooden tick for a dot, a laser and a blast in space, a chime
-// when the move comes back to you, a handheld's piezo beeps for Sputnik Catch. Nothing plays until the player has touched
+// when the move comes back to you, a handheld's piezo beeps for Sputnik Catch, a torpedo's run for Torpedo Run. Nothing plays until the player has touched
 // the page once (browsers keep an AudioContext silent until then), and nothing
 // at all while the top bar's switch says off — remembered per device, since
 // whether a phone beeps is the person's own business.
@@ -13,6 +13,7 @@ export type Cue =
   | "deploy" | "fire" | "miss" | "hit" | "destroyed"
   | "lcdStep0" | "lcdStep1" | "lcdStep2" | "lcdStep3"
   | "lcdCatch" | "lcdCrash" | "lcdAlien" | "lcdPardon" | "lcdStart" | "lcdOver"
+  | "torpedoLaunch" | "torpedoPing" | "torpedoHit" | "torpedoMiss" | "torpedoBonus" | "torpedoStart" | "torpedoOver"
   | "yourMove" | "message" | "invite" | "win" | "lose" | "draw";
 
 const STORAGE_KEY = "isputnik-games-sound";
@@ -228,6 +229,39 @@ const cues: Record<Cue, (ctx: AudioContext, out: AudioNode, at: number) => numbe
     notes(ctx, out, at, [392, 330, 262, 196], 0.2, 0.18, "square", LCD_GAIN);
     return 1;
   },
+  // Torpedo Run: the tube's hiss, a sonar ping as the torpedo passes a lane,
+  // a deep blast, the splash of a miss.
+  torpedoLaunch: (ctx, out, at) => {
+    tone(ctx, out, { freq: 70, to: 45, at, dur: 0.18, gain: 0.7 });
+    noise(ctx, out, { at, dur: 0.5, gain: 0.35, filter: "bandpass", freq: 600, to: 2600 });
+    return 0.2;
+  },
+  torpedoPing: (ctx, out, at) => {
+    tone(ctx, out, { freq: 1320, to: 1250, at, dur: 0.22, gain: 0.12 });
+    return 0.05;
+  },
+  torpedoHit: (ctx, out, at) => {
+    noise(ctx, out, { at, dur: 1.1, gain: 0.85, freq: 1800, to: 70 });
+    tone(ctx, out, { freq: 80, to: 28, at, dur: 0.9, gain: 0.95 });
+    return 0.6;
+  },
+  torpedoMiss: (ctx, out, at) => {
+    noise(ctx, out, { at, dur: 0.35, gain: 0.2, freq: 700, to: 140 });
+    return 0.3;
+  },
+  torpedoBonus: (ctx, out, at) => {
+    notes(ctx, out, at, [523, 659, 784, 1046, 1318], 0.1, 0.16, "triangle", 0.55);
+    return 0.8;
+  },
+  torpedoStart: (ctx, out, at) => {
+    tone(ctx, out, { freq: 1046, to: 1000, at, dur: 0.5, gain: 0.18 });
+    tone(ctx, out, { freq: 1046, to: 1000, at: at + 0.6, dur: 0.5, gain: 0.08 });
+    return 0.4;
+  },
+  torpedoOver: (ctx, out, at) => {
+    notes(ctx, out, at, [440, 392, 330, 262], 0.22, 0.25, "triangle", 0.5);
+    return 1.1;
+  },
   yourMove: (ctx, out, at) => {
     notes(ctx, out, at, [784, 1046], 0.13, 0.25);
     return 0.6;
@@ -259,7 +293,8 @@ const buzz: Partial<Record<Cue, number[]>> = {
   yourMove: [35],
   invite: [35, 60, 35],
   destroyed: [60, 40, 60],
-  lcdCrash: [40]
+  lcdCrash: [40],
+  torpedoHit: [50, 30, 50]
 };
 
 /** Plays the cues one after another. A no-op while switched off, before the

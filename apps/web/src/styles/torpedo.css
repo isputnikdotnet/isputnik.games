@@ -1,0 +1,691 @@
+/* ── Torpedo Run ───────────────────────────────────────────────────────── */
+/* The periscope (games/torpedo/Periscope.tsx), after the owner's approved
+   mockup. The cabinet, lens, sea, ships, amber lamps and the red FIRE button
+   are a physical thing and keep their own colours on every theme, as the
+   Sputnik Catch handheld does; the panel beside it and the round-over card
+   follow the app's theme. */
+
+.game-stage.is-torpedo:not(.is-phone) {
+  /* The scope is wide: its column is sized from the window's height through
+     the lens's shape, with room for the scale, the lamps and the buttons. */
+  --tr-w: min(1080px, 100vw - var(--stage-panel) - 3 * var(--space-4) - 16px, (100dvh - var(--stage-chrome) - 250px) * 2.35);
+  grid-template-columns: max(520px, var(--tr-w)) var(--stage-panel);
+  grid-template-rows: auto;
+  align-items: start;
+}
+
+.game-stage.is-torpedo .game-stage-log {
+  flex: none;
+  gap: var(--space-4);
+}
+
+.game-stage.is-torpedo .game-stage-board {
+  width: 100%;
+}
+
+@media (max-width: 960px) {
+  .game-stage.is-torpedo:not(.is-phone) {
+    grid-template-columns: min(100%, 760px);
+  }
+}
+
+.torpedo-scope {
+  --tr-brass: #b78f5d;
+  --tr-lamp: #ffd27a;
+  --tr-lamp-glow: rgba(255, 170, 80, 0.7);
+  --tr-fire: #d14b2d;
+  --tr-fire-edge: #7e2a17;
+  --tr-key: #0d2528;
+  --tr-ink: #f2d9ad;
+  --tr-font: "Russo One", "Arial Black", "Segoe UI Black", Impact, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  container-type: inline-size;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.torpedo-cabinet {
+  position: relative;
+  padding: 14px;
+  border-radius: 28px;
+  background: linear-gradient(160deg, #1b3f3c, #0b2422 60%, #071a19);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: var(--tr-ink);
+}
+
+/* As wide as the lens and on its scale, so a figure sits over the bearing
+   it names: a tick every 5°, a figure every 15°. */
+.torpedo-bearings {
+  position: relative;
+  height: 26px;
+  margin: 0 0 6px;
+  overflow: hidden;
+}
+
+.torpedo-bearing {
+  position: absolute;
+  bottom: 0;
+  width: 1.5px;
+  height: 5px;
+  background: var(--tr-brass);
+  color: var(--tr-brass);
+  font-family: var(--tr-font);
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.12em;
+}
+
+.torpedo-bearing.is-major {
+  height: 8px;
+}
+
+.torpedo-bearing b {
+  position: absolute;
+  bottom: 11px;
+  left: 50%;
+  font-weight: 400;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.torpedo-bearing.is-on {
+  color: var(--tr-lamp);
+}
+
+.torpedo-bearing-mark {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  border: 6px solid transparent;
+  border-top: 0;
+  border-bottom: 7px solid var(--tr-lamp);
+  transform: translateX(-50%);
+}
+
+/* The lens: a pill on a wide screen, near round on a narrow one. */
+.torpedo-lens {
+  position: relative;
+  aspect-ratio: 1000 / 440;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #06161a;
+  touch-action: none;
+  cursor: grab;
+}
+
+.torpedo-scope:not(.is-play) .torpedo-lens {
+  cursor: default;
+}
+
+@container (max-width: 560px) {
+  .torpedo-lens {
+    aspect-ratio: 370 / 330;
+    border-radius: 46% / 50%;
+  }
+
+  .torpedo-cabinet {
+    padding: 10px;
+    border-radius: 22px;
+  }
+}
+
+.torpedo-lens > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.torpedo-headlands path {
+  fill: #2a2a30;
+  opacity: 0.75;
+}
+
+.torpedo-horizon {
+  stroke: rgba(255, 210, 122, 0.2);
+  stroke-width: 2;
+}
+
+.torpedo-glints rect {
+  fill: rgba(230, 245, 245, 0.07);
+}
+
+/* A tick is a twentieth of a second: the ships glide between ticks rather
+   than step. */
+.torpedo-ship {
+  transition: transform 50ms linear, opacity 50ms linear;
+}
+
+.torpedo-ship-hull {
+  fill: #061012;
+  /* The last of the dusk catching the superstructure. */
+  stroke: rgba(255, 186, 120, 0.3);
+  stroke-width: 0.6;
+  transition: fill 120ms;
+}
+
+.torpedo-ship-hull.is-sighted {
+  fill: #1a1408;
+}
+
+.torpedo-ship-wake {
+  fill: rgba(230, 245, 245, 0.35);
+}
+
+.torpedo-splash {
+  fill: rgba(230, 245, 245, 0.55);
+}
+
+.torpedo-wake circle {
+  fill: var(--tr-lamp);
+  filter: drop-shadow(0 0 5px var(--tr-lamp-glow));
+}
+
+.torpedo-wake circle.is-head {
+  fill: #fff2cc;
+}
+
+.torpedo-crosshair line {
+  stroke: rgba(255, 210, 122, 0.55);
+  stroke-width: 1.5;
+  transition: stroke 120ms;
+}
+
+.torpedo-crosshair.is-sighted line {
+  stroke: rgba(255, 220, 140, 0.95);
+}
+
+.torpedo-vignette {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 90px 30px rgba(0, 0, 0, 0.85);
+  pointer-events: none;
+}
+
+.torpedo-banner,
+.torpedo-prompt {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  margin: 0;
+  transform: translateX(-50%);
+  font-family: var(--tr-font);
+  font-size: clamp(16px, 3.4cqw, 24px);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  color: var(--tr-lamp);
+  text-shadow: 0 0 12px rgba(255, 160, 70, 0.7);
+  pointer-events: none;
+}
+
+.torpedo-banner {
+  animation: torpedo-banner 1.4s ease-out both;
+}
+
+.torpedo-banner.is-miss {
+  color: #c9d6d6;
+  text-shadow: none;
+}
+
+.torpedo-prompt {
+  bottom: auto;
+  top: 62%;
+  animation: torpedo-blink 1.6s ease-in-out infinite;
+}
+
+@keyframes torpedo-banner {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  12% { opacity: 1; transform: translate(-50%, 0); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes torpedo-blink {
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .torpedo-banner,
+  .torpedo-prompt {
+    animation: none;
+  }
+}
+
+.torpedo-hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 22px;
+  padding: 14px 24px 4px;
+}
+
+.torpedo-hud-tubes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-right: auto;
+}
+
+.torpedo-hud-label {
+  color: var(--tr-brass);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.torpedo-lamps {
+  display: flex;
+  gap: 6px;
+}
+
+.torpedo-lamp {
+  width: 14px;
+  height: 22px;
+  border: 1px solid rgba(202, 151, 86, 0.28);
+  border-radius: 7px;
+  background: #16302f;
+}
+
+.torpedo-lamp.is-lit {
+  border-color: transparent;
+  background: var(--tr-lamp);
+  box-shadow: 0 0 8px var(--tr-lamp-glow);
+}
+
+.torpedo-hud-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.torpedo-hud-value {
+  font-family: var(--tr-font);
+  font-size: 30px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.torpedo-hud-value.is-score {
+  color: var(--tr-lamp);
+}
+
+.torpedo-progress {
+  height: 6px;
+  margin: 8px 24px 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.torpedo-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--tr-fire);
+  transition: width 300ms ease-out;
+}
+
+.torpedo-progress.is-earned > span {
+  background: var(--tr-lamp);
+  box-shadow: 0 0 8px var(--tr-lamp-glow);
+}
+
+@container (max-width: 560px) {
+  .torpedo-hud {
+    padding: 10px 8px 2px;
+    gap: 8px 14px;
+  }
+
+  .torpedo-hud-tubes {
+    order: 3;
+    width: 100%;
+    align-items: center;
+    margin-right: 0;
+  }
+
+  .torpedo-hud-figure:first-of-type {
+    align-items: flex-start;
+    margin-right: auto;
+  }
+
+  .torpedo-hud-value {
+    font-size: 26px;
+  }
+
+  .torpedo-lamps {
+    gap: 5px;
+  }
+
+  .torpedo-lamp {
+    width: 12px;
+    height: 20px;
+  }
+
+  .torpedo-progress {
+    margin-inline: 8px;
+  }
+}
+
+/* The turn buttons and FIRE: big enough for thumbs, and held down to turn. */
+.torpedo-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.torpedo-turn,
+.torpedo-fire {
+  height: 60px;
+  border-radius: 16px;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+
+.torpedo-turn {
+  display: inline-grid;
+  place-items: center;
+  width: 64px;
+  border: 1px solid rgba(202, 151, 86, 0.28);
+  background: var(--tr-key);
+  color: var(--tr-ink);
+}
+
+.torpedo-turn:active:not(:disabled) {
+  background: #16393b;
+}
+
+.torpedo-fire {
+  min-width: 220px;
+  border: 0;
+  background: var(--tr-fire);
+  color: #fff6e6;
+  font-family: var(--tr-font);
+  font-size: 18px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  box-shadow: 0 6px 0 var(--tr-fire-edge);
+  transition: transform 60ms, box-shadow 60ms;
+}
+
+.torpedo-fire:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 var(--tr-fire-edge);
+}
+
+.torpedo-turn:disabled,
+.torpedo-fire:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.torpedo-turn:focus-visible,
+.torpedo-fire:focus-visible {
+  outline: 3px solid var(--tr-lamp);
+  outline-offset: 3px;
+}
+
+@container (max-width: 560px) {
+  .torpedo-controls {
+    gap: 10px;
+  }
+
+  .torpedo-turn,
+  .torpedo-fire {
+    height: 64px;
+  }
+
+  .torpedo-fire {
+    flex: 1;
+    min-width: 0;
+    font-size: 20px;
+  }
+}
+
+/* The round-over card sits over the lens, in the app's own colours. */
+.torpedo-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  border-radius: inherit;
+  background: rgba(2, 11, 14, 0.55);
+  overflow: auto;
+}
+
+.torpedo-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: min(420px, 100%);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 16px 40px var(--shadow);
+  text-align: center;
+}
+
+.torpedo-card-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.torpedo-card-score {
+  margin: 0;
+  font-family: "Russo One", "Arial Black", "Segoe UI Black", Impact, sans-serif;
+  font-size: clamp(40px, 9cqw, 60px);
+  line-height: 1;
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+}
+
+.torpedo-card-hits {
+  margin: 0;
+  color: var(--muted);
+}
+
+.torpedo-card-bonus {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--mint) 55%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--mint) 14%, transparent);
+  text-align: left;
+}
+
+.torpedo-card-bonus svg {
+  flex: none;
+  color: var(--gold);
+}
+
+.torpedo-card-bonus div {
+  display: flex;
+  flex-direction: column;
+}
+
+.torpedo-card-bonus span {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.torpedo-card-rows {
+  width: 100%;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+
+.torpedo-card-rows > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 4px 0;
+}
+
+.torpedo-card-rows > .is-total {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-weight: 600;
+}
+
+.torpedo-card-rows dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.torpedo-card-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.torpedo-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-2);
+}
+
+.torpedo-card-fire {
+  height: 52px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--mint);
+  color: var(--canvas);
+  font-weight: 700;
+  font-size: var(--text-base, 1rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.torpedo-card-fire:focus-visible {
+  outline: 3px solid var(--icon-control-focus-ring, var(--mint));
+  outline-offset: 3px;
+}
+
+.torpedo-card-back {
+  color: var(--muted);
+}
+
+/* The panel: the theme's own colours. */
+.torpedo-best {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.torpedo-best > div {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+
+.torpedo-best dt {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.torpedo-best dd {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.torpedo-status {
+  margin: 0;
+  color: var(--muted);
+}
+
+.torpedo-panel-section h2 {
+  margin: 0 0 var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.torpedo-contacts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.torpedo-contacts li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+
+.torpedo-contacts li > span:first-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.torpedo-contacts li .muted {
+  font-size: var(--text-sm);
+}
+
+.torpedo-contacts-points {
+  color: var(--amber);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.torpedo-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.torpedo-keys {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+}
+
+/* A phone turned sideways: the scope takes the screen, as the handheld does. */
+@media (orientation: landscape) and (max-height: 520px) {
+  body:has(.game-stage.is-torpedo) .app-bar,
+  body:has(.game-stage.is-torpedo) .mobile-nav,
+  .game-stage.is-torpedo.is-phone > .game-stage-title {
+    display: none;
+  }
+
+  .app-main:has(> .game-stage.is-torpedo) {
+    max-width: none;
+    padding: var(--space-2);
+  }
+
+  .game-stage.is-torpedo:is(.is-phone, :not(.is-phone)) {
+    grid-template-columns: min(100%, (100dvh - 2 * var(--space-2) - 190px) * 2.35 + 28px);
+    justify-content: center;
+  }
+}

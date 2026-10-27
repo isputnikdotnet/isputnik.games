@@ -214,7 +214,8 @@ export interface ArcadeRun {
   seed: number;
   /** The run's own id: the server keeps one score per key. */
   key: string;
-  log: [number, number][];
+  /** [tick, input] pairs, one per change of input; the input is the game's own (a rail, a periscope turn and fire). */
+  log: [number, unknown][];
 }
 
 export interface ArcadeScoreAnswer {

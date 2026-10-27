@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { reportArcadeScore, type ArcadeScoreAnswer } from "../../api";
 import { useSession } from "../../session";
-import type { FinishedRun } from "./useArcadeRun";
+
+/** What a finished run of any arcade game hands over to be reported. */
+export interface ReportableRun {
+  key: string;
+  variant: string;
+  seed: number;
+  log: [number, unknown][];
+}
 
 export type ReportState =
   | { status: "saving" }
@@ -13,7 +20,7 @@ export type ReportState =
 // the member's best across devices. One try: a run is not kept on the device,
 // so one that fails to send (offline) is the device's best only. A guest's
 // runs are not the family's.
-export function useArcadeReport(game: string, run: FinishedRun | null): ReportState | null {
+export function useArcadeReport(game: string, run: ReportableRun | null): ReportState | null {
   const session = useSession();
   const member = session.status === "ready" && session.user.role !== "guest";
   const [report, setReport] = useState<{ key: string; state: ReportState } | null>(null);

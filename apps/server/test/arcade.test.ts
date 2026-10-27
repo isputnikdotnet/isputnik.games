@@ -1,6 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
-import { Sputnik, replayRun, seededRandom, sputnik, type SputnikRail, type SputnikVariant } from "@isputnik/games-engine";
+import {
+  Sputnik,
+  Torpedo,
+  replayRun,
+  seededRandom,
+  sputnik,
+  torpedo,
+  type SputnikRail,
+  type SputnikVariant,
+  type TorpedoInput,
+  type TorpedoShip
+} from "@isputnik/games-engine";
 import { buildApp } from "../src/app.js";
 import { openDatabase, type Db } from "../src/db.js";
 import { rememberMember } from "../src/matches.js";
@@ -25,6 +36,31 @@ function playRun(variant: SputnikVariant, seed: number, skill = 0.95) {
     state = Sputnik.tick(state, net).state;
   }
   return { seed, log, score: state.caught };
+}
+
+/** A Torpedo Run played by a gunner who leads the best ship in reach and fires
+ *  when on it, starting the bonus round when it is earned. */
+function playTorpedo(seed: number) {
+  const { SHIPS, RANGE, MAX_BEARING } = Torpedo;
+  const lead = (ship: TorpedoShip) => ship.x + ship.dir * ship.speed * (RANGE[SHIPS[ship.kind].lane] + 1);
+  let state = Torpedo.createRun("standard", seed);
+  let last: TorpedoInput = { turn: 0, fire: false };
+  const log: [number, TorpedoInput][] = [];
+  while (!state.over) {
+    const input: TorpedoInput = { turn: 0, fire: state.phase === "bonus" };
+    const target = state.ships
+      .filter((ship) => ship.sinking === null && Math.abs(lead(ship)) <= MAX_BEARING)
+      .sort((a, b) => SHIPS[b.kind].points - SHIPS[a.kind].points)[0];
+    if (state.phase === "play" && target) {
+      const aim = lead(target);
+      input.turn = Math.abs(aim - state.bearing) <= 6 ? 0 : aim > state.bearing ? 1 : -1;
+      input.fire = Math.abs(aim - state.bearing) <= SHIPS[target.kind].half / 2;
+    }
+    if (input.turn !== last.turn || input.fire !== last.fire) log.push([state.tick, input]);
+    last = input;
+    state = Torpedo.tick(state, input).state;
+  }
+  return { seed, log, score: state.score };
 }
 
 let db: Db;
@@ -56,6 +92,21 @@ describe("arcade scores", () => {
     const idle = saveArcadeScore(db, "kid", { game: "sputnik", variant: "A", seed: 5, key: "run-key-0003", log: [] });
     expect(idle.score).toBe(replayRun(sputnik, "A", 5, [], 1_000_000).caught);
     expect(idle.score).toBeLessThan(run.score);
+  });
+
+  it("replays and records a Torpedo Run, bonus round and all", () => {
+    const run = playTorpedo(12);
+    expect(run.score).toBeGreaterThan(0);
+    const saved = saveArcadeScore(db, "kid", { game: "torpedo", variant: "standard", seed: run.seed, key: "run-key-0201", log: run.log });
+    expect(saved).toEqual({ recorded: true, score: run.score, best: run.score });
+    // Firing straight ahead and never turning is another, poorer run.
+    const idle = saveArcadeScore(db, "kid", { game: "torpedo", variant: "standard", seed: run.seed, key: "run-key-0202", log: [[0, { turn: 0, fire: true }]] });
+    expect(idle.score).toBe(replayRun(torpedo, "standard", run.seed, [[0, { turn: 0, fire: true }]], 1_000_000).score);
+    expect(idle.best).toBe(run.score);
+    expect(() => saveArcadeScore(db, "kid", { game: "torpedo", variant: "A", seed: 1, key: "run-key-0203", log: [] })).toThrow(/Not a run/);
+    expect(() => saveArcadeScore(db, "kid", { game: "torpedo", variant: "standard", seed: 1, key: "run-key-0204", log: [[0, 1]] })).toThrow(/bad input/);
+    const stats = arcadeStats(db, names, "2026-01-01T00:00:00.000Z");
+    expect(stats.all).toContainEqual({ id: "kid", name: "Kid", game: "torpedo", variant: "standard", best: run.score, played: 2 });
   });
 
   it("refuses an unknown game, a bad variant, seed or log", () => {

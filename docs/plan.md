@@ -678,6 +678,49 @@ gets its own small contract instead of bending the old one:
   6. **Release:** games minor (0.17.0). The home app needs nothing: it only
      shows invitations and your-move cards, and an arcade game makes neither.
 
+### Torpedo Run («Торпедная атака») — built 2026-10-27
+
+The second game for one player: an original periscope torpedo game in the
+spirit of the electromechanical arcade cabinets (the Soviet «Морской бой»,
+itself after Sega's Periscope). Only the general mechanics are borrowed — a
+periscope view, leading a moving ship with a slow torpedo, a limited number
+of torpedoes, a bonus-round threshold; the layout, art and names are our own.
+Game id `torpedo`, one variant `standard`. The owner approved a mockup on a
+design canvas (desktop mid-round, phone mid-round, phone round-over).
+
+- **Rules** (`packages/engine/src/arcade/torpedo/rules.ts`). 20 ticks a
+  second, all whole numbers (bearings in tenths of a degree). Three lanes:
+  tanker 100 (slow, near), cargo ship 200 (steady, mid), destroyer 300 (fast,
+  far), patrol boat 500 (very fast, mid, changes speed every so often — a
+  quarter of the mid lane's ships). At most one ship to a lane; an empty lane
+  sends the next after a seeded wait. The periscope turns ±60° at 24°/s and
+  sees ±30°. A torpedo runs down the bearing it was fired on and reaches the
+  near lane after 14 ticks, mid 26, far 40; the first ship afloat covering
+  its bearing when it gets to a lane is hit (a nearer ship shields a farther
+  one). One torpedo in the water at a time, ten a round, and a round clock of
+  90 s so a run without a shot still ends.
+- **The bonus round continues the same run.** Reaching 1 500 in the first
+  round earns one bonus round of ten more torpedoes; the score carries on, so
+  a run is one replayable score and one row on the board. Between rounds the
+  run waits (phase `bonus`) and ticks change nothing until fire is pressed;
+  the web app stops its clock there. The bonus round earns no further one.
+- **Input** is `{ turn: -1 | 0 | 1, fire: boolean }`, logged once per change
+  as `[tick, input]`; a press of fire is one tick with `fire: true`. Cues:
+  `launch`, `pass`, `hit`, `miss`, `bonus`, `roundOver`, `round`, `ship`,
+  `zig`, `over`. The server needed no new code: `ARCADE_GAMES` has it.
+- **Web** (`apps/web/src/games/torpedo/`, `styles/torpedo.css`). The periscope
+  (bearing scale, pill lens drawn on the lens's own aspect so a phone sees a
+  narrower arc, ship silhouettes, lamp-by-lamp wake, burst, HUD with ten
+  torpedo lamps, score, "bonus round at 1 500" and its bar) keeps its own
+  colours on every theme; the panel and round-over card follow the theme.
+  Space fires, ← → (or A D) turn, P pauses; on a phone, drag across the lens
+  or hold the arrows, and the big FIRE. The clock keeps to wall time and plays
+  missed ticks when a timer comes late. The card holds fire for 1.2 s so a
+  player still pressing fire reads it. Sounds are synthesised cues in
+  `shared/sound.ts`, under the top bar's switch. The lobby's arcade board
+  became "Arcade" with three chips: Sputnik Catch A, B and Torpedo Run.
+- **Later, not now:** a dusk / night / day scene picker like Chess's themes.
+
 ## Guests — playing by link (built 2026-10-23)
 
 A member can invite someone with no account here — a friend, a cousin abroad —

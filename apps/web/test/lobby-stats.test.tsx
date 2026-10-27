@@ -43,7 +43,8 @@ const stats: FamilyStats = {
     month: [
       { id: "kid", name: "Kid", game: "sputnik", variant: "A", best: 212, played: 9 },
       { id: "dad", name: "Dad", game: "sputnik", variant: "A", best: 212, played: 3 },
-      { id: "mum", name: "Мама", game: "sputnik", variant: "B", best: 40, played: 1 }
+      { id: "mum", name: "Мама", game: "sputnik", variant: "B", best: 40, played: 1 },
+      { id: "kid", name: "Kid", game: "torpedo", variant: "standard", best: 1700, played: 2 }
     ],
     all: [
       { id: "kid", name: "Kid", game: "sputnik", variant: "A", best: 212, played: 12 },
@@ -173,22 +174,24 @@ describe("the Puzzles board", () => {
   });
 });
 
-describe("the Sputnik Catch board", () => {
+describe("the arcade board", () => {
   it("ranks one variant by best run, fewer runs breaking a tie", () => {
-    expect(arcadeStandings(stats.arcade!.month, "A").map((row) => row.id)).toEqual(["dad", "kid"]);
-    expect(arcadeStandings(stats.arcade!.month, "B").map((row) => row.id)).toEqual(["mum"]);
+    expect(arcadeStandings(stats.arcade!.month, "sputnik", "A").map((row) => row.id)).toEqual(["dad", "kid"]);
+    expect(arcadeStandings(stats.arcade!.month, "sputnik", "B").map((row) => row.id)).toEqual(["mum"]);
   });
 
-  it("is the last tab, with Game A or B, the month or all time", async () => {
+  it("is the last tab, with Sputnik Catch A or B or Torpedo Run, the month or all time", async () => {
     const user = userEvent.setup();
     render(<Leaderboard stats={stats} myId="mum" />);
     const panel = screen.getByRole("region", { name: /Family leaderboard/ });
-    await user.click(within(panel).getByRole("tab", { name: "Sputnik Catch" }));
+    await user.click(within(panel).getByRole("tab", { name: "Arcade" }));
     const table = within(panel).getByRole("table");
     expect(within(table).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["#", "Player", "Best", "Runs"]);
     expect(names(table)).toEqual(["Dad", "Kid"]);
-    await user.click(within(within(panel).getByRole("group", { name: "Which game" })).getByRole("button", { name: "Game B" }));
+    await user.click(within(within(panel).getByRole("group", { name: "Which game" })).getByRole("button", { name: "Sputnik Catch B" }));
     expect(names(within(panel).getByRole("table"))).toEqual(["Мама (you)"]);
+    await user.click(within(within(panel).getByRole("group", { name: "Which game" })).getByRole("button", { name: "Torpedo Run" }));
+    expect(names(within(panel).getByRole("table"))).toEqual(["Kid"]);
     await user.click(within(panel).getByRole("button", { name: "All time" }));
     expect(within(panel).queryByRole("table")).not.toBeInTheDocument();
     expect(panel).toHaveTextContent("Nobody has finished a run yet.");
@@ -197,7 +200,7 @@ describe("the Sputnik Catch board", () => {
   it("is empty, not broken, when an older server sends no arcade results", async () => {
     const user = userEvent.setup();
     render(<Leaderboard stats={{ ...stats, arcade: undefined }} myId="mum" />);
-    await user.click(screen.getByRole("tab", { name: "Sputnik Catch" }));
+    await user.click(screen.getByRole("tab", { name: "Arcade" }));
     expect(screen.getByText("Nobody has finished a run this month yet.")).toBeInTheDocument();
   });
 });

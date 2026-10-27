@@ -1,4 +1,4 @@
-import { ChessKnight, CircleDot, Orbit, RectangleVertical, Satellite, type LucideIcon } from "lucide-react";
+import { ChessKnight, CircleDot, Orbit, RectangleVertical, Satellite, Ship, type LucideIcon } from "lucide-react";
 import { ARCADE_GAMES, GAMES } from "@isputnik/games-engine";
 import { loadDotsGame } from "./dots/storage";
 import { loadStarBattleGame } from "./starbattle/storage";
@@ -9,8 +9,8 @@ import { loadDominoesGame } from "./dominoes/storage";
 // registries: an icon and the keys of its name and summary, the ways it can be
 // played, and whether a local game of it is in progress on this device. A game
 // without an entry here is not offered, whatever the engine knows.
-export type GameNameKey = "games.dots.name" | "games.starbattle.name" | "games.chess.name" | "games.dominoes.name" | "games.sputnik.name";
-export type GameSummaryKey = "games.dots.summary" | "games.starbattle.summary" | "games.chess.summary" | "games.dominoes.summary" | "games.sputnik.summary";
+export type GameNameKey = "games.dots.name" | "games.starbattle.name" | "games.chess.name" | "games.dominoes.name" | "games.sputnik.name" | "games.torpedo.name";
+export type GameSummaryKey = "games.dots.summary" | "games.starbattle.summary" | "games.chess.summary" | "games.dominoes.summary" | "games.sputnik.summary" | "games.torpedo.summary";
 
 /** Against the computer, two people at one screen, two people online, or an
  *  arcade game: one person against the clock. */
@@ -69,6 +69,15 @@ export const CATALOG: Record<string, CatalogEntry> = {
     modes: ["arcade"],
     newUntil: "2026-11-30",
     // A run is not kept between visits: the handheld starts afresh.
+    inProgress: () => false
+  },
+  torpedo: {
+    icon: Ship,
+    name: "games.torpedo.name",
+    summary: "games.torpedo.summary",
+    modes: ["arcade"],
+    newUntil: "2026-12-01",
+    // Nor is a torpedo run: the periscope starts afresh.
     inProgress: () => false
   }
 };

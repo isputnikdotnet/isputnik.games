@@ -13,12 +13,18 @@ import { CATALOG } from "../games/catalog";
 // online games between members; vs Computer, the games each member finished
 // against the computer, scored by the level beaten; Chess rating, each
 // member's chess rating; Puzzles, the members' chess puzzle ratings; and
-// Sputnik Catch, each member's best run at Game A or B. Each footnote says
-// what its board counts.
+// Arcade, each member's best run at Sputnik Catch (Game A or B) or Torpedo
+// Run. Each footnote says what its board counts.
 
 type Period = "month" | "all";
 type Board = "each" | "computer" | "rating" | "puzzles" | "arcade";
-type Variant = "A" | "B";
+/** The arcade board's choices: a game for one player and the variant it keeps scores by. */
+const ARCADE_BOARDS = [
+  { game: "sputnik", variant: "A", label: "lobby.board.arcadeSputnikA" },
+  { game: "sputnik", variant: "B", label: "lobby.board.arcadeSputnikB" },
+  { game: "torpedo", variant: "standard", label: "lobby.board.arcadeTorpedo" }
+] as const;
+type ArcadeBoard = (typeof ARCADE_BOARDS)[number];
 
 interface Standing {
   id: string;
@@ -79,9 +85,9 @@ export function ratingStandings(rows: ChessRatingRow[]): ChessRatingRow[] {
   return [...rows].sort((a, b) => b.rating - a.rating || Number(a.provisional) - Number(b.provisional) || b.games - a.games || a.name.localeCompare(b.name));
 }
 
-/** The Sputnik Catch board: the highest best first; between equals, fewer runs. */
-export function arcadeStandings(rows: ArcadeRow[], variant: Variant): ArcadeRow[] {
-  return rows.filter((row) => row.game === "sputnik" && row.variant === variant)
+/** An arcade board: the highest best first; between equals, fewer runs. */
+export function arcadeStandings(rows: ArcadeRow[], game: string, variant: string): ArcadeRow[] {
+  return rows.filter((row) => row.game === game && row.variant === variant)
     .sort((a, b) => b.best - a.best || a.played - b.played || a.name.localeCompare(b.name));
 }
 
@@ -108,12 +114,12 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
   const [board, setBoard] = useState<Board>("each");
   const [period, setPeriod] = useState<Period>("month");
   const [game, setGame] = useState<string | null>(null);
-  const [variant, setVariant] = useState<Variant>("A");
+  const [arcadeBoard, setArcadeBoard] = useState<ArcadeBoard>(ARCADE_BOARDS[0]);
   const each = stats && board === "each" ? standings(stats[period], game) : [];
   const computer = stats && board === "computer" ? computerStandings(stats.computer[period], game) : [];
   const puzzles = stats && board === "puzzles" ? puzzleStandings(stats.puzzles ?? [], period) : [];
   const ratings = stats && board === "rating" ? ratingStandings(stats.chessRatings ?? []) : [];
-  const arcade = stats && board === "arcade" ? arcadeStandings(stats.arcade?.[period] ?? [], variant) : [];
+  const arcade = stats && board === "arcade" ? arcadeStandings(stats.arcade?.[period] ?? [], arcadeBoard.game, arcadeBoard.variant) : [];
   const shown = { each: each.length, computer: computer.length, rating: ratings.length, puzzles: puzzles.length, arcade: arcade.length };
   const empty = stats && shown[board] === 0;
   const player = (id: string, name: string) => (id === myId ? t("lobby.board.you", { name }) : name);
@@ -161,8 +167,9 @@ export function Leaderboard({ stats, myId }: { stats: FamilyStats | null; myId: 
       )}
       {board === "arcade" && (
       <div className="chip-row lobby-board-games" role="group" aria-label={t("lobby.board.variant")}>
-        <Button variant="chip" selected={variant === "A"} onClick={() => setVariant("A")}>{t("sputnik.gameA")}</Button>
-        <Button variant="chip" selected={variant === "B"} onClick={() => setVariant("B")}>{t("sputnik.gameB")}</Button>
+        {ARCADE_BOARDS.map((choice) => (
+          <Button key={choice.label} variant="chip" selected={arcadeBoard === choice} onClick={() => setArcadeBoard(choice)}>{t(choice.label)}</Button>
+        ))}
       </div>
       )}
       {empty && (

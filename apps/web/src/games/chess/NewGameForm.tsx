@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Chess, type AiLevel, type PlayerIndex } from "@isputnik/games-engine";
 import { Button } from "../../shared/Button";
 import { Choice } from "../../shared/Choice";
@@ -97,7 +98,7 @@ export function ChessNewGameForm({ onStart }: { onStart: (setup: ChessSetup) => 
   );
 }
 
-type Translate = ReturnType<typeof useTranslation>["t"];
+type Translate = TFunction;
 
 export function puzzleTypeOptions(t: Translate): { value: PuzzleChoice["type"]; label: string }[] {
   return (["any", ...Chess.PUZZLE_TYPES] as PuzzleChoice["type"][]).map((value) => ({ value, label: t(`chess.puzzle.types.${value}`) }));

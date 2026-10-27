@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { otherPlayer, type HandResult, type PlayerIndex } from "@isputnik/games-engine";
 import { Dialog } from "../../shared/Dialog";
 import { DominoTile } from "./DominoTile";
@@ -49,7 +50,7 @@ export function DominoesScore({
 
 /** What a finished hand was, in a sentence: who went out or why it stopped,
  *  and who collected what. */
-function handLead(t: ReturnType<typeof useTranslation>["t"], result: HandResult, me: PlayerIndex, names: [string, string]): string {
+function handLead(t: TFunction, result: HandResult, me: PlayerIndex, names: [string, string]): string {
   if (result.winner === null) return t("dominoes.summary.tieLead", { count: result.pips[0] });
   // Going out, the other hand pays; a «рыба», the heavier hand pays its own.
   // Either way it is the seat that did not win the hand.
@@ -60,7 +61,7 @@ function handLead(t: ReturnType<typeof useTranslation>["t"], result: HandResult,
     : t(result.fish ? "dominoes.summary.fishThem" : "dominoes.summary.collectThem", { name: names[collector], count: points });
 }
 
-function handTitle(t: ReturnType<typeof useTranslation>["t"], result: HandResult, me: PlayerIndex, names: [string, string]): string {
+function handTitle(t: TFunction, result: HandResult, me: PlayerIndex, names: [string, string]): string {
   if (result.fish) return result.winner === null ? t("dominoes.summary.tieTitle") : t("dominoes.summary.fishTitle");
   return result.winner === me ? t("dominoes.summary.outYou") : t("dominoes.summary.outThem", { name: names[result.winner ?? 0] });
 }

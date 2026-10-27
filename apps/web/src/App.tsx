@@ -18,6 +18,7 @@ import { ChessMatchPage } from "./games/chess/ChessMatchPage";
 import { DominoesPage } from "./games/dominoes/DominoesPage";
 import { DominoesMatchPage } from "./games/dominoes/DominoesMatchPage";
 import { SputnikPage } from "./games/sputnik/SputnikPage";
+import { TorpedoPage } from "./games/torpedo/TorpedoPage";
 
 function Routes() {
   const route = useRoute();
@@ -48,6 +49,7 @@ function Routes() {
   // Games for one player have their own registry: they have no matches.
   if (route.name === "game" && getArcadeGame(route.gameId)) {
     if (route.gameId === "sputnik") return <SputnikPage />;
+    if (route.gameId === "torpedo") return <TorpedoPage />;
   }
   if (route.name === "puzzles") return <ChessPuzzlePage />;
   if (route.name === "myGames") return <MyChessGamesPage />;

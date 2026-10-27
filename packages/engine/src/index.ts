@@ -19,3 +19,6 @@ export * from "./arcade/registry.js";
 export * as Sputnik from "./arcade/sputnik/index.js";
 export { sputnik } from "./arcade/sputnik/index.js";
 export type { SputnikState, SputnikVariant, Rail as SputnikRail, Side as SputnikSide } from "./arcade/sputnik/rules.js";
+export * as Torpedo from "./arcade/torpedo/index.js";
+export { torpedo } from "./arcade/torpedo/index.js";
+export type { TorpedoState, TorpedoVariant, TorpedoInput, Turn as TorpedoTurn, ShipKind, Ship as TorpedoShip, Lane as TorpedoLane, RoundTally } from "./arcade/torpedo/rules.js";
