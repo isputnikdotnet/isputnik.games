@@ -1,8 +1,9 @@
 // Torpedo Run, the rules (docs/plan.md → Torpedo Run). A submarine's periscope
 // looks out over three lanes of sea — near, mid and far — where ships cross
-// from one side to the other. The player turns the periscope and fires down
-// its bearing; a torpedo is slow, reaching the near lane first and the far
-// lane last, so a ship must be led. One torpedo in the water at a time, ten to
+// from one side to the other. The periscope's view holds still and shows the
+// whole field of attack; the player moves the sight left and right along the
+// horizon and fires along its bearing. A torpedo is slow, reaching the near
+// lane first and the far lane last, so a ship must be led. One torpedo in the water at a time, ten to
 // a round. A round that comes to 1 500 earns one bonus round of ten more,
 // played on in the same run, so a run is one replayable score.
 //
@@ -14,10 +15,10 @@ import { ArcadeOverError, type ArcadeCue, type ArcadeTick } from "../game.js";
 export type TorpedoVariant = "standard";
 export const VARIANTS: readonly TorpedoVariant[] = ["standard"];
 
-/** The periscope's turn this tick: -1 left, 0 still, 1 right. */
+/** Which way the sight moves this tick: -1 left, 0 still, 1 right. */
 export type Turn = -1 | 0 | 1;
 
-/** What the player does on a tick: which way the periscope turns, and whether
+/** What the player does on a tick: which way the sight moves, and whether
  *  the fire button is down. Fire launches only when the tube is free. */
 export interface TorpedoInput {
   turn: Turn;
@@ -42,24 +43,23 @@ interface ShipClass {
 }
 
 export const SHIPS: Record<ShipKind, ShipClass> = {
-  tanker: { points: 100, lane: "near", speed: 4, half: 56 },
-  cargo: { points: 200, lane: "mid", speed: 6, half: 42 },
-  destroyer: { points: 300, lane: "far", speed: 9, half: 30 },
-  patrol: { points: 500, lane: "mid", speed: 12, half: 22 }
+  tanker: { points: 100, lane: "near", speed: 2, half: 56 },
+  cargo: { points: 200, lane: "mid", speed: 3, half: 42 },
+  destroyer: { points: 300, lane: "far", speed: 4, half: 30 },
+  patrol: { points: 500, lane: "mid", speed: 6, half: 22 }
 };
 
 /** One tick, in milliseconds: twenty a second. */
 export const TICK_MS = 50;
-/** The periscope turns at most this far either way of dead ahead. */
-export const MAX_BEARING = 600;
-/** Bearing units the periscope turns in a tick. */
-export const TURN_SPEED = 12;
-/** Half the lens's field of view: what is in sight either side of the bearing. */
-export const VIEW_HALF = 300;
-/** Ships enter and leave this far either side of dead ahead. */
-export const SEA_EDGE = 900;
+/** Half the field of attack: the lens shows this far either side of dead
+ *  ahead, all of it at once. Ships come in and go out at its edges. */
+export const FIELD_HALF = 450;
+/** The sight moves at most this far either way of dead ahead. */
+export const MAX_BEARING = 420;
+/** Bearing units the sight moves in a tick. */
+export const SIGHT_SPEED = 10;
 /** Ticks a torpedo runs before it reaches each lane. */
-export const RANGE: Record<Lane, number> = { near: 14, mid: 26, far: 40 };
+export const RANGE: Record<Lane, number> = { near: 16, mid: 30, far: 46 };
 /** Torpedoes a round. */
 export const TORPEDOES = 10;
 /** A round's clock: ninety seconds, so a run without a shot still ends. */
@@ -71,19 +71,19 @@ export const ROUNDS = 2;
 /** Ticks a hit ship takes to go under. */
 export const SINK_TICKS = 24;
 /** A patrol boat changes speed this often… */
-const ZIGZAG_TICKS: [from: number, span: number] = [12, 16];
+const ZIGZAG_TICKS: [from: number, span: number] = [20, 30];
 /** …to one of these, never stopping and never turning back. */
-const PATROL_SPEEDS: readonly number[] = [6, 10, 14, 18];
+const PATROL_SPEEDS: readonly number[] = [3, 5, 7, 9];
 /** Chance the mid lane sends a patrol boat rather than a cargo ship. */
 const PATROL_CHANCE = 0.25;
 /** Ticks an empty lane waits before its next ship comes in. */
-const LANE_WAIT: [from: number, span: number] = [10, 50];
+const LANE_WAIT: [from: number, span: number] = [20, 60];
 
 export interface Ship {
   /** Numbered from 1 in the order they came in, for the web app's keys. */
   id: number;
   kind: ShipKind;
-  /** Bearing of the ship's middle. */
+  /** Bearing of the ship's middle; off the field until it comes in. */
   x: number;
   /** 1 heading right, -1 heading left. */
   dir: 1 | -1;
@@ -122,6 +122,7 @@ export interface TorpedoState {
   round: number;
   /** Ticks left on this round's clock. */
   clock: number;
+  /** Where the sight is on the horizon. */
   bearing: number;
   torpedoesLeft: number;
   torpedo: Torpedo | null;
@@ -161,7 +162,7 @@ export function parseVariant(input: unknown): TorpedoVariant {
 export function parseInput(input: unknown): TorpedoInput {
   if (typeof input !== "object" || input === null || Array.isArray(input)) throw new Error("An input is { turn, fire }");
   const { turn, fire } = input as Record<string, unknown>;
-  if (turn !== -1 && turn !== 0 && turn !== 1) throw new Error("The periscope turns -1, 0 or 1");
+  if (turn !== -1 && turn !== 0 && turn !== 1) throw new Error("The sight moves -1, 0 or 1");
   if (typeof fire !== "boolean") throw new Error("Fire is true or false");
   return { turn, fire };
 }
@@ -214,7 +215,7 @@ function launchShip(dice: Dice, lane: Lane, id: number): Ship {
   return {
     id,
     kind,
-    x: -dir * (SEA_EDGE + ship.half),
+    x: -dir * (FIELD_HALF + ship.half),
     dir,
     speed: patrol ? PATROL_SPEEDS[dice.between(0, PATROL_SPEEDS.length)] : ship.speed,
     zig: patrol ? dice.between(...ZIGZAG_TICKS) : 0,
@@ -246,8 +247,8 @@ export function tick(state: TorpedoState, input: TorpedoInput): ArcadeTick<Torpe
   next.waits = { ...state.waits };
   next.clock = Math.max(0, state.clock - 1);
 
-  // The periscope turns, as far as it goes.
-  next.bearing = Math.max(-MAX_BEARING, Math.min(MAX_BEARING, state.bearing + input.turn * TURN_SPEED));
+  // The sight moves along the horizon, as far as it goes.
+  next.bearing = Math.max(-MAX_BEARING, Math.min(MAX_BEARING, state.bearing + input.turn * SIGHT_SPEED));
 
   // Ships move; a sunk one is gone, and so is one that has crossed the sea.
   const ships: Ship[] = [];
@@ -264,7 +265,7 @@ export function tick(state: TorpedoState, input: TorpedoInput): ArcadeTick<Torpe
       cues.push({ kind: "zig", ship: ship.id });
     }
     ship.x += ship.dir * ship.speed;
-    if (Math.abs(ship.x) > SEA_EDGE + SHIPS[ship.kind].half) continue;
+    if (Math.abs(ship.x) > FIELD_HALF + SHIPS[ship.kind].half) continue;
     ships.push(ship);
   }
   next.ships = ships;

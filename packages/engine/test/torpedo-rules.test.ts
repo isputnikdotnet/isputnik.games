@@ -11,7 +11,7 @@ import {
   SHIPS,
   SINK_TICKS,
   TORPEDOES,
-  TURN_SPEED,
+  SIGHT_SPEED,
   createRun,
   inSights,
   parseInput,
@@ -57,7 +57,7 @@ function play(seed: number, skill: number, check?: (state: TorpedoState, cues: {
         .sort((a, b) => SHIPS[b.kind].points - SHIPS[a.kind].points)[0];
       if (target) {
         const aim = lead(target);
-        const turn: Turn = Math.abs(aim - state.bearing) <= TURN_SPEED / 2 ? 0 : aim > state.bearing ? 1 : -1;
+        const turn: Turn = Math.abs(aim - state.bearing) <= SIGHT_SPEED / 2 ? 0 : aim > state.bearing ? 1 : -1;
         const on = Math.abs(aim - state.bearing) <= SHIPS[target.kind].half / 2;
         input = { turn, fire: on && !state.torpedo && random() < skill };
       }
@@ -82,10 +82,10 @@ describe("Torpedo Run rules", () => {
     expect(state).toMatchObject({ tick: 0, phase: "play", round: 1, clock: ROUND_TICKS, bearing: 0, torpedoesLeft: TORPEDOES, torpedo: null, score: 0, over: false });
   });
 
-  it("turns the periscope as far as it goes and no further", () => {
+  it("moves the sight as far as it goes and no further", () => {
     let state = run();
     state = tick(state, { turn: 1, fire: false }).state;
-    expect(state.bearing).toBe(TURN_SPEED);
+    expect(state.bearing).toBe(SIGHT_SPEED);
     for (let i = 0; i < 200; i++) state = tick(state, { turn: -1, fire: false }).state;
     expect(state.bearing).toBe(-MAX_BEARING);
   });

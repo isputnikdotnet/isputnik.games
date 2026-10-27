@@ -4,18 +4,21 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Torpedo, type TorpedoState } from "@isputnik/games-engine";
 import { SHIP_HEIGHT, SHIP_PATHS } from "./ships";
 import type { TorpedoMode } from "./useTorpedoRun";
-import { CENTRE, HORIZON, K, LANE_Y, LENS_H, TUBE_Y, formatScore, screenX, shipScale, wakePoint } from "./view";
+import { FIELD_W, HORIZON, K, LANE_Y, LENS_H, formatScore, screenX, shipScale, viewOf, wakePoint } from "./view";
 
-const { SHIPS, SINK_TICKS, RANGE, TORPEDOES, BONUS_AT, TICK_MS, inSights } = Torpedo;
+const { SHIPS, SINK_TICKS, RANGE, TORPEDOES, BONUS_AT, TICK_MS, FIELD_HALF, inSights } = Torpedo;
 
-/** Far headlands on the horizon, at fixed bearings: they slide as the periscope turns. */
+/** Far headlands on the horizon, at fixed bearings. */
 const HEADLANDS: readonly [bearing: number, width: number, height: number][] = [
-  [-760, 220, 9], [-430, 120, 5], [130, 260, 7], [520, 160, 11], [820, 90, 4]
+  [-380, 160, 7], [-170, 90, 4], [210, 200, 8], [400, 110, 5]
 ];
-/** Rows of glints on the water, each with its own spacing, near rows wider apart. */
-const GLINT_ROWS: readonly [y: number, every: number, width: number][] = [
-  [222, 70, 10], [252, 95, 16], [296, 130, 24], [348, 170, 34], [404, 220, 46]
-];
+/** Glints on the water, row by row, near rows wider apart: [x, y, width]. */
+const GLINTS: readonly [number, number, number][] = [
+  [222, 70, 10], [252, 95, 16], [296, 130, 24], [348, 170, 34], [404, 220, 46], [470, 260, 56], [540, 300, 64]
+].flatMap(([y, every, width], row) =>
+  Array.from({ length: Math.ceil(FIELD_W / every) + 1 }, (_, i): [number, number, number] => [i * every + ((row * 37 + i * 53) % 29) - row * 11, y + ((i * 7) % 5), width]));
+/** The bearing scale: a tick every 5°, a figure every 15°, across the field. */
+const SCALE: readonly number[] = Array.from({ length: (2 * FIELD_HALF) / 50 + 1 }, (_, i) => -FIELD_HALF / 10 + i * 5);
 /** One lamp of the wake every this many ticks of the torpedo's run. */
 const LAMP_EVERY = 4;
 const LAMP_RUNS = Array.from({ length: RANGE.far / LAMP_EVERY + 1 }, (_, i) => i * LAMP_EVERY);
@@ -51,9 +54,11 @@ const keepFocus = (event: { preventDefault(): void }) => event.preventDefault();
 const compass = (degrees: number) => String(((degrees % 360) + 360) % 360).padStart(3, "0");
 
 // The periscope, the game's board: a bearing scale over a pill-shaped lens on
-// the dusk sea, the torpedo lamps and the score under it, and the turn and
-// FIRE buttons at the foot. A physical thing, so it wears its own colours on
-// every theme (torpedo.css). Dragging across the lens turns the periscope.
+// the dusk sea, the torpedo lamps and the score under it, and the sight and
+// FIRE buttons at the foot. The view holds still and shows the whole field of
+// attack; the sight moves along the horizon, and a torpedo runs straight up
+// the lens from under it. A physical thing, so it wears its own colours on
+// every theme (torpedo.css). A finger on the lens draws the sight to it.
 export function Periscope({
   mode,
   state,
@@ -74,14 +79,19 @@ export function Periscope({
 }) {
   const { t } = useTranslation();
   const [lensRef, aspect] = useAspect<HTMLDivElement>();
-  const drag = useRef<{ id: number; x: number; bearing: number } | null>(null);
-  const viewW = LENS_H * aspect;
-  const left = CENTRE - viewW / 2;
-  const box = `${left} 0 ${viewW} ${LENS_H}`;
+  const drag = useRef<number | null>(null);
+  const { top, height } = viewOf(aspect);
+  const bottom = top + height;
+  const tubeY = bottom - 12;
   const { bearing } = state;
-  const visible = (x: number, margin = 200) => x > left - margin && x < left + viewW + margin;
+  const sightX = screenX(bearing);
   const sighted = mode === "play" ? inSights(state, bearing) : undefined;
 
+  /** The bearing under a finger on the lens. */
+  const bearingAt = (event: PointerEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return (((event.clientX - rect.left) / rect.width) * FIELD_W - FIELD_W / 2) / K;
+  };
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (mode !== "play") return;
     try {
@@ -89,24 +99,20 @@ export function Periscope({
     } catch {
       /* a pointer already gone: the drag still follows it while over the lens */
     }
-    drag.current = { id: event.pointerId, x: event.clientX, bearing };
+    drag.current = event.pointerId;
+    onAim(bearingAt(event));
   };
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    const start = drag.current;
-    if (!start || start.id !== event.pointerId) return;
-    const perPixel = viewW / event.currentTarget.clientWidth / K;
-    onAim(start.bearing + (event.clientX - start.x) * perPixel);
+    if (drag.current !== event.pointerId) return;
+    onAim(bearingAt(event));
   };
   const onPointerEnd = (event: PointerEvent<HTMLDivElement>) => {
-    if (drag.current?.id !== event.pointerId) return;
+    if (drag.current !== event.pointerId) return;
     drag.current = null;
     onAim(null);
   };
 
-  // The bearing scale: a tick every 5°, a figure every 15°.
   const degrees = bearing / 10;
-  const scale: number[] = [];
-  for (let d = Math.ceil((degrees - 60) / 5) * 5; d <= degrees + 60; d += 5) scale.push(d);
 
   const shown = banner && state.tick - banner.tick < BANNER_TICKS ? banner : null;
   let bannerText: string | null = null;
@@ -128,8 +134,8 @@ export function Periscope({
       <div className="torpedo-cabinet">
         {/* Placed in percent of the lens's width, so each figure sits over the bearing it names. */}
         <div className="torpedo-bearings" aria-hidden="true">
-          {scale.map((d) => {
-            const at = ((CENTRE + (d - degrees) * 10 * K - left) / viewW) * 100;
+          {SCALE.map((d) => {
+            const at = (screenX(d * 10) / FIELD_W) * 100;
             if (at < 2 || at > 98) return null;
             const major = d % 15 === 0;
             return (
@@ -138,7 +144,7 @@ export function Periscope({
               </span>
             );
           })}
-          <span className="torpedo-bearing-mark" />
+          <span className="torpedo-bearing-mark" style={{ left: `${(sightX / FIELD_W) * 100}%` }} />
         </div>
 
         <div
@@ -151,7 +157,7 @@ export function Periscope({
           onPointerUp={onPointerEnd}
           onPointerCancel={onPointerEnd}
         >
-          <svg viewBox={box} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+          <svg viewBox={`0 ${top} ${FIELD_W} ${height}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
             <defs>
               <linearGradient id="torpedo-sky" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0" stopColor="#24384a" />
@@ -169,33 +175,23 @@ export function Periscope({
                 <stop offset="1" stopColor="#d14b2d" stopOpacity="0" />
               </radialGradient>
             </defs>
-            <rect x={left} y={0} width={viewW} height={HORIZON} fill="url(#torpedo-sky)" />
-            <rect x={left} y={HORIZON} width={viewW} height={LENS_H - HORIZON} fill="url(#torpedo-sea)" />
+            <rect x={0} y={top} width={FIELD_W} height={HORIZON - top} fill="url(#torpedo-sky)" />
+            <rect x={0} y={HORIZON} width={FIELD_W} height={bottom - HORIZON} fill="url(#torpedo-sea)" />
             <g className="torpedo-headlands">
               {HEADLANDS.map(([at, width, height]) => {
-                const x = screenX(at, bearing);
-                if (!visible(x, width)) return null;
+                const x = screenX(at);
                 return <path key={at} d={`M${x - width / 2} ${HORIZON} Q${x - width / 4} ${HORIZON - height} ${x} ${HORIZON - height * 0.8} T${x + width / 2} ${HORIZON} Z`} />;
               })}
             </g>
-            <line x1={left} x2={left + viewW} y1={HORIZON} y2={HORIZON} className="torpedo-horizon" />
+            <line x1={0} x2={FIELD_W} y1={HORIZON} y2={HORIZON} className="torpedo-horizon" />
             <g className="torpedo-glints">
-              {GLINT_ROWS.map(([y, every, width], row) => {
-                const out: ReactNode[] = [];
-                const offset = row * 37;
-                const from = Math.floor((bearing + (left - CENTRE) / K - offset) / every) - 1;
-                const to = Math.ceil((bearing + (left + viewW - CENTRE) / K - offset) / every) + 1;
-                for (let i = from; i <= to; i++) {
-                  const x = screenX(i * every + offset + ((i * 53) % 29), bearing);
-                  out.push(<rect key={`${row}:${i}`} x={x - width / 2} y={y + ((i * 7) % 5)} width={width} height={row < 2 ? 1.5 : 2.5} rx={1} />);
-                }
-                return out;
-              })}
+              {GLINTS.filter(([, y]) => y < bottom).map(([x, y, width]) => (
+                <rect key={`${x}:${y}`} x={x - width / 2} y={y} width={width} height={y < 260 ? 1.5 : 2.5} rx={1} />
+              ))}
             </g>
 
             {ships.map((ship) => {
-              const x = screenX(ship.x, bearing);
-              if (!visible(x)) return null;
+              const x = screenX(ship.x);
               const s = shipScale(ship);
               const y = LANE_Y[SHIPS[ship.kind].lane];
               const sinking = ship.sinking === null ? 0 : 1 - ship.sinking / SINK_TICKS;
@@ -224,7 +220,7 @@ export function Periscope({
             {torpedo && (
               <g className="torpedo-wake">
                 {LAMP_RUNS.filter((run) => run <= torpedo.run).map((run) => {
-                  const point = wakePoint(torpedo.bearing, run, bearing);
+                  const point = wakePoint(torpedo.bearing, run, tubeY);
                   const head = torpedo.run - run < LAMP_EVERY;
                   const glow = 0.35 + 0.65 * (run / RANGE.far);
                   return (
@@ -241,14 +237,19 @@ export function Periscope({
               </g>
             )}
 
+            {/* The reticle's rule holds still on the horizon; the sight (its upright,
+                and the tube's mark under it) slides along it. */}
             <g className={`torpedo-crosshair${sighted ? " is-sighted" : ""}`}>
-              <line x1={CENTRE} x2={CENTRE} y1={40} y2={HORIZON - 20} />
-              <line x1={CENTRE} x2={CENTRE} y1={HORIZON + 20} y2={TUBE_Y - 30} />
-              <line x1={left + 40} x2={CENTRE - 24} y1={HORIZON} y2={HORIZON} />
-              <line x1={CENTRE + 24} x2={left + viewW - 40} y1={HORIZON} y2={HORIZON} />
-              {[-200, -100, 100, 200].map((dx) => (
-                <line key={dx} x1={CENTRE + dx} x2={CENTRE + dx} y1={HORIZON - (Math.abs(dx) === 200 ? 8 : 6)} y2={HORIZON + (Math.abs(dx) === 200 ? 8 : 6)} />
+              <line x1={30} x2={FIELD_W - 30} y1={HORIZON} y2={HORIZON} className="is-rule" />
+              {[-300, -200, -100, 0, 100, 200, 300].map((at) => (
+                <line key={at} x1={screenX(at)} x2={screenX(at)} y1={HORIZON - 5} y2={HORIZON + 5} className="is-rule" />
               ))}
+              <g className="torpedo-sight" style={{ transform: `translateX(${sightX}px)` }}>
+                <line x1={0} x2={0} y1={top + 30} y2={HORIZON - 18} />
+                <line x1={0} x2={0} y1={HORIZON + 18} y2={tubeY - 24} />
+                <line x1={-18} x2={18} y1={HORIZON} y2={HORIZON} />
+                <path d={`M-10 ${tubeY + 6} L0 ${tubeY - 10} L10 ${tubeY + 6} Z`} />
+              </g>
             </g>
           </svg>
           <div className="torpedo-vignette" aria-hidden="true" />

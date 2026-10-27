@@ -815,7 +815,7 @@
   },
   "torpedo": {
     "lens": {
-      "label": "Periscope view, bearing {{bearing}}",
+      "label": "Periscope view, sight on bearing {{bearing}}",
       "hit": "HIT · +{{points}}",
       "miss": "MISS",
       "bonus": "BONUS ROUND EARNED",
@@ -833,8 +833,8 @@
       "round": "Round {{round}}"
     },
     "controls": {
-      "left": "Turn the periscope left",
-      "right": "Turn the periscope right",
+      "left": "Move the sight left",
+      "right": "Move the sight right",
       "fire": "Fire",
       "start": "Start",
       "bonus": "Bonus round",
@@ -870,14 +870,14 @@
     "rules": {
       "title": "How a round goes",
       "torpedoes": "Ten torpedoes a round, one in the water at a time.",
-      "lead": "The wake lights up lamp by lamp: it takes time to get there, so aim where the ship will be.",
+      "lead": "The wake lights up lamp by lamp from under the sight: it takes time to get there, so aim where the ship will be.",
       "points": "Far and fast ships score more. A nearer ship in the way takes the torpedo.",
       "bonus": "Reach {{score}} and the next round is on the house.",
       "clock": "A round lasts ninety seconds at most."
     },
     "keys": {
-      "desktop": "Space fires · ← → or A D turn the periscope · P pauses.",
-      "touch": "Drag across the view, or hold the arrows, to turn the periscope."
+      "desktop": "Space fires · ← → or A D move the sight · P pauses.",
+      "touch": "Touch the view where to aim, or hold the arrows, to move the sight."
     },
     "card": {
       "roundOver": "Round over",

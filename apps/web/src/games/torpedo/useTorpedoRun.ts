@@ -50,12 +50,12 @@ function randomSeed(): number {
   return Math.floor(Math.random() * 0x100000000);
 }
 
-const { SHIPS, RANGE, MAX_BEARING, TURN_SPEED } = Torpedo;
+const { SHIPS, RANGE, MAX_BEARING, SIGHT_SPEED } = Torpedo;
 
 /** Where a ship will be when a torpedo fired now gets to its lane. */
 const leadOf = (ship: TorpedoState["ships"][number]) => ship.x + ship.dir * ship.speed * (RANGE[SHIPS[ship.kind].lane] + 1);
 
-const turnToward = (from: number, to: number): TorpedoTurn => (Math.abs(to - from) <= TURN_SPEED / 2 ? 0 : to > from ? 1 : -1);
+const turnToward = (from: number, to: number): TorpedoTurn => (Math.abs(to - from) <= SIGHT_SPEED / 2 ? 0 : to > from ? 1 : -1);
 
 /** The demo's gunner: swings onto the best ship in reach and fires, not
  *  always well, so the attract mode shows misses too. */
@@ -80,7 +80,7 @@ interface Live {
   /** The arrow keys and buttons held down. */
   left: boolean;
   right: boolean;
-  /** Where a drag across the lens wants the periscope, if one is under way. */
+  /** Where a finger on the lens wants the sight, while it is there. */
   target: number | null;
   /** Fire was pressed since the last tick. */
   fire: boolean;
@@ -232,14 +232,14 @@ export function useTorpedoRun(onCues?: (cues: ArcadeCue[], mode: TorpedoMode, st
     }
   }, [publish, schedule, start]);
 
-  /** A turn key or button going down or up. */
+  /** A sight key or button going down or up. */
   const hold = useCallback((side: "left" | "right", down: boolean) => {
     const run = live.current;
     run[side] = down;
     if (down) run.target = null;
   }, []);
 
-  /** A drag across the lens: the bearing it asks for, or null when let go. */
+  /** A finger on the lens: the bearing it asks the sight to go to, or null when let go. */
   const aim = useCallback((bearing: number | null) => {
     live.current.target = bearing === null ? null : Math.max(-MAX_BEARING, Math.min(MAX_BEARING, Math.round(bearing)));
   }, []);

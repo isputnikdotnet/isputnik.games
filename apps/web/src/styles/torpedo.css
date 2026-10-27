@@ -95,17 +95,19 @@
   color: var(--tr-lamp);
 }
 
+/* The mark under the scale follows the sight. */
 .torpedo-bearing-mark {
   position: absolute;
-  left: 50%;
   bottom: 0;
+  transition: left 50ms linear;
   border: 6px solid transparent;
   border-top: 0;
   border-bottom: 7px solid var(--tr-lamp);
   transform: translateX(-50%);
 }
 
-/* The lens: a pill on a wide screen, near round on a narrow one. */
+/* The lens: a pill on a wide screen, deeper on a narrow one, always showing
+   the whole field of attack across its width. */
 .torpedo-lens {
   position: relative;
   aspect-ratio: 1000 / 440;
@@ -122,8 +124,8 @@
 
 @container (max-width: 560px) {
   .torpedo-lens {
-    aspect-ratio: 370 / 330;
-    border-radius: 46% / 50%;
+    aspect-ratio: 370 / 250;
+    border-radius: 40% / 50%;
   }
 
   .torpedo-cabinet {
@@ -189,20 +191,34 @@
 }
 
 .torpedo-crosshair line {
-  stroke: rgba(255, 210, 122, 0.55);
-  stroke-width: 1.5;
+  stroke: rgba(255, 210, 122, 0.7);
+  stroke-width: 2;
   transition: stroke 120ms;
 }
 
-.torpedo-crosshair.is-sighted line {
-  stroke: rgba(255, 220, 140, 0.95);
+.torpedo-crosshair line.is-rule {
+  stroke: rgba(255, 210, 122, 0.3);
+  stroke-width: 1.5;
+}
+
+.torpedo-crosshair.is-sighted line:not(.is-rule) {
+  stroke: rgba(255, 228, 160, 1);
+}
+
+/* The sight glides between ticks, as the ships do. */
+.torpedo-sight {
+  transition: transform 50ms linear;
+}
+
+.torpedo-sight path {
+  fill: var(--tr-lamp);
 }
 
 .torpedo-vignette {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 0 90px 30px rgba(0, 0, 0, 0.85);
+  box-shadow: inset 0 0 50px 14px rgba(0, 0, 0, 0.8);
   pointer-events: none;
 }
 
