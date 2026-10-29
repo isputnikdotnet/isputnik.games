@@ -871,7 +871,7 @@
     "rules": {
       "title": "How a round goes",
       "torpedoes": "Ten torpedoes a round, one in the water at a time.",
-      "lead": "The torpedo leaves the bow and runs on a slant toward the sight, lamp by lamp: it takes time to get there, so aim where the ship will be.",
+      "lead": "The torpedo leaves from between the two lines and leans the way the periscope is turned, lamp by lamp: it takes time to get out to the ships, so aim where the ship will be.",
       "points": "Far and fast ships score more. A nearer ship in the way takes the torpedo.",
       "bonus": "Reach {{score}} and the next round is on the house.",
       "clock": "A round lasts ninety seconds at most."

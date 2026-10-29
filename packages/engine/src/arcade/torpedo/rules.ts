@@ -1,11 +1,11 @@
 // Torpedo Run, the rules (docs/plan.md → Torpedo Run). A submarine's periscope
 // looks out over three lanes of sea — near, mid and far — where ships cross
-// from one side to the other. The periscope's view holds still and shows the
-// whole field of attack; the player moves the sight left and right along the
-// horizon and fires along its bearing. The tube is in the bow, dead ahead under
-// the lens, so a torpedo runs out on a slant toward where the sight points:
-// across the near lane it is only part of the way over, and it comes to the
-// sight's bearing on the horizon. A torpedo is slow, reaching the near lane
+// from one side to the other, far off under the horizon. The player turns the
+// periscope a little either way (±20°) and fires. The torpedo leaves from under
+// the sight and leans the way the periscope is turned (owner, 2026-10-29, after
+// the old cabinet): it runs on a straight course from the sight's bearing to
+// LEAN more of it again on the horizon, so turned left 20° it is off to the left
+// of the sight by the time it gets out to the ships. A torpedo is slow, reaching the near lane
 // first and the far lane last, so a ship must be led. One torpedo in the water at a time, ten to
 // a round. A round that comes to 1 500 earns one bonus round of ten more,
 // played on in the same run, so a run is one replayable score.
@@ -58,16 +58,20 @@ export const TICK_MS = 50;
  *  ahead, all of it at once. Ships come in and go out at its edges. ±36°, so
  *  the ships are big enough in the lens to read as ships. */
 export const FIELD_HALF = 360;
-/** The sight moves at most this far either way of dead ahead. */
-export const MAX_BEARING = 340;
+/** The sight moves at most this far either way of dead ahead: ±20°. With
+ *  the lean, a torpedo still reaches the edge of the field. */
+export const MAX_BEARING = 200;
 /** Bearing units the sight moves in a tick. */
 export const SIGHT_SPEED = 10;
 /** Ticks a torpedo runs before it reaches each lane. */
 export const RANGE: Record<Lane, number> = { near: 16, mid: 30, far: 46 };
-/** How far over toward the sight's bearing a torpedo has come, in percent,
- *  when it crosses each lane: it leaves the tube dead ahead and runs on a
- *  straight course that meets the sight on the horizon. */
-export const REACH: Record<Lane, number> = { near: 65, mid: 85, far: 97 };
+/** How far out to the horizon each lane is, in percent of the way: the
+ *  ships keep far off, every lane close under the horizon. */
+export const REACH: Record<Lane, number> = { near: 90, mid: 95, far: 98 };
+/** How much a torpedo leans the way the periscope is turned, in percent of
+ *  the turn: on the horizon its course is off dead ahead by the sight's
+ *  bearing and LEAN of it again. */
+export const LEAN = 75;
 /** Torpedoes a round. */
 export const TORPEDOES = 10;
 /** A round's clock: ninety seconds, so a run without a shot still ends. */
@@ -206,11 +210,12 @@ export function periodOf(): number {
 /** The lane a torpedo has just reached on this run tick, if any. */
 const laneAt = (run: number): Lane | undefined => LANES.find((lane) => RANGE[lane] === run);
 
-/** Where a torpedo fired down `bearing` crosses a lane. */
-export const courseAt = (bearing: number, lane: Lane) => Math.round((bearing * REACH[lane]) / 100);
+/** Where a torpedo fired down `bearing` crosses a lane: it leaves from under
+ *  the sight and has leant LEAN of the turn, as far as the lane is out. */
+export const courseAt = (bearing: number, lane: Lane) => Math.round((bearing * (10_000 + LEAN * REACH[lane])) / 10_000);
 
 /** The bearing to fire down for a torpedo to cross a lane at `x`. */
-export const aimFor = (x: number, lane: Lane) => Math.round((x * 100) / REACH[lane]);
+export const aimFor = (x: number, lane: Lane) => Math.round((x * 10_000) / (10_000 + LEAN * REACH[lane]));
 
 /** Whether a ship afloat covers a bearing. */
 export const covers = (ship: Ship, bearing: number) => ship.sinking === null && Math.abs(ship.x - bearing) <= SHIPS[ship.kind].half;

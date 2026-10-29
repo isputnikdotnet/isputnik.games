@@ -32,6 +32,10 @@
   .modes button[aria-pressed="true"] { border-color: var(--lamp); box-shadow: 0 0 0 1px var(--lamp) inset; }
   .modes b { display: block; }
   .modes span { color: var(--muted); font-size: 13px; }
+  .tune { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: -6px 0 20px; color: var(--muted); }
+  .tune label { display: flex; align-items: center; gap: 10px; }
+  .tune input { width: 180px; accent-color: var(--lamp); }
+  .tune output { color: var(--ink); font-weight: 600; }
   .stage { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
   .device h2 { margin: 0 0 8px; color: var(--muted); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; }
   .device.is-desk { width: min(860px, 100%); }
@@ -73,8 +77,13 @@
   <h1>Torpedo Run — periscope mock</h1>
   <p class="lead">One game, two lenses. Aim with <kbd>←</kbd> <kbd>→</kbd> (or drag on a lens), fire with <kbd>Space</kbd> or ПУСК. Pick which reading of the old cabinet's GIF feels right:</p>
   <div class="modes" role="group" aria-label="Periscope mode">
-    <button type="button" data-mode="slide" aria-pressed="true"><b>A · The window slides</b><span>The sea holds still; the round window moves over it with your aim, black all round — as the GIF looks.</span></button>
+    <button type="button" data-mode="c" aria-pressed="true"><b>C · Short turn, launch from the middle</b><span>The view turns a little; the torpedo leaves from between the two lines and leans the way the periscope is turned. Ships keep far off, on the horizon.</span></button>
+    <button type="button" data-mode="slide" aria-pressed="false"><b>A · The window slides</b><span>The sea holds still; the round window moves over it with your aim, black all round — as the GIF looks.</span></button>
     <button type="button" data-mode="turn" aria-pressed="false"><b>B · The view turns</b><span>The sight stays in the middle; the sea pans past as you turn, closer up — like a real periscope.</span></button>
+  </div>
+  <div class="tune" data-tune>
+    <label>Periscope turns ±<output data-out="turn">20</output>° <input type="range" min="8" max="34" step="1" value="20" data-in="turn"></label>
+    <label>Torpedo leans <output data-out="lean">75</output>% of the turn <input type="range" min="0" max="150" step="5" value="75" data-in="lean"></label>
   </div>
 
   <div class="stage">
@@ -97,6 +106,7 @@
   </div>
 
   <ul class="notes">
+    <li><b>C</b>: the torpedo always leaves from the middle of the view, between the two lines, and leans the way the periscope is turned — turned left 15°, it runs off to the left of the sight, so lead a little less on that side. Ships sail far off, close under the horizon. Tune the turn and the lean with the sliders.</li>
     <li><b>The reticle</b>: just two fine etched lines, as in the GIF — aim with the middle between them (the scale's mark at the top shows the bearing).</li>
     <li><b>The torpedo</b> leaves the bow (dead ahead, foot of the lens) and runs on a straight slant to where the target line meets the horizon. In B, aiming far off, it comes in from the side of the view.</li>
     <li><b>A hit</b> puts the sea in shadow for a moment: the fire glows and throws a column of light down the water, as in the GIF's last frames.</li>
@@ -126,13 +136,19 @@ const SHIPS = {
 };
 const LANES = ["near", "mid", "far"];
 // How far over to the sight a torpedo is at each lane, and when it gets there.
-const REACH = { near: 0.65, mid: 0.85, far: 0.97 };
+const REACH_B = { near: 0.65, mid: 0.85, far: 0.97 };
+// C: the ships keep far off, every lane close under the horizon.
+const REACH_C = { near: 0.9, mid: 0.955, far: 0.985 };
+const reachOf = (lane) => (st.mode === "c" ? REACH_C : REACH_B)[lane];
+// C: how far the periscope turns (degrees) and how much the torpedo leans the way it is turned.
+const tune = { turn: 20, lean: 0.75 };
+const turnMax = () => (st.mode === "c" ? tune.turn : 34) * PER_DEG;
 const ARRIVE = { near: 0.8, mid: 1.5, far: 2.3 };
 const SIGHT_SPEED = 280;
 const CLOUDS = [[60, 70, 250], [300, 52, 150], [640, 62, 230], [880, 78, 170], [-120, 40, 200], [1120, 50, 220], [470, 120, 180], [780, 150, 150], [150, 170, 200]];
 
 const st = {
-  mode: "slide", sight: 500, keys: 0, held: 0, drag: null,
+  mode: "c", sight: 500, keys: 0, held: 0, drag: null,
   ships: [], waits: { near: 2, mid: 1, far: 0 },
   torp: null, score: 0, left: 10, clock: 90, flash: null, t: 0
 };
@@ -157,22 +173,24 @@ function camera(v) {
   const tube = v.h - 12;
   let scale, x0;
   if (st.mode === "slide") { scale = v.w / 1000; x0 = 0; }
+  else if (st.mode === "c") { const span = 1000 * v.win * (v.wide ? 0.9 : 0.8); scale = v.w / span; x0 = st.sight - span / 2; }
   else { const span = 1000 * v.win * (v.wide ? 1 : 0.9); scale = v.w / span; x0 = st.sight - span / 2; }
-  const laneY = (lane) => tube - REACH[lane] * (tube - hor);
+  const laneY = (lane) => tube - reachOf(lane) * (tube - hor);
   return { hor, tube, scale, x0, sx: (x) => (x - x0) * scale, laneY };
 }
 
-/** Where the torpedo is, t seconds out: world x and how far over it is. */
+/** Where the torpedo is, t seconds out: world x and how far up the sea it is.
+ *  It runs straight from where it left (the bow in A/B, the middle of the
+ *  view in C) to where it is headed on the horizon. */
 function torpedoAt(torp, t) {
-  const stops = [[0, 0], [ARRIVE.near, REACH.near], [ARRIVE.mid, REACH.mid], [ARRIVE.far, REACH.far]];
+  const R = torp.reach;
+  const stops = [[0, 0], [ARRIVE.near, R.near], [ARRIVE.mid, R.mid], [ARRIVE.far, R.far]];
+  let reach = R.far;
   for (let i = 1; i < stops.length; i++) {
     const [t0, r0] = stops[i - 1], [t1, r1] = stops[i];
-    if (t <= t1) {
-      const f = (t - t0) / (t1 - t0);
-      return { reach: r0 + f * (r1 - r0), x: 500 + (torp.aim - 500) * (r0 + f * (r1 - r0)) };
-    }
+    if (t <= t1) { reach = r0 + ((t - t0) / (t1 - t0)) * (r1 - r0); break; }
   }
-  return { reach: REACH.far, x: 500 + (torp.aim - 500) * REACH.far };
+  return { reach, x: torp.from + (torp.to - torp.from) * reach };
 }
 
 function spawn(lane) {
@@ -185,7 +203,13 @@ function spawn(lane) {
 function fire() {
   if (st.torp || st.left === 0) return;
   if (st.clock <= 0) { st.left = 10; st.clock = 90; st.score = 0; }
-  st.torp = { aim: st.sight, t: 0, done: {} };
+  const c = st.mode === "c";
+  st.torp = {
+    aim: st.sight, t: 0, done: {},
+    reach: c ? REACH_C : REACH_B,
+    from: c ? st.sight : 500,
+    to: c ? st.sight + tune.lean * (st.sight - 500) : st.sight
+  };
   st.left -= 1;
 }
 
@@ -194,7 +218,7 @@ function update(dt) {
   st.clock = Math.max(0, st.clock - dt);
   const turn = Math.sign(st.keys + st.held);
   if (turn) st.sight += turn * SIGHT_SPEED * dt;
-  st.sight = Math.min(Math.max(st.sight, 500 - 34 * PER_DEG), 500 + 34 * PER_DEG);
+  st.sight = Math.min(Math.max(st.sight, 500 - turnMax()), 500 + turnMax());
 
   for (const ship of st.ships) {
     if (ship.sinking !== null) ship.sinking += dt;
@@ -212,7 +236,7 @@ function update(dt) {
     for (const lane of LANES) {
       if (st.torp.done[lane] || st.torp.t < ARRIVE[lane]) continue;
       st.torp.done[lane] = true;
-      const x = 500 + (st.torp.aim - 500) * REACH[lane];
+      const x = st.torp.from + (st.torp.to - st.torp.from) * st.torp.reach[lane];
       const ship = st.ships.find((s) => s.lane === lane && s.sinking === null && Math.abs(s.x - x) <= SHIPS[s.kind].w / 2);
       if (ship) {
         ship.sinking = 0;
@@ -420,11 +444,13 @@ function aimAt(e) {
   const px = e.clientX - v.canvas.getBoundingClientRect().left;
   // A: the window goes where the finger is. B: dragging turns the periscope.
   st.sight = st.mode === "slide" ? c.x0 + px / c.scale : st.drag.sight - (e.clientX - st.drag.x) / c.scale;
-  st.sight = Math.min(Math.max(st.sight, 500 - 34 * PER_DEG), 500 + 34 * PER_DEG);
+  st.sight = Math.min(Math.max(st.sight, 500 - turnMax()), 500 + turnMax());
 }
 for (const b of document.querySelectorAll("[data-mode]")) {
   b.addEventListener("click", () => {
     st.mode = b.dataset.mode;
+    st.torp = null;
+    document.querySelector("[data-tune]").hidden = st.mode !== "c";
     for (const o of document.querySelectorAll("[data-mode]")) o.setAttribute("aria-pressed", String(o === b));
   });
 }
@@ -440,6 +466,14 @@ function frame(now) {
 }
 for (const v of views) size(v);
 addEventListener("resize", () => views.forEach(size));
+for (const input of document.querySelectorAll("[data-in]")) {
+  input.addEventListener("input", () => {
+    const value = Number(input.value);
+    if (input.dataset.in === "turn") tune.turn = value;
+    else tune.lean = value / 100;
+    document.querySelector(`[data-out="${input.dataset.in}"]`).textContent = value;
+  });
+}
 requestAnimationFrame(frame);
 </script>
 </body>

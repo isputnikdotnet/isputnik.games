@@ -692,12 +692,14 @@ design canvas (desktop mid-round, phone mid-round, phone round-over).
   second, all whole numbers (bearings in tenths of a degree). The field of attack is ±36° (±45° until
   2026-10-29, when the owner asked for bigger ships; ships were widened a
   quarter too); the player turns the **sight** left and right along the
-  horizon (to ±34°, 20°/s). The engine knows only bearings; how the view
-  shows them is the web app's (below). The
-  torpedo leaves the tube in the bow, dead ahead, and runs on a straight
-  slant to the sight on the horizon, as the cabinet's did (owner,
-  2026-10-29): it crosses a lane `REACH` (near 65 %, mid 85 %, far 97 %) of
-  the way over to the sight's bearing — `courseAt()`, inverted by `aimFor()`. Three lanes:
+  horizon (to ±20° since 2026-10-29, ±34° before; 20°/s). The engine knows
+  only bearings; how the view shows them is the web app's (below). The
+  torpedo leaves from under the sight and leans the way the periscope is
+  turned (owner, 2026-10-29, option C of the mock): a straight course from
+  the sight's bearing to `LEAN` (75 %) more of it again on the horizon. The
+  lanes are `REACH` of the way out to the horizon (near 90 %, mid 95 %, far
+  98 %), so the ships keep far off, and a torpedo crosses a lane at
+  bearing × (1 + LEAN × REACH) — `courseAt()`, inverted by `aimFor()`. Three lanes:
   tanker 100 (slow, near, ~25 s to cross), cargo ship 200 (steady, mid,
   ~15 s), destroyer 300 (fast, far, ~11 s), patrol boat 500 (mid, changes
   speed every so often — a quarter of the mid lane's ships). At most one
@@ -725,7 +727,8 @@ design canvas (desktop mid-round, phone mid-round, phone round-over).
   `docs/mocks/torpedo-periscope-mock.html` after the old cabinet's GIF; it
   held still with a moving sight from 2026-10-27): the lens shows ±20°
   (a phone's deep lens ±26°) with the sight always in its middle, between
-  two fine etched lines — no target line — and the scene and the bearing
+  two fine etched lines — no target line; the torpedo leaves from the foot
+  of the lens between them — and the scene and the bearing
   scale move past as the periscope turns, so a ship off to the side is out
   of sight. A deep lens puts the horizon in its upper part and spreads the
   lanes down it so the torpedo's course stays straight. A hit puts the sea

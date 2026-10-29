@@ -15,15 +15,13 @@ export const FIELD_W = 1000;
 export const K = FIELD_W / (2 * Torpedo.FIELD_HALF);
 export const CENTRE = 500;
 export const HORIZON = 207;
-/** The tube, dead ahead at the foot of the lens. */
+/** Where a torpedo leaves: the foot of the lens, under the sight. */
 export const tubeOf = (bottom: number) => bottom - 12;
 
-/** The waterline of each lane: far ships sit on the horizon, near ones low in
- *  the lens. A torpedo runs straight from the tube to the sight on the
- *  horizon, and the engine counts it as far over as Torpedo.REACH says when it
- *  crosses a lane, so each lane lies where that straight course is that far
- *  over. A deeper lens spreads the lanes down it: the sea opens out, and the
- *  course stays straight. */
+/** The waterline of each lane: Torpedo.REACH of the way out from the foot of
+ *  the lens to the horizon, so the ships keep far off just under it, and a
+ *  torpedo's straight course crosses each lane as far over as the engine
+ *  counts it. */
 export function laneYs(tubeY: number): Record<TorpedoLane, number> {
   const at = (lane: TorpedoLane) => tubeY - (Torpedo.REACH[lane] / 100) * (tubeY - HORIZON);
   return { far: at("far"), mid: at("mid"), near: at("near") };
@@ -46,9 +44,11 @@ export function viewOf(aspect: number): { left: number; width: number; top: numb
   return { left: CENTRE - width / 2, width, top: HORIZON - height * (deep ? 0.38 : 0.47), height };
 }
 
-/** Where the course of a torpedo fired down `bearing` is at height `y`:
- *  dead ahead at the tube, under the sight on the horizon. */
-export const courseX = (bearing: number, y: number, tubeY: number) => CENTRE + (screenX(bearing) - CENTRE) * ((tubeY - y) / (tubeY - HORIZON));
+/** Where the course of a torpedo fired down `bearing` is at height `y`: under
+ *  the sight at the foot of the lens, leaning the way the periscope is turned
+ *  to Torpedo.LEAN of the turn again on the horizon. */
+export const courseX = (bearing: number, y: number, tubeY: number) =>
+  screenX(bearing * (1 + (Torpedo.LEAN / 100) * ((tubeY - y) / (tubeY - HORIZON))));
 
 /** The torpedo's place `run` ticks out on its course, from the tube to the
  *  lane it has reached. */

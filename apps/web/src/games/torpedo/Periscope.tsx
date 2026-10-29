@@ -74,9 +74,10 @@ const compass = (degrees: number) => String(((degrees % 360) + 360) % 360).padSt
 // and the turn and FIRE buttons at the foot. The view turns: the sight is
 // always the middle of the lens, between two fine etched lines, and the sea
 // moves past as the periscope turns, so a ship off to the side is out of
-// sight until the periscope comes round to it. A torpedo leaves the tube in
-// the bow — dead ahead, which turns away with the view — and runs on a slant
-// to where the sight meets the horizon. A hit puts the sea in shadow so the
+// sight until the periscope comes round to it. The periscope turns only a
+// little (±20°) and the ships keep far off under the horizon. A torpedo leaves
+// from the middle of the view, between the lines, and leans the way the
+// periscope is turned. A hit puts the sea in shadow so the
 // fire glows. On a phone the scale sits inside the top of the lens and the
 // lens takes the screen's height (torpedo.css); `tools` (pause, full screen)
 // ride on its foot there. A physical thing, so it wears its own colours on
