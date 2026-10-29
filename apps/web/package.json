@@ -1,7 +1,7 @@
 {
   "name": "@isputnik/games-web",
   "private": true,
-  "version": "0.18.1",
+  "version": "0.18.2",
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
@@ -13,7 +13,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@isputnik/games-engine": "0.18.1",
+    "@isputnik/games-engine": "0.18.2",
     "i18next": "^26.4.6",
     "lucide-react": "^1.57.0",
     "react": "^19.3.1",
