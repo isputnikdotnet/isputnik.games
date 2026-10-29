@@ -933,6 +933,9 @@
   .game-stage.is-torpedo.is-phone .torpedo-cabinet { padding: 10px 10px 6px; border-radius: 3px; }
   .game-stage.is-torpedo.is-phone .torpedo-bearings { top: 47px; right: 17px; left: 17px; }
   .game-stage.is-torpedo.is-phone .torpedo-lens { border-radius: 43% / 26%; }
+  /* The lens's lower corners curve in a long way: the icons sit just above
+     the curve, where its sides run straight, so the rim never cuts them. */
+  .game-stage.is-torpedo.is-phone .torpedo-tools { right: 12px; bottom: calc(26% + 6px); left: 12px; }
   .game-stage.is-torpedo.is-phone .torpedo-fire { width: 112px; font-size: 16px; background: radial-gradient(ellipse at 45% 25%, #b8523b, #873c2d); box-shadow: 0 4px 0 #5f2b20, 0 0 0 4px #263a30, 0 0 0 5px #8a9179; }
   .game-stage.is-torpedo.is-phone .torpedo-fire:active:not(:disabled) { box-shadow: 0 1px 0 #5f2b20, 0 0 0 4px #263a30, 0 0 0 5px #8a9179; }
 }
