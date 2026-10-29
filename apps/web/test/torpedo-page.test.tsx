@@ -75,17 +75,20 @@ describe("TorpedoPage", () => {
       act(() => vi.advanceTimersByTime(300));
       fireEvent.keyUp(window, { code: i % 2 ? "ArrowLeft" : "KeyD" });
       press("Space");
-      act(() => vi.advanceTimersByTime(2100));
+      // The last shot is watched closely: a hit on a near ship ends the run
+      // early, and the card's hold below counts from then.
+      if (i < 9) act(() => vi.advanceTimersByTime(2100));
     }
-    for (let i = 0; i < 100 && !screen.queryByText(/^Run over/); i++) act(() => vi.advanceTimersByTime(500));
+    for (let i = 0; i < 1000 && !screen.queryByText(/^Run over/); i++) act(() => vi.advanceTimersByTime(50));
     await act(async () => undefined);
     expect(screen.getByRole("region", { name: /Round over|Bonus round over/ })).toBeInTheDocument();
 
     expect(api.reportArcadeScore).toHaveBeenCalledTimes(1);
     const sent = vi.mocked(api.reportArcadeScore).mock.calls[0][0];
     expect(sent).toMatchObject({ game: "torpedo", variant: "standard" });
+    // Thousands are set apart with a no-break space, which the matcher reads as a plain one.
     const score = replayRun(torpedo, "standard", sent.seed, sent.log as [number, TorpedoInput][], 1_000_000).score;
-    expect(screen.getByRole("region", { name: /over/ })).toHaveTextContent(score.toLocaleString("ru-RU"));
+    expect(screen.getByRole("region", { name: /over/ })).toHaveTextContent(score.toLocaleString("ru-RU").replace(/\s/g, " "));
     expect(screen.getByText("On the family board. Your best: 2 100.")).toBeInTheDocument();
 
     // Fire still pressed at the end waits for the card to be read.

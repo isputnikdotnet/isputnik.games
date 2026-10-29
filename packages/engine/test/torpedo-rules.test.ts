@@ -12,6 +12,7 @@ import {
   SINK_TICKS,
   TORPEDOES,
   SIGHT_SPEED,
+  aimFor,
   createRun,
   inSights,
   parseInput,
@@ -37,8 +38,8 @@ function ship(kind: ShipKind, x: number, over: Partial<Ship> = {}): Ship {
   return { id: 1, kind, x, dir: 1, speed: 0, zig: 1000, sinking: null, ...over };
 }
 
-/** Where a ship will be when a torpedo fired now reaches its lane. */
-const lead = (s: Ship) => s.x + s.dir * s.speed * (RANGE[SHIPS[s.kind].lane] + 1);
+/** The bearing that puts a torpedo fired now where the ship will be when it reaches its lane. */
+const lead = (s: Ship) => aimFor(s.x + s.dir * s.speed * (RANGE[SHIPS[s.kind].lane] + 1), SHIPS[s.kind].lane);
 
 /** A player who swings onto the most valuable ship's lead and fires when on
  *  it, and is wrong now and then. Returns the end of the run and its log. */
@@ -128,6 +129,18 @@ describe("Torpedo Run rules", () => {
     // It goes under and is gone.
     for (let i = 0; i < SINK_TICKS; i++) state = tick(state, still).state;
     expect(state.ships).toEqual([]);
+  });
+
+  it("runs on a slant from the bow toward the sight, crossing the near lane short of its bearing", () => {
+    // Fired down 40°: across the near lane it has come 65% of the way over, 26°.
+    const onCourse = ship("tanker", 260);
+    const underSight = ship("tanker", 400);
+    expect(tick(run({ ships: [onCourse], torpedo: { bearing: 400, run: RANGE.near - 1 } }), still).cues).toContainEqual(expect.objectContaining({ kind: "hit" }));
+    expect(tick(run({ ships: [underSight], torpedo: { bearing: 400, run: RANGE.near - 1 } }), still).cues).not.toContainEqual(expect.objectContaining({ kind: "hit" }));
+    expect(inSights({ ships: [onCourse] }, 400)?.id).toBe(1);
+    expect(inSights({ ships: [underSight] }, 400)).toBeUndefined();
+    // Across the far lane it is nearly under the sight: 97% of the way, and the other way too.
+    expect(tick(run({ ships: [ship("destroyer", -388)], torpedo: { bearing: -400, run: RANGE.far - 1 } }), still).cues).toContainEqual(expect.objectContaining({ kind: "hit" }));
   });
 
   it("is stopped by the nearer ship, and misses wide of everything", () => {

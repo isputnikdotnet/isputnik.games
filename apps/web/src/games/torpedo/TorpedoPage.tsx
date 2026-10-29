@@ -136,13 +136,40 @@ export function TorpedoPage() {
     </section>
   );
 
+  // On a phone the two ride on the lens as icons, so the scope keeps the screen.
+  const tools = phone ? (
+    <>
+      <button
+        type="button"
+        className="torpedo-tool"
+        onClick={togglePause}
+        disabled={mode !== "play" && mode !== "paused"}
+        aria-label={mode === "paused" ? t("torpedo.controls.resume") : t("torpedo.controls.pause")}
+        title={mode === "paused" ? t("torpedo.controls.resume") : t("torpedo.controls.pause")}
+      >
+        {mode === "paused" ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}
+      </button>
+      {fullscreen.supported && (
+        <button
+          type="button"
+          className="torpedo-tool"
+          onClick={() => void fullscreen.toggle()}
+          aria-label={fullscreen.on ? t("torpedo.fullscreen.exit") : t("torpedo.fullscreen.enter")}
+          title={fullscreen.on ? t("torpedo.fullscreen.exit") : t("torpedo.fullscreen.enter")}
+        >
+          {fullscreen.on ? <Minimize size={16} aria-hidden="true" /> : <Maximize size={16} aria-hidden="true" />}
+        </button>
+      )}
+    </>
+  ) : undefined;
+
   const card = mode === "bonus" || mode === "over" ? <RoundCard mode={mode} state={state} report={report} best={run.finished?.best ?? false} onFire={onFire} /> : null;
 
   return (
     <GameStage
       className="is-torpedo"
       title={t("games.torpedo.name")}
-      board={<Periscope mode={mode} state={state} banner={banner} overlay={card} onFire={onFire} onHold={hold} onAim={aim} />}
+      board={<Periscope mode={mode} state={state} banner={banner} overlay={card} tools={tools} onFire={onFire} onHold={hold} onAim={aim} />}
       score={phone ? undefined : best}
       notices={
         <>
@@ -157,18 +184,20 @@ export function TorpedoPage() {
         </>
       }
       actions={
-        <>
-          <Button variant="secondary" onClick={togglePause} disabled={mode !== "play" && mode !== "paused"}>
-            {mode === "paused" ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}
-            {" "}{mode === "paused" ? t("torpedo.controls.resume") : t("torpedo.controls.pause")}
-          </Button>
-          {fullscreen.supported && (
-            <Button variant="secondary" onClick={() => void fullscreen.toggle()}>
-              {fullscreen.on ? <Minimize size={16} aria-hidden="true" /> : <Maximize size={16} aria-hidden="true" />}
-              {" "}{fullscreen.on ? t("torpedo.fullscreen.exit") : t("torpedo.fullscreen.enter")}
+        phone ? undefined : (
+          <>
+            <Button variant="secondary" onClick={togglePause} disabled={mode !== "play" && mode !== "paused"}>
+              {mode === "paused" ? <Play size={16} aria-hidden="true" /> : <Pause size={16} aria-hidden="true" />}
+              {" "}{mode === "paused" ? t("torpedo.controls.resume") : t("torpedo.controls.pause")}
             </Button>
-          )}
-        </>
+            {fullscreen.supported && (
+              <Button variant="secondary" onClick={() => void fullscreen.toggle()}>
+                {fullscreen.on ? <Minimize size={16} aria-hidden="true" /> : <Maximize size={16} aria-hidden="true" />}
+                {" "}{fullscreen.on ? t("torpedo.fullscreen.exit") : t("torpedo.fullscreen.enter")}
+              </Button>
+            )}
+          </>
+        )
       }
     />
   );

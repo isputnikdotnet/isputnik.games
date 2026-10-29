@@ -95,11 +95,18 @@
   color: var(--tr-lamp);
 }
 
-/* The mark under the scale follows the sight. */
+/* The scale turns with the view; the mark under it is the sight, always in
+   the middle. */
+.torpedo-bearings-strip {
+  position: absolute;
+  inset: 0;
+  transition: transform 50ms linear;
+}
+
 .torpedo-bearing-mark {
   position: absolute;
   bottom: 0;
-  transition: left 50ms linear;
+  left: 50%;
   border: 6px solid transparent;
   border-top: 0;
   border-bottom: 7px solid var(--tr-lamp);
@@ -113,7 +120,7 @@
   aspect-ratio: 1000 / 440;
   border-radius: 999px;
   overflow: hidden;
-  background: #06161a;
+  background: #020607;
   touch-action: none;
   cursor: grab;
 }
@@ -141,18 +148,18 @@
   height: 100%;
 }
 
-.torpedo-headlands path {
-  fill: #2a2a30;
-  opacity: 0.75;
+.torpedo-clouds path {
+  fill: #ecdfc0;
+  opacity: 0.92;
 }
 
 .torpedo-horizon {
-  stroke: rgba(255, 210, 122, 0.2);
-  stroke-width: 2;
+  stroke: rgba(10, 40, 46, 0.5);
+  stroke-width: 1.5;
 }
 
 .torpedo-glints rect {
-  fill: rgba(230, 245, 245, 0.07);
+  fill: rgba(170, 215, 215, 0.2);
 }
 
 /* A tick is a twentieth of a second: the ships glide between ticks rather
@@ -162,19 +169,16 @@
 }
 
 .torpedo-ship-hull {
-  fill: #061012;
-  /* The last of the dusk catching the superstructure. */
-  stroke: rgba(255, 186, 120, 0.3);
-  stroke-width: 0.6;
+  fill: #121a1c;
   transition: fill 120ms;
 }
 
 .torpedo-ship-hull.is-sighted {
-  fill: #1a1408;
+  fill: #3a2a10;
 }
 
 .torpedo-ship-wake {
-  fill: rgba(230, 245, 245, 0.35);
+  fill: rgba(235, 245, 240, 0.55);
 }
 
 .torpedo-splash {
@@ -190,34 +194,24 @@
   fill: #fff2cc;
 }
 
-.torpedo-crosshair line {
-  stroke: rgba(255, 210, 122, 0.7);
-  stroke-width: 2;
-  transition: stroke 120ms;
-}
-
-.torpedo-crosshair line.is-rule {
-  stroke: rgba(255, 210, 122, 0.3);
-  stroke-width: 1.5;
-}
-
-.torpedo-crosshair.is-sighted line:not(.is-rule) {
-  stroke: rgba(255, 228, 160, 1);
-}
-
-/* The sight glides between ticks, as the ships do. */
-.torpedo-sight {
+/* The scene turns under the lens with the sight, gliding between ticks as
+   the ships do. */
+.torpedo-world {
   transition: transform 50ms linear;
 }
 
-.torpedo-sight path {
-  fill: var(--tr-lamp);
+/* The reticle: two fine etched lines, dark as on the old cabinet's glass. */
+.torpedo-reticle line {
+  stroke: rgba(4, 16, 18, 0.7);
+  stroke-width: 1.5;
 }
 
+/* The lens's dark rim, and a paper grain over the scene like an old print's. */
 .torpedo-vignette {
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.25 0 0 0 0 0.2 0 0 0 0 0.12 0 0 0 0.14 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
   box-shadow: inset 0 0 50px 14px rgba(0, 0, 0, 0.8);
   pointer-events: none;
 }
@@ -271,19 +265,24 @@
   }
 }
 
+/* One row under the lens: the score, the tubes, the bonus mark, the clock. */
 .torpedo-hud {
   display: flex;
-  flex-wrap: wrap;
   align-items: flex-end;
-  gap: 10px 22px;
+  gap: 22px;
   padding: 14px 24px 4px;
 }
 
 .torpedo-hud-tubes {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 6px;
-  margin-right: auto;
+  margin: 0 auto;
+}
+
+.torpedo-hud-figure.is-score {
+  align-items: flex-start;
 }
 
 .torpedo-hud-label {
@@ -315,8 +314,15 @@
 
 .torpedo-hud-figure {
   display: flex;
+  flex: none;
   flex-direction: column;
   align-items: flex-end;
+}
+
+/* A figure never breaks over two lines, whatever the width. */
+.torpedo-hud-label,
+.torpedo-hud-value {
+  white-space: nowrap;
 }
 
 .torpedo-hud-value {
@@ -326,8 +332,14 @@
   font-variant-numeric: tabular-nums;
 }
 
-.torpedo-hud-value.is-score {
+.torpedo-hud-figure.is-score .torpedo-hud-value {
   color: var(--tr-lamp);
+}
+
+/* The other two figures sit apart from the tubes, a rule between them. */
+.torpedo-hud-figure:not(.is-score) + .torpedo-hud-figure {
+  padding-left: 22px;
+  border-left: 1px solid rgba(202, 151, 86, 0.25);
 }
 
 .torpedo-progress {
@@ -350,39 +362,53 @@
   box-shadow: 0 0 8px var(--tr-lamp-glow);
 }
 
+/* Narrow: the figures keep the row and the labels step aside (each figure
+   still names itself to a screen reader). */
 @container (max-width: 560px) {
   .torpedo-hud {
-    padding: 10px 8px 2px;
-    gap: 8px 14px;
-  }
-
-  .torpedo-hud-tubes {
-    order: 3;
-    width: 100%;
     align-items: center;
-    margin-right: 0;
+    gap: 8px;
+    padding: 8px 4px 0;
   }
 
-  .torpedo-hud-figure:first-of-type {
-    align-items: flex-start;
-    margin-right: auto;
+  .torpedo-hud-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .torpedo-hud-figure {
+    padding: 3px 7px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.35);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+  }
+
+  .torpedo-hud-figure:not(.is-score) + .torpedo-hud-figure {
+    padding-left: 7px;
+    border-left: 0;
   }
 
   .torpedo-hud-value {
-    font-size: 26px;
+    font-size: 19px;
   }
 
   .torpedo-lamps {
-    gap: 5px;
+    gap: 3px;
   }
 
   .torpedo-lamp {
-    width: 12px;
-    height: 20px;
+    width: 9px;
+    height: 16px;
+    border-radius: 5px;
   }
 
   .torpedo-progress {
-    margin-inline: 8px;
+    height: 3px;
+    margin: 6px 4px 0;
   }
 }
 
@@ -461,6 +487,41 @@
     min-width: 0;
     font-size: 20px;
   }
+}
+
+/* Pause and full screen on a phone: small keys on the lens's foot, one each
+   side of the tube. */
+.torpedo-tools {
+  position: absolute;
+  right: 8%;
+  bottom: 10px;
+  left: 8%;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.torpedo-tool {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(202, 151, 86, 0.35);
+  border-radius: 50%;
+  background: rgba(6, 22, 26, 0.6);
+  color: var(--tr-ink);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.torpedo-tool:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.torpedo-tool:focus-visible {
+  outline: 2px solid var(--tr-lamp);
+  outline-offset: 2px;
 }
 
 /* The round-over card sits over the lens, in the app's own colours. */
@@ -685,6 +746,93 @@
 .torpedo-keys {
   margin: var(--space-3) 0 0;
   font-size: var(--text-sm);
+}
+
+/* A phone held upright: the lens takes the screen's height. The page's
+   title steps aside (it stays for a screen reader), the bearing scale sits
+   inside the top of the lens, pause and full screen ride on its foot, and the
+   lens is as deep as what is left once the figures, the keys and the tab bar
+   have their rows. The panel waits below. */
+@media (orientation: portrait) {
+  .app-main:has(> .game-stage.is-torpedo.is-phone) {
+    padding-top: var(--space-2);
+  }
+
+  .game-stage.is-torpedo.is-phone {
+    --tr-rest: calc(var(--space-2) + 16px + 44px + 8px + 64px + 58px + env(safe-area-inset-bottom) + 20px);
+    gap: var(--space-3);
+  }
+
+  .game-stage.is-torpedo.is-phone > .game-stage-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .game-stage.is-torpedo.is-phone .torpedo-scope {
+    gap: var(--space-2);
+  }
+
+  .game-stage.is-torpedo.is-phone .torpedo-cabinet {
+    padding: 8px 8px 6px;
+    border-radius: 20px;
+  }
+
+  .game-stage.is-torpedo.is-phone .torpedo-lens {
+    aspect-ratio: auto;
+    height: clamp(280px, 100dvh - var(--app-bar-h, 60px) - var(--tr-rest), 900px);
+    border-radius: 30px / 26px;
+  }
+
+  .game-stage.is-torpedo.is-phone .torpedo-bearings {
+    position: absolute;
+    z-index: 1;
+    top: 18px;
+    right: 8px;
+    left: 8px;
+    margin: 0;
+    pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  }
+
+  /* Over the sky: the scale in cream, as on the print. */
+  .game-stage.is-torpedo.is-phone .torpedo-bearing {
+    background: #f6ecd4;
+    color: #f6ecd4;
+    font-size: 11px;
+  }
+
+  .game-stage.is-torpedo.is-phone .torpedo-controls {
+    gap: 10px;
+  }
+
+  .game-stage.is-torpedo.is-phone .torpedo-turn {
+    flex: 1;
+    width: auto;
+    height: 56px;
+  }
+
+  /* FIRE: a round red push-button between the two keys. */
+  .game-stage.is-torpedo.is-phone .torpedo-fire {
+    flex: none;
+    width: 128px;
+    min-width: 0;
+    height: 64px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 50% 35%, #e9674a, var(--tr-fire) 60%, #a83a22);
+    font-size: 17px;
+    line-height: 1.05;
+    letter-spacing: 0.08em;
+    box-shadow: 0 5px 0 var(--tr-fire-edge), 0 0 0 4px #0d2528, 0 0 0 5px rgba(202, 151, 86, 0.3);
+  }
+
+  .game-stage.is-torpedo.is-phone .torpedo-fire:active:not(:disabled) {
+    box-shadow: 0 1px 0 var(--tr-fire-edge), 0 0 0 4px #0d2528, 0 0 0 5px rgba(202, 151, 86, 0.3);
+  }
 }
 
 /* A phone turned sideways: the scope takes the screen, as the handheld does. */

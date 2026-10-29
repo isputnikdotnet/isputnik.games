@@ -2,8 +2,11 @@
 // looks out over three lanes of sea — near, mid and far — where ships cross
 // from one side to the other. The periscope's view holds still and shows the
 // whole field of attack; the player moves the sight left and right along the
-// horizon and fires along its bearing. A torpedo is slow, reaching the near
-// lane first and the far lane last, so a ship must be led. One torpedo in the water at a time, ten to
+// horizon and fires along its bearing. The tube is in the bow, dead ahead under
+// the lens, so a torpedo runs out on a slant toward where the sight points:
+// across the near lane it is only part of the way over, and it comes to the
+// sight's bearing on the horizon. A torpedo is slow, reaching the near lane
+// first and the far lane last, so a ship must be led. One torpedo in the water at a time, ten to
 // a round. A round that comes to 1 500 earns one bonus round of ten more,
 // played on in the same run, so a run is one replayable score.
 //
@@ -43,23 +46,28 @@ interface ShipClass {
 }
 
 export const SHIPS: Record<ShipKind, ShipClass> = {
-  tanker: { points: 100, lane: "near", speed: 2, half: 56 },
-  cargo: { points: 200, lane: "mid", speed: 3, half: 42 },
-  destroyer: { points: 300, lane: "far", speed: 4, half: 30 },
-  patrol: { points: 500, lane: "mid", speed: 6, half: 22 }
+  tanker: { points: 100, lane: "near", speed: 2, half: 70 },
+  cargo: { points: 200, lane: "mid", speed: 3, half: 52 },
+  destroyer: { points: 300, lane: "far", speed: 4, half: 38 },
+  patrol: { points: 500, lane: "mid", speed: 6, half: 28 }
 };
 
 /** One tick, in milliseconds: twenty a second. */
 export const TICK_MS = 50;
 /** Half the field of attack: the lens shows this far either side of dead
- *  ahead, all of it at once. Ships come in and go out at its edges. */
-export const FIELD_HALF = 450;
+ *  ahead, all of it at once. Ships come in and go out at its edges. ±36°, so
+ *  the ships are big enough in the lens to read as ships. */
+export const FIELD_HALF = 360;
 /** The sight moves at most this far either way of dead ahead. */
-export const MAX_BEARING = 420;
+export const MAX_BEARING = 340;
 /** Bearing units the sight moves in a tick. */
 export const SIGHT_SPEED = 10;
 /** Ticks a torpedo runs before it reaches each lane. */
 export const RANGE: Record<Lane, number> = { near: 16, mid: 30, far: 46 };
+/** How far over toward the sight's bearing a torpedo has come, in percent,
+ *  when it crosses each lane: it leaves the tube dead ahead and runs on a
+ *  straight course that meets the sight on the horizon. */
+export const REACH: Record<Lane, number> = { near: 65, mid: 85, far: 97 };
 /** Torpedoes a round. */
 export const TORPEDOES = 10;
 /** A round's clock: ninety seconds, so a run without a shot still ends. */
@@ -198,13 +206,19 @@ export function periodOf(): number {
 /** The lane a torpedo has just reached on this run tick, if any. */
 const laneAt = (run: number): Lane | undefined => LANES.find((lane) => RANGE[lane] === run);
 
+/** Where a torpedo fired down `bearing` crosses a lane. */
+export const courseAt = (bearing: number, lane: Lane) => Math.round((bearing * REACH[lane]) / 100);
+
+/** The bearing to fire down for a torpedo to cross a lane at `x`. */
+export const aimFor = (x: number, lane: Lane) => Math.round((x * 100) / REACH[lane]);
+
 /** Whether a ship afloat covers a bearing. */
 export const covers = (ship: Ship, bearing: number) => ship.sinking === null && Math.abs(ship.x - bearing) <= SHIPS[ship.kind].half;
 
 /** The ship a torpedo fired now down `bearing` would meet if nothing moved
  *  but the torpedo — what the crosshair has on it. */
 export function inSights(state: Pick<TorpedoState, "ships">, bearing: number): Ship | undefined {
-  return LANES.map((lane) => state.ships.find((ship) => SHIPS[ship.kind].lane === lane && covers(ship, bearing))).find(Boolean);
+  return LANES.map((lane) => state.ships.find((ship) => SHIPS[ship.kind].lane === lane && covers(ship, courseAt(bearing, lane)))).find(Boolean);
 }
 
 function launchShip(dice: Dice, lane: Lane, id: number): Ship {
@@ -274,7 +288,7 @@ export function tick(state: TorpedoState, input: TorpedoInput): ArcadeTick<Torpe
   if (state.torpedo) {
     const torpedo = { bearing: state.torpedo.bearing, run: state.torpedo.run + 1 };
     const lane = laneAt(torpedo.run);
-    const target = lane && next.ships.find((ship) => SHIPS[ship.kind].lane === lane && covers(ship, torpedo.bearing));
+    const target = lane && next.ships.find((ship) => SHIPS[ship.kind].lane === lane && covers(ship, courseAt(torpedo.bearing, lane)));
     if (target) {
       const points = SHIPS[target.kind].points;
       next.ships = next.ships.map((ship) => (ship === target ? { ...ship, sinking: SINK_TICKS } : ship));

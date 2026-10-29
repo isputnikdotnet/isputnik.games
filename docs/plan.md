@@ -689,17 +689,21 @@ Game id `torpedo`, one variant `standard`. The owner approved a mockup on a
 design canvas (desktop mid-round, phone mid-round, phone round-over).
 
 - **Rules** (`packages/engine/src/arcade/torpedo/rules.ts`). 20 ticks a
-  second, all whole numbers (bearings in tenths of a degree). **The view
-  holds still** and shows the whole field of attack, ±45°, as the cabinet's
-  did; the player moves the **sight** left and right along the horizon (to
-  ±42°, 20°/s) and the torpedo runs straight up the lens from under it
-  (owner, 2026-10-27, after trying a turning periscope). Three lanes:
+  second, all whole numbers (bearings in tenths of a degree). The field of attack is ±36° (±45° until
+  2026-10-29, when the owner asked for bigger ships; ships were widened a
+  quarter too); the player turns the **sight** left and right along the
+  horizon (to ±34°, 20°/s). The engine knows only bearings; how the view
+  shows them is the web app's (below). The
+  torpedo leaves the tube in the bow, dead ahead, and runs on a straight
+  slant to the sight on the horizon, as the cabinet's did (owner,
+  2026-10-29): it crosses a lane `REACH` (near 65 %, mid 85 %, far 97 %) of
+  the way over to the sight's bearing — `courseAt()`, inverted by `aimFor()`. Three lanes:
   tanker 100 (slow, near, ~25 s to cross), cargo ship 200 (steady, mid,
   ~15 s), destroyer 300 (fast, far, ~11 s), patrol boat 500 (mid, changes
   speed every so often — a quarter of the mid lane's ships). At most one
   ship to a lane; an empty lane sends the next after a seeded wait. A
   torpedo reaches the near lane after 16 ticks, mid 30, far 46; the first
-  ship afloat covering its bearing when it gets to a lane is hit (a nearer
+  ship afloat covering its course when it gets to a lane is hit (a nearer
   ship shields a farther one). One torpedo in the water at a time, ten a round, and a round clock of
   90 s so a run without a shot still ends.
 - **The bonus round continues the same run.** Reaching 1 500 in the first
@@ -712,14 +716,27 @@ design canvas (desktop mid-round, phone mid-round, phone round-over).
   `launch`, `pass`, `hit`, `miss`, `bonus`, `roundOver`, `round`, `ship`,
   `zig`, `over`. The server needed no new code: `ARCADE_GAMES` has it.
 - **Web** (`apps/web/src/games/torpedo/`, `styles/torpedo.css`). The periscope
-  (bearing scale with the sight's mark, pill lens that always shows the whole
-  field across its width — a phone's deeper lens adds sky and sea, not
-  bearings — ship silhouettes, lamp-by-lamp wake, burst, HUD with ten
-  torpedo lamps, score, "bonus round at 1 500" and its bar) keeps its own
-  colours on every theme; the panel and round-over card follow the theme.
-  Space fires, ← → (or A D) move the sight, P pauses; on a phone, touch the
-  lens where to aim (the sight runs there) or hold the arrows, and the big
-  FIRE. The clock keeps to wall time and plays
+  (bearing scale with the sight's mark, pill lens, ship silhouettes, lamp-by-lamp wake, burst, HUD with ten
+  torpedo lamps, score, "bonus round at 1 500", the clock, in one row, and
+  the bonus bar) keeps its own
+  colours on every theme — a daytime sea under flat cream clouds with a
+  paper grain, after the owner's print-style mock (2026-10-29; it was dusk); the panel and round-over card follow the theme.
+  **The view turns** (owner, 2026-10-29, choosing B of
+  `docs/mocks/torpedo-periscope-mock.html` after the old cabinet's GIF; it
+  held still with a moving sight from 2026-10-27): the lens shows ±20°
+  (a phone's deep lens ±26°) with the sight always in its middle, between
+  two fine etched lines — no target line — and the scene and the bearing
+  scale move past as the periscope turns, so a ship off to the side is out
+  of sight. A deep lens puts the horizon in its upper part and spreads the
+  lanes down it so the torpedo's course stays straight. A hit puts the sea
+  in shadow for a moment and the fire throws a column of light down the
+  water.
+  Space fires, ← → (or A D) move the sight, P pauses; on a phone, drag the
+  lens to turn the periscope or hold the arrows, and the round
+  FIRE. A phone held upright gives the lens its height (owner, 2026-10-29):
+  the page title is hidden, the bearing scale sits inside the lens, the HUD
+  drops its labels, and pause and full screen ride on the lens's foot as
+  icons (`tools`). The clock keeps to wall time and plays
   missed ticks when a timer comes late. The card holds fire for 1.2 s so a
   player still pressing fire reads it. Sounds are synthesised cues in
   `shared/sound.ts`, under the top bar's switch. The lobby's arcade board

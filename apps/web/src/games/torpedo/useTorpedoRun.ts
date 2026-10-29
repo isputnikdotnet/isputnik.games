@@ -50,10 +50,11 @@ function randomSeed(): number {
   return Math.floor(Math.random() * 0x100000000);
 }
 
-const { SHIPS, RANGE, MAX_BEARING, SIGHT_SPEED } = Torpedo;
+const { SHIPS, RANGE, MAX_BEARING, SIGHT_SPEED, aimFor } = Torpedo;
 
-/** Where a ship will be when a torpedo fired now gets to its lane. */
-const leadOf = (ship: TorpedoState["ships"][number]) => ship.x + ship.dir * ship.speed * (RANGE[SHIPS[ship.kind].lane] + 1);
+/** The bearing that puts a torpedo fired now where a ship will be when it gets to its lane. */
+const leadOf = (ship: TorpedoState["ships"][number]) =>
+  aimFor(ship.x + ship.dir * ship.speed * (RANGE[SHIPS[ship.kind].lane] + 1), SHIPS[ship.kind].lane);
 
 const turnToward = (from: number, to: number): TorpedoTurn => (Math.abs(to - from) <= SIGHT_SPEED / 2 ? 0 : to > from ? 1 : -1);
 

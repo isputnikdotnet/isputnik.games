@@ -15,19 +15,19 @@ export function GamePreview({ game }: { game: string }) {
   return null;
 }
 
-/** Torpedo Run: the periscope's lens at dusk, a torpedo's wake closing on a destroyer. */
+/** Torpedo Run: the periscope's lens by day, a torpedo's wake closing on a destroyer. */
 function TorpedoPreview() {
-  const ship = "#071012";
+  const ship = "#121a1c";
   return (
     <svg className="game-preview is-torpedo" viewBox={VIEW} aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id="torpedo-preview-sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#24384a" />
-          <stop offset="1" stopColor="#b8703f" />
+          <stop offset="0" stopColor="#4a86a4" />
+          <stop offset="1" stopColor="#9fc2cb" />
         </linearGradient>
         <linearGradient id="torpedo-preview-sea" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#1d3a40" />
-          <stop offset="1" stopColor="#051316" />
+          <stop offset="0" stopColor="#1f5b64" />
+          <stop offset="1" stopColor="#0b3037" />
         </linearGradient>
         <clipPath id="torpedo-preview-lens">
           <rect x="12" y="10" width="176" height="92" rx="46" />
@@ -37,12 +37,13 @@ function TorpedoPreview() {
       <g clipPath="url(#torpedo-preview-lens)">
         <rect x="0" y="0" width="200" height="52" fill="url(#torpedo-preview-sky)" />
         <rect x="0" y="52" width="200" height="60" fill="url(#torpedo-preview-sea)" />
+        <path d="M40 34 C44 30 52 30 56 32 C60 27 70 27 73 32 C78 31 84 32 86 34 Z M128 24 C131 21 137 21 140 23 C143 19 151 19 153 23 C157 22 161 23 163 24 Z" fill="#ecdfc0" />
         <path d="M118 57 L160 57 L166 52 L164 59 L119 59 Z M130 57 V53 H140 V57 Z M135 53 V46 H136 V53 Z" fill={ship} />
         <path d="M30 70 L76 70 L72 74 L33 74 Z M34 70 V64 H42 V70 Z M36 64 V61 H39 V64 Z" fill={ship} />
         {[[100, 98, 3.4], [104, 88, 3], [108, 79, 2.6], [112, 71, 2.2], [116, 65, 1.8]].map(([x, y, r]) => (
           <circle key={y} cx={x} cy={y} r={r} fill="#ffd27a" opacity={0.5 + r / 8} />
         ))}
-        <g stroke="#ffd27a" strokeOpacity="0.55" strokeWidth="1">
+        <g stroke="#f6ecd4" strokeOpacity="0.75" strokeWidth="1">
           <line x1="100" y1="16" x2="100" y2="46" />
           <line x1="100" y1="58" x2="100" y2="96" />
           <line x1="30" y1="52" x2="94" y2="52" />

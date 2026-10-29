@@ -4,21 +4,36 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Torpedo, type TorpedoState } from "@isputnik/games-engine";
 import { SHIP_HEIGHT, SHIP_PATHS } from "./ships";
 import type { TorpedoMode } from "./useTorpedoRun";
-import { FIELD_W, HORIZON, K, LANE_Y, LENS_H, formatScore, screenX, shipScale, viewOf, wakePoint } from "./view";
+import { FIELD_W, HORIZON, K, LENS_H, formatScore, laneYs, screenX, shipScale, tubeOf, viewOf, wakePoint } from "./view";
 
-const { SHIPS, SINK_TICKS, RANGE, TORPEDOES, BONUS_AT, TICK_MS, FIELD_HALF, inSights } = Torpedo;
+const { SHIPS, SINK_TICKS, RANGE, TORPEDOES, BONUS_AT, TICK_MS, inSights } = Torpedo;
 
-/** Far headlands on the horizon, at fixed bearings. */
-const HEADLANDS: readonly [bearing: number, width: number, height: number][] = [
-  [-380, 160, 7], [-170, 90, 4], [210, 200, 8], [400, 110, 5]
+/** How far the scene runs on either side of the field, for the view to turn over. */
+const SEA_FROM = -400;
+const SEA_TO = FIELD_W + 400;
+
+/** Clouds in the sky, flat underneath as in an old print: [x, height above the
+ *  horizon, width], in view units. The high ones only show in a deep lens. */
+const CLOUDS: readonly [x: number, rise: number, width: number][] = [
+  [-300, 46, 210], [-110, 70, 240], [140, 70, 250], [370, 52, 150], [700, 62, 230], [930, 78, 170], [1130, 50, 220], [1330, 72, 190],
+  [-200, 160, 180], [560, 170, 200], [210, 250, 220], [830, 320, 180], [1180, 230, 200], [480, 420, 160], [-60, 380, 190]
 ];
-/** Glints on the water, row by row, near rows wider apart: [x, y, width]. */
+/** A cloud's outline: three puffs over a flat base. */
+const cloudPath = (x: number, y: number, w: number) => {
+  const h = w * 0.16;
+  return `M${x - w / 2} ${y} C${x - w * 0.44} ${y - h * 0.9} ${x - w * 0.3} ${y - h * 1.2} ${x - w * 0.18} ${y - h * 0.9} ` +
+    `C${x - w * 0.12} ${y - h * 2} ${x + w * 0.14} ${y - h * 2.1} ${x + w * 0.2} ${y - h} ` +
+    `C${x + w * 0.3} ${y - h * 1.4} ${x + w * 0.46} ${y - h * 0.8} ${x + w / 2} ${y} Z`;
+};
+/** Glints on the water, row by row, near rows wider apart: [x, y, width].
+ *  The rows run on below a wide lens's foot for a deep one's foreground. */
 const GLINTS: readonly [number, number, number][] = [
-  [222, 70, 10], [252, 95, 16], [296, 130, 24], [348, 170, 34], [404, 220, 46], [470, 260, 56], [540, 300, 64]
+  [222, 70, 10], [252, 95, 16], [296, 130, 24], [348, 170, 34], [404, 220, 46], [470, 260, 56], [540, 300, 64],
+  [620, 330, 70], [710, 360, 76], [810, 390, 82], [920, 420, 88], [1040, 450, 94], [1170, 480, 100]
 ].flatMap(([y, every, width], row) =>
-  Array.from({ length: Math.ceil(FIELD_W / every) + 1 }, (_, i): [number, number, number] => [i * every + ((row * 37 + i * 53) % 29) - row * 11, y + ((i * 7) % 5), width]));
-/** The bearing scale: a tick every 5°, a figure every 15°, across the field. */
-const SCALE: readonly number[] = Array.from({ length: (2 * FIELD_HALF) / 50 + 1 }, (_, i) => -FIELD_HALF / 10 + i * 5);
+  Array.from({ length: Math.ceil((SEA_TO - SEA_FROM) / every) + 1 }, (_, i): [number, number, number] => [SEA_FROM + i * every + ((row * 37 + i * 53) % 29) - row * 11, y + ((i * 7) % 5), width]));
+/** The bearing scale: a tick every 5°, a figure every 15°, as far round as the view turns. */
+const SCALE: readonly number[] = Array.from({ length: 25 }, (_, i) => -60 + i * 5);
 /** One lamp of the wake every this many ticks of the torpedo's run. */
 const LAMP_EVERY = 4;
 const LAMP_RUNS = Array.from({ length: RANGE.far / LAMP_EVERY + 1 }, (_, i) => i * LAMP_EVERY);
@@ -53,17 +68,25 @@ const keepFocus = (event: { preventDefault(): void }) => event.preventDefault();
 
 const compass = (degrees: number) => String(((degrees % 360) + 360) % 360).padStart(3, "0");
 
-// The periscope, the game's board: a bearing scale over a pill-shaped lens on
-// the dusk sea, the torpedo lamps and the score under it, and the sight and
-// FIRE buttons at the foot. The view holds still and shows the whole field of
-// attack; the sight moves along the horizon, and a torpedo runs straight up
-// the lens from under it. A physical thing, so it wears its own colours on
-// every theme (torpedo.css). A finger on the lens draws the sight to it.
+// The periscope, the game's board, after the old cabinet (the owner's
+// reference and mock, 2026-10-29): a bearing scale over a pill-shaped lens on
+// a daytime sea under flat clouds, the torpedo lamps and the score under it,
+// and the turn and FIRE buttons at the foot. The view turns: the sight is
+// always the middle of the lens, between two fine etched lines, and the sea
+// moves past as the periscope turns, so a ship off to the side is out of
+// sight until the periscope comes round to it. A torpedo leaves the tube in
+// the bow — dead ahead, which turns away with the view — and runs on a slant
+// to where the sight meets the horizon. A hit puts the sea in shadow so the
+// fire glows. On a phone the scale sits inside the top of the lens and the
+// lens takes the screen's height (torpedo.css); `tools` (pause, full screen)
+// ride on its foot there. A physical thing, so it wears its own colours on
+// every theme. Dragging a finger along the lens turns the periscope.
 export function Periscope({
   mode,
   state,
   banner,
   overlay,
+  tools,
   onFire,
   onHold,
   onAim
@@ -73,25 +96,26 @@ export function Periscope({
   banner: Banner | null;
   /** The round-over card, laid over the lens. */
   overlay?: ReactNode;
+  /** Small buttons laid on the lens's foot, where a phone has no panel for them. */
+  tools?: ReactNode;
   onFire: () => void;
   onHold: (side: "left" | "right", down: boolean) => void;
   onAim: (bearing: number | null) => void;
 }) {
   const { t } = useTranslation();
   const [lensRef, aspect] = useAspect<HTMLDivElement>();
-  const drag = useRef<number | null>(null);
-  const { top, height } = viewOf(aspect);
+  const drag = useRef<{ id: number; x: number; bearing: number } | null>(null);
+  const view = viewOf(aspect);
+  const { top, height } = view;
   const bottom = top + height;
-  const tubeY = bottom - 12;
+  const tubeY = tubeOf(bottom);
+  const lanes = laneYs(tubeY);
   const { bearing } = state;
-  const sightX = screenX(bearing);
   const sighted = mode === "play" ? inSights(state, bearing) : undefined;
+  /** The scene turns under the lens: it moves by as much as the sight is off dead ahead. */
+  const turned = { transform: `translateX(${-bearing * K}px)` };
 
-  /** The bearing under a finger on the lens. */
-  const bearingAt = (event: PointerEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return (((event.clientX - rect.left) / rect.width) * FIELD_W - FIELD_W / 2) / K;
-  };
+  /** Dragging along the lens turns the periscope: the sea follows the finger. */
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (mode !== "play") return;
     try {
@@ -99,15 +123,16 @@ export function Periscope({
     } catch {
       /* a pointer already gone: the drag still follows it while over the lens */
     }
-    drag.current = event.pointerId;
-    onAim(bearingAt(event));
+    drag.current = { id: event.pointerId, x: event.clientX, bearing };
   };
   const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (drag.current !== event.pointerId) return;
-    onAim(bearingAt(event));
+    const from = drag.current;
+    if (from?.id !== event.pointerId) return;
+    const width = event.currentTarget.getBoundingClientRect().width || 1;
+    onAim(from.bearing - ((event.clientX - from.x) / width) * (view.width / K));
   };
   const onPointerEnd = (event: PointerEvent<HTMLDivElement>) => {
-    if (drag.current !== event.pointerId) return;
+    if (drag.current?.id !== event.pointerId) return;
     drag.current = null;
     onAim(null);
   };
@@ -123,7 +148,11 @@ export function Periscope({
   if (mode === "demo") prompt = t("torpedo.lens.start");
   if (mode === "paused") prompt = t("torpedo.lens.paused");
 
-  const ships = [...state.ships].sort((a, b) => LANE_Y[SHIPS[a.kind].lane] - LANE_Y[SHIPS[b.kind].lane]);
+  // A hit puts the sea in shadow for a moment, so the fire glows.
+  const hitAge = shown?.kind === "hit" ? state.tick - shown.tick : null;
+  const dusk = hitAge !== null && hitAge < SINK_TICKS ? 0.62 * (1 - hitAge / SINK_TICKS) : 0;
+
+  const ships = [...state.ships].sort((a, b) => lanes[SHIPS[a.kind].lane] - lanes[SHIPS[b.kind].lane]);
   const torpedo = state.torpedo;
   const seconds = Math.ceil((state.clock * TICK_MS) / 1000);
   const bonusRound = state.round > 1;
@@ -132,19 +161,24 @@ export function Periscope({
   return (
     <div className={`torpedo-scope is-${mode}`}>
       <div className="torpedo-cabinet">
-        {/* Placed in percent of the lens's width, so each figure sits over the bearing it names. */}
+        {/* The scale turns with the view: each figure in percent of the lens's
+            width over the bearing it names, the strip moved by the sight. */}
         <div className="torpedo-bearings" aria-hidden="true">
-          {SCALE.map((d) => {
-            const at = (screenX(d * 10) / FIELD_W) * 100;
-            if (at < 2 || at > 98) return null;
-            const major = d % 15 === 0;
-            return (
-              <span key={d} className={`torpedo-bearing${major ? " is-major" : ""}${major && Math.abs(d - degrees) < 7.5 ? " is-on" : ""}`} style={{ left: `${at}%` }}>
-                {major && <b>{compass(d)}</b>}
-              </span>
-            );
-          })}
-          <span className="torpedo-bearing-mark" style={{ left: `${(sightX / FIELD_W) * 100}%` }} />
+          <div className="torpedo-bearings-strip" style={{ transform: `translateX(${(-bearing * K * 100) / view.width}%)` }}>
+            {SCALE.map((d) => {
+              const major = d % 15 === 0;
+              return (
+                <span
+                  key={d}
+                  className={`torpedo-bearing${major ? " is-major" : ""}${major && Math.abs(d - degrees) < 7.5 ? " is-on" : ""}`}
+                  style={{ left: `${((screenX(d * 10) - view.left) / view.width) * 100}%` }}
+                >
+                  {major && <b>{compass(d)}</b>}
+                </span>
+              );
+            })}
+          </div>
+          <span className="torpedo-bearing-mark" />
         </div>
 
         <div
@@ -157,16 +191,16 @@ export function Periscope({
           onPointerUp={onPointerEnd}
           onPointerCancel={onPointerEnd}
         >
-          <svg viewBox={`0 ${top} ${FIELD_W} ${height}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+          <svg viewBox={`${view.left} ${top} ${view.width} ${height}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
             <defs>
               <linearGradient id="torpedo-sky" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#24384a" />
-                <stop offset="0.7" stopColor="#7c5a4c" />
-                <stop offset="1" stopColor="#b8703f" />
+                <stop offset="0" stopColor="#3f7b9a" />
+                <stop offset="0.75" stopColor="#80adbd" />
+                <stop offset="1" stopColor="#a6c6cc" />
               </linearGradient>
               <linearGradient id="torpedo-sea" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#2c5156" />
-                <stop offset="1" stopColor="#0a1f23" />
+                <stop offset="0" stopColor="#1f5c65" />
+                <stop offset="1" stopColor="#0a2e35" />
               </linearGradient>
               <radialGradient id="torpedo-burst">
                 <stop offset="0" stopColor="#fff0c8" stopOpacity="0.95" />
@@ -175,95 +209,98 @@ export function Periscope({
                 <stop offset="1" stopColor="#d14b2d" stopOpacity="0" />
               </radialGradient>
             </defs>
-            <rect x={0} y={top} width={FIELD_W} height={HORIZON - top} fill="url(#torpedo-sky)" />
-            <rect x={0} y={HORIZON} width={FIELD_W} height={bottom - HORIZON} fill="url(#torpedo-sea)" />
-            <g className="torpedo-headlands">
-              {HEADLANDS.map(([at, width, height]) => {
-                const x = screenX(at);
-                return <path key={at} d={`M${x - width / 2} ${HORIZON} Q${x - width / 4} ${HORIZON - height} ${x} ${HORIZON - height * 0.8} T${x + width / 2} ${HORIZON} Z`} />;
-              })}
-            </g>
-            <line x1={0} x2={FIELD_W} y1={HORIZON} y2={HORIZON} className="torpedo-horizon" />
-            <g className="torpedo-glints">
-              {GLINTS.filter(([, y]) => y < bottom).map(([x, y, width]) => (
-                <rect key={`${x}:${y}`} x={x - width / 2} y={y} width={width} height={y < 260 ? 1.5 : 2.5} rx={1} />
-              ))}
-            </g>
+            <rect x={SEA_FROM} y={top} width={SEA_TO - SEA_FROM} height={HORIZON - top} fill="url(#torpedo-sky)" />
+            <rect x={SEA_FROM} y={HORIZON} width={SEA_TO - SEA_FROM} height={bottom - HORIZON} fill="url(#torpedo-sea)" />
 
-            {ships.map((ship) => {
-              const x = screenX(ship.x);
-              const s = shipScale(ship);
-              const y = LANE_Y[SHIPS[ship.kind].lane];
-              const sinking = ship.sinking === null ? 0 : 1 - ship.sinking / SINK_TICKS;
-              const height = SHIP_HEIGHT[ship.kind] * s;
-              return (
-                <g key={ship.id}>
-                  <g
-                    className="torpedo-ship"
-                    style={{ transform: `translate(${x}px, ${y + sinking * height}px) scale(${s * ship.dir}, ${s})`, opacity: 1 - sinking * 0.9 }}
-                  >
-                    <path d={SHIP_PATHS[ship.kind]} transform="translate(-50 0)" className={`torpedo-ship-hull${sighted?.id === ship.id ? " is-sighted" : ""}`} />
+            <g className="torpedo-world" style={turned}>
+              <g className="torpedo-clouds">
+                {CLOUDS.filter(([, rise, width]) => HORIZON - rise - width * 0.34 > top).map(([x, rise, width]) => (
+                  <path key={`${x}:${rise}`} d={cloudPath(x, HORIZON - rise, width)} />
+                ))}
+              </g>
+              <line x1={SEA_FROM} x2={SEA_TO} y1={HORIZON} y2={HORIZON} className="torpedo-horizon" />
+              <g className="torpedo-glints">
+                {GLINTS.filter(([, y]) => y < bottom).map(([x, y, width]) => (
+                  <rect key={`${x}:${y}`} x={x - width / 2} y={y} width={width} height={y < 260 ? 1.5 : 2.5} rx={1} />
+                ))}
+              </g>
+              <rect x={SEA_FROM} y={top} width={SEA_TO - SEA_FROM} height={height} fill="#02090b" opacity={dusk} />
+
+              {ships.map((ship) => {
+                const x = screenX(ship.x);
+                const s = shipScale(ship);
+                const y = lanes[SHIPS[ship.kind].lane];
+                const sinking = ship.sinking === null ? 0 : 1 - ship.sinking / SINK_TICKS;
+                const height = SHIP_HEIGHT[ship.kind] * s;
+                return (
+                  <g key={ship.id}>
+                    <g
+                      className="torpedo-ship"
+                      style={{ transform: `translate(${x}px, ${y + sinking * height}px) scale(${s * ship.dir}, ${s})`, opacity: 1 - sinking * 0.9 }}
+                    >
+                      <path d={SHIP_PATHS[ship.kind]} transform="translate(-50 0)" className={`torpedo-ship-hull${sighted?.id === ship.id ? " is-sighted" : ""}`} />
+                    </g>
+                    {ship.sinking === null && (
+                      <rect x={x - ship.dir * 50 * s - (ship.dir > 0 ? 30 * s : 0)} y={y - 1} width={30 * s} height={Math.max(1.5, 2 * s)} rx={1} className="torpedo-ship-wake" />
+                    )}
+                    {ship.sinking !== null && sinking < 0.6 && (
+                      <>
+                        <circle cx={x} cy={y - height * 0.4} r={height * (0.8 + sinking * 2.4)} fill="url(#torpedo-burst)" opacity={1 - sinking / 0.6} />
+                        {/* The fire's reflection, a column down the water. */}
+                        <ellipse cx={x} cy={y + height * 1.2} rx={height * 0.7} ry={height * 1.4} fill="url(#torpedo-burst)" opacity={0.55 * (1 - sinking / 0.6)} />
+                      </>
+                    )}
+                    {ship.sinking !== null && (
+                      <ellipse cx={x} cy={y} rx={50 * s * (0.6 + sinking)} ry={3 + 4 * s} className="torpedo-splash" opacity={1 - sinking} />
+                    )}
                   </g>
-                  {ship.sinking === null && (
-                    <rect x={x - ship.dir * 50 * s - (ship.dir > 0 ? 30 * s : 0)} y={y - 1} width={30 * s} height={Math.max(1.5, 2 * s)} rx={1} className="torpedo-ship-wake" />
-                  )}
-                  {ship.sinking !== null && sinking < 0.6 && (
-                    <circle cx={x} cy={y - height * 0.4} r={height * (0.8 + sinking * 2.4)} fill="url(#torpedo-burst)" opacity={1 - sinking / 0.6} />
-                  )}
-                  {ship.sinking !== null && (
-                    <ellipse cx={x} cy={y} rx={50 * s * (0.6 + sinking)} ry={3 + 4 * s} className="torpedo-splash" opacity={1 - sinking} />
-                  )}
+                );
+              })}
+
+              {torpedo && (
+                <g className="torpedo-wake">
+                  {LAMP_RUNS.filter((run) => run <= torpedo.run).map((run) => {
+                    const point = wakePoint(torpedo.bearing, run, tubeY);
+                    const head = torpedo.run - run < LAMP_EVERY;
+                    const glow = 0.35 + 0.65 * (run / RANGE.far);
+                    return (
+                      <circle
+                        key={run}
+                        cx={point.x}
+                        cy={point.y}
+                        r={point.size / (head ? 1.6 : 2)}
+                        className={head ? "is-head" : undefined}
+                        opacity={head ? 1 : glow * 0.8}
+                      />
+                    );
+                  })}
                 </g>
-              );
-            })}
+              )}
+            </g>
 
-            {torpedo && (
-              <g className="torpedo-wake">
-                {LAMP_RUNS.filter((run) => run <= torpedo.run).map((run) => {
-                  const point = wakePoint(torpedo.bearing, run, tubeY);
-                  const head = torpedo.run - run < LAMP_EVERY;
-                  const glow = 0.35 + 0.65 * (run / RANGE.far);
-                  return (
-                    <circle
-                      key={run}
-                      cx={point.x}
-                      cy={point.y}
-                      r={point.size / (head ? 1.6 : 2)}
-                      className={head ? "is-head" : undefined}
-                      opacity={head ? 1 : glow * 0.8}
-                    />
-                  );
-                })}
-              </g>
-            )}
-
-            {/* The reticle's rule holds still on the horizon; the sight (its upright,
-                and the tube's mark under it) slides along it. */}
-            <g className={`torpedo-crosshair${sighted ? " is-sighted" : ""}`}>
-              <line x1={30} x2={FIELD_W - 30} y1={HORIZON} y2={HORIZON} className="is-rule" />
-              {[-300, -200, -100, 0, 100, 200, 300].map((at) => (
-                <line key={at} x1={screenX(at)} x2={screenX(at)} y1={HORIZON - 5} y2={HORIZON + 5} className="is-rule" />
-              ))}
-              <g className="torpedo-sight" style={{ transform: `translateX(${sightX}px)` }}>
-                <line x1={0} x2={0} y1={top + 30} y2={HORIZON - 18} />
-                <line x1={0} x2={0} y1={HORIZON + 18} y2={tubeY - 24} />
-                <line x1={-18} x2={18} y1={HORIZON} y2={HORIZON} />
-                <path d={`M-10 ${tubeY + 6} L0 ${tubeY - 10} L10 ${tubeY + 6} Z`} />
-              </g>
+            {/* The reticle: two fine etched lines; the sight is the middle between them. */}
+            <g className="torpedo-reticle">
+              {[-1, 1].map((side) => {
+                const x = view.left + view.width / 2 + (side * view.width) / 6;
+                return <line key={side} x1={x} x2={x} y1={top} y2={bottom} />;
+              })}
             </g>
           </svg>
           <div className="torpedo-vignette" aria-hidden="true" />
           {bannerText && <p key={shown!.tick} className={`torpedo-banner is-${shown!.kind}`} aria-hidden="true">{bannerText}</p>}
           {prompt && !overlay && <p className="torpedo-prompt">{prompt}</p>}
+          {tools && !overlay && <div className="torpedo-tools">{tools}</div>}
         </div>
 
+        {/* One row: the score, the tubes, what the bonus round needs, the clock.
+            A phone hides the labels and keeps the figures. */}
         <div className="torpedo-hud">
+          <div className="torpedo-hud-figure is-score">
+            <span className="torpedo-hud-label">{t("torpedo.hud.score")}</span>
+            <span className="torpedo-hud-value" aria-live="off">{formatScore(state.score)}</span>
+          </div>
           <div className="torpedo-hud-tubes">
-            <span className="torpedo-hud-label">
-              {t("torpedo.hud.torpedoes", { left: state.torpedoesLeft, of: TORPEDOES })}
-              {" · "}
-              {t("torpedo.hud.time", { seconds })}
-            </span>
+            <span className="torpedo-hud-label">{t("torpedo.hud.torpedoes", { left: state.torpedoesLeft, of: TORPEDOES })}</span>
             <span className="torpedo-lamps" role="img" aria-label={t("torpedo.hud.torpedoesLabel", { count: state.torpedoesLeft })}>
               {Array.from({ length: TORPEDOES }, (_, i) => (
                 <span key={i} className={`torpedo-lamp${i < state.torpedoesLeft ? " is-lit" : ""}`} />
@@ -271,12 +308,12 @@ export function Periscope({
             </span>
           </div>
           <div className="torpedo-hud-figure">
-            <span className="torpedo-hud-label">{t("torpedo.hud.score")}</span>
-            <span className="torpedo-hud-value is-score" aria-live="off">{formatScore(state.score)}</span>
-          </div>
-          <div className="torpedo-hud-figure">
             <span className="torpedo-hud-label">{bonusRound ? t("torpedo.hud.bonusRound") : t("torpedo.hud.bonusAt")}</span>
             <span className="torpedo-hud-value">{bonusRound ? t("torpedo.hud.round", { round: state.round }) : formatScore(BONUS_AT)}</span>
+          </div>
+          <div className="torpedo-hud-figure is-clock">
+            <span className="torpedo-hud-label">{t("torpedo.hud.clock")}</span>
+            <span className="torpedo-hud-value">{t("torpedo.hud.time", { seconds })}</span>
           </div>
         </div>
         <div className={`torpedo-progress${state.bonus ? " is-earned" : ""}`} aria-hidden="true">

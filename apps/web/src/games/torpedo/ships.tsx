@@ -1,6 +1,6 @@
 import type { ShipKind } from "@isputnik/games-engine";
 
-// The four ships as silhouettes against the dusk, the house's own drawings:
+// The four ships as silhouettes against the sky, the house's own drawings:
 // each hull 100 units long, bow to the right, waterline at y 0. A ship
 // heading left is the same drawing mirrored.
 export const SHIP_PATHS: Record<ShipKind, string> = {

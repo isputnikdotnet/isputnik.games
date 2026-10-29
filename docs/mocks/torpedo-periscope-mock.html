@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Torpedo Run periscope mock</title>
+<!-- Mock for the owner (2026-10-29): the periscope after the old cabinet's GIF
+     (new-east-archive.org, "Russian video games history", first animation).
+     One game, drawn into a desktop lens and a phone lens. Two readings of the
+     GIF to choose between: A, the window slides over a still sea; B, the whole
+     view turns and the sight stays in the middle. -->
+<style>
+  :root {
+    --bg: #1b1e1d;
+    --panel: #242827;
+    --ink: #ece6d6;
+    --muted: #9c9a8e;
+    --brass: #b78f5d;
+    --lamp: #ffd27a;
+    --font: "Russo One", "Arial Black", "Segoe UI Black", Impact, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, "Segoe UI", sans-serif; }
+  main { max-width: 1340px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .lead { max-width: 820px; margin: 0 0 16px; color: var(--muted); }
+  .modes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .modes button {
+    padding: 10px 14px; border: 1px solid #3a403e; border-radius: 10px;
+    background: var(--panel); color: var(--ink); font: inherit; cursor: pointer; text-align: left;
+  }
+  .modes button[aria-pressed="true"] { border-color: var(--lamp); box-shadow: 0 0 0 1px var(--lamp) inset; }
+  .modes b { display: block; }
+  .modes span { color: var(--muted); font-size: 13px; }
+  .stage { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+  .device h2 { margin: 0 0 8px; color: var(--muted); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .device.is-desk { width: min(860px, 100%); }
+  .device.is-phone { width: 360px; max-width: 100%; }
+  .cabinet {
+    padding: 10px 10px 8px; border-radius: 24px;
+    background: linear-gradient(160deg, #1b3f3c, #0b2422 60%, #071a19);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  canvas { display: block; width: 100%; touch-action: none; cursor: grab; }
+  .is-desk canvas { aspect-ratio: 1000 / 440; border-radius: 999px; }
+  .is-phone canvas { height: 520px; border-radius: 30px / 26px; }
+  .hud { display: flex; align-items: center; gap: 8px; padding: 8px 2px 0; font-family: var(--font); }
+  .fig { padding: 3px 8px; border-radius: 6px; background: rgba(0, 0, 0, 0.35); font-size: 20px; line-height: 1.2; }
+  .fig.is-score { color: var(--lamp); }
+  .lamps { display: flex; gap: 3px; margin: 0 auto; }
+  .lamp { width: 9px; height: 16px; border: 1px solid rgba(202, 151, 86, 0.28); border-radius: 5px; background: #16302f; }
+  .lamp.on { border-color: transparent; background: var(--lamp); box-shadow: 0 0 8px rgba(255, 170, 80, 0.7); }
+  .controls { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .key {
+    flex: 1; height: 52px; border: 1px solid rgba(202, 151, 86, 0.28); border-radius: 14px;
+    background: #0d2528; color: var(--ink); font-size: 20px; cursor: pointer; touch-action: none;
+  }
+  .fire {
+    width: 128px; height: 60px; border: 0; border-radius: 999px; cursor: pointer;
+    background: radial-gradient(circle at 50% 35%, #e9674a, #d14b2d 60%, #a83a22);
+    color: #fff6e6; font: 17px var(--font); letter-spacing: 0.08em;
+    box-shadow: 0 5px 0 #7e2a17, 0 0 0 4px #0d2528, 0 0 0 5px rgba(202, 151, 86, 0.3);
+  }
+  .fire:active { transform: translateY(4px); box-shadow: 0 1px 0 #7e2a17, 0 0 0 4px #0d2528, 0 0 0 5px rgba(202, 151, 86, 0.3); }
+  .notes { max-width: 820px; margin-top: 28px; color: var(--muted); }
+  .notes b { color: var(--ink); }
+  .notes li { margin-bottom: 6px; }
+  kbd { padding: 1px 6px; border: 1px solid #444; border-radius: 4px; background: #2c302f; color: var(--ink); font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Torpedo Run — periscope mock</h1>
+  <p class="lead">One game, two lenses. Aim with <kbd>←</kbd> <kbd>→</kbd> (or drag on a lens), fire with <kbd>Space</kbd> or ПУСК. Pick which reading of the old cabinet's GIF feels right:</p>
+  <div class="modes" role="group" aria-label="Periscope mode">
+    <button type="button" data-mode="slide" aria-pressed="true"><b>A · The window slides</b><span>The sea holds still; the round window moves over it with your aim, black all round — as the GIF looks.</span></button>
+    <button type="button" data-mode="turn" aria-pressed="false"><b>B · The view turns</b><span>The sight stays in the middle; the sea pans past as you turn, closer up — like a real periscope.</span></button>
+  </div>
+
+  <div class="stage">
+    <section class="device is-desk">
+      <h2>Desktop</h2>
+      <div class="cabinet">
+        <canvas id="desk"></canvas>
+        <div class="hud"><span class="fig is-score" data-score>0</span><span class="lamps" data-lamps></span><span class="fig">1 500</span><span class="fig" data-clock>90 s</span></div>
+      </div>
+      <div class="controls"><button class="key" data-turn="-1" aria-label="Left">◀</button><button class="fire" data-fire>ПУСК</button><button class="key" data-turn="1" aria-label="Right">▶</button></div>
+    </section>
+    <section class="device is-phone">
+      <h2>Phone</h2>
+      <div class="cabinet">
+        <canvas id="phone"></canvas>
+        <div class="hud"><span class="fig is-score" data-score>0</span><span class="lamps" data-lamps></span><span class="fig">1 500</span><span class="fig" data-clock>90 s</span></div>
+      </div>
+      <div class="controls"><button class="key" data-turn="-1" aria-label="Left">◀</button><button class="fire" data-fire>ПУСК</button><button class="key" data-turn="1" aria-label="Right">▶</button></div>
+    </section>
+  </div>
+
+  <ul class="notes">
+    <li><b>The reticle</b>: just two fine etched lines, as in the GIF — aim with the middle between them (the scale's mark at the top shows the bearing).</li>
+    <li><b>The torpedo</b> leaves the bow (dead ahead, foot of the lens) and runs on a straight slant to where the target line meets the horizon. In B, aiming far off, it comes in from the side of the view.</li>
+    <li><b>A hit</b> puts the sea in shadow for a moment: the fire glows and throws a column of light down the water, as in the GIF's last frames.</li>
+    <li><b>Out of the window</b> a ship is out of sight — you search for it with the periscope. The bearing scale stays across the top.</li>
+    <li>Ships, scene, HUD and buttons are as in the game now; only the lens changes.</li>
+  </ul>
+</main>
+
+<script>
+"use strict";
+// Ship silhouettes from the game (ships.tsx): hull 100 units long, bow right, waterline y 0.
+const PATHS = {
+  tanker: "M0 -7 L100 -7 L96 0 L4 0 Z M5 -7 V-17 H19 V-7 Z M8 -17 V-23 H13 V-17 Z M22 -7 V-9 H86 V-7 Z M30 -9 V-11 H34 V-9 Z M52 -9 V-11 H56 V-9 Z M74 -9 V-11 H78 V-9 Z M89 -7 V-14 H90.5 V-7 Z",
+  cargo: "M0 -9 L88 -9 L100 -13 L94 0 L5 0 Z M14 -9 V-22 H28 V-9 Z M18 -22 V-28 H24 V-22 Z M34 -9 V-16 H82 V-9 Z M40 -16 V-21 H58 V-16 Z M62 -16 V-20 H78 V-16 Z M48 -21 V-31 H49.6 V-21 Z M49 -31 L60 -23 L59 -22 L49 -29 Z M70 -20 V-30 H71.6 V-20 Z M71 -30 L81 -22 L80 -21 L71 -28 Z",
+  destroyer: "M0 -6 L84 -7 L100 -10 L95 0 L3 0 Z M30 -7 V-14 H56 V-7 Z M50 -14 V-20 H58 V-14 Z M36 -14 V-20 H42 V-14 Z M45 -14 V-30 H46.4 V-14 Z M41 -25 H51 V-24 H41 Z M68 -7 V-11 H77 V-7 Z M77 -10 H87 V-9 H77 Z M12 -6 V-10 H21 V-6 Z M4 -9 H12 V-8 H4 Z",
+  patrol: "M0 -6 L80 -7 L100 -11 L90 0 L6 0 Z M24 -7 V-17 H52 L62 -7 Z M36 -17 V-27 H38 V-17 Z M8 -7 V-10 H16 V-7 Z"
+};
+const HULL = Object.fromEntries(Object.entries(PATHS).map(([k, d]) => [k, new Path2D(d)]));
+const HEIGHT = { tanker: 23, cargo: 31, destroyer: 30, patrol: 27 };
+// World: the field of attack is 1000 units across, ±36°, dead ahead at 500.
+const PER_DEG = 1000 / 72;
+const SHIPS = {
+  tanker: { lane: "near", w: 140, speed: 40, points: 100 },
+  cargo: { lane: "mid", w: 104, speed: 60, points: 200 },
+  destroyer: { lane: "far", w: 76, speed: 80, points: 300 },
+  patrol: { lane: "mid", w: 56, speed: 120, points: 500 }
+};
+const LANES = ["near", "mid", "far"];
+// How far over to the sight a torpedo is at each lane, and when it gets there.
+const REACH = { near: 0.65, mid: 0.85, far: 0.97 };
+const ARRIVE = { near: 0.8, mid: 1.5, far: 2.3 };
+const SIGHT_SPEED = 280;
+const CLOUDS = [[60, 70, 250], [300, 52, 150], [640, 62, 230], [880, 78, 170], [-120, 40, 200], [1120, 50, 220], [470, 120, 180], [780, 150, 150], [150, 170, 200]];
+
+const st = {
+  mode: "slide", sight: 500, keys: 0, held: 0, drag: null,
+  ships: [], waits: { near: 2, mid: 1, far: 0 },
+  torp: null, score: 0, left: 10, clock: 90, flash: null, t: 0
+};
+
+const views = [
+  { canvas: document.getElementById("desk"), wide: true, win: 0.56 },
+  { canvas: document.getElementById("phone"), wide: false, win: 0.8 }
+];
+
+function size(v) {
+  const r = v.canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  v.w = r.width; v.h = r.height;
+  v.canvas.width = Math.round(r.width * dpr);
+  v.canvas.height = Math.round(r.height * dpr);
+  v.dpr = dpr;
+}
+
+/** What a lens shows: world x to screen x, the horizon, the lanes. */
+function camera(v) {
+  const hor = v.h * (v.wide ? 0.47 : 0.38);
+  const tube = v.h - 12;
+  let scale, x0;
+  if (st.mode === "slide") { scale = v.w / 1000; x0 = 0; }
+  else { const span = 1000 * v.win * (v.wide ? 1 : 0.9); scale = v.w / span; x0 = st.sight - span / 2; }
+  const laneY = (lane) => tube - REACH[lane] * (tube - hor);
+  return { hor, tube, scale, x0, sx: (x) => (x - x0) * scale, laneY };
+}
+
+/** Where the torpedo is, t seconds out: world x and how far over it is. */
+function torpedoAt(torp, t) {
+  const stops = [[0, 0], [ARRIVE.near, REACH.near], [ARRIVE.mid, REACH.mid], [ARRIVE.far, REACH.far]];
+  for (let i = 1; i < stops.length; i++) {
+    const [t0, r0] = stops[i - 1], [t1, r1] = stops[i];
+    if (t <= t1) {
+      const f = (t - t0) / (t1 - t0);
+      return { reach: r0 + f * (r1 - r0), x: 500 + (torp.aim - 500) * (r0 + f * (r1 - r0)) };
+    }
+  }
+  return { reach: REACH.far, x: 500 + (torp.aim - 500) * REACH.far };
+}
+
+function spawn(lane) {
+  const kind = lane === "near" ? "tanker" : lane === "far" ? "destroyer" : Math.random() < 0.3 ? "patrol" : "cargo";
+  const dir = Math.random() < 0.5 ? 1 : -1;
+  const s = SHIPS[kind];
+  st.ships.push({ kind, lane, dir, x: dir > 0 ? -200 - s.w / 2 : 1200 + s.w / 2, sinking: null });
+}
+
+function fire() {
+  if (st.torp || st.left === 0) return;
+  if (st.clock <= 0) { st.left = 10; st.clock = 90; st.score = 0; }
+  st.torp = { aim: st.sight, t: 0, done: {} };
+  st.left -= 1;
+}
+
+function update(dt) {
+  st.t += dt;
+  st.clock = Math.max(0, st.clock - dt);
+  const turn = Math.sign(st.keys + st.held);
+  if (turn) st.sight += turn * SIGHT_SPEED * dt;
+  st.sight = Math.min(Math.max(st.sight, 500 - 34 * PER_DEG), 500 + 34 * PER_DEG);
+
+  for (const ship of st.ships) {
+    if (ship.sinking !== null) ship.sinking += dt;
+    else ship.x += ship.dir * SHIPS[ship.kind].speed * dt;
+  }
+  st.ships = st.ships.filter((s) => (s.sinking === null ? s.x > -400 && s.x < 1400 : s.sinking < 1.4));
+  for (const lane of LANES) {
+    if (st.ships.some((s) => s.lane === lane)) continue;
+    st.waits[lane] -= dt;
+    if (st.waits[lane] <= 0) { spawn(lane); st.waits[lane] = 1 + Math.random() * 3; }
+  }
+
+  if (st.torp) {
+    st.torp.t += dt;
+    for (const lane of LANES) {
+      if (st.torp.done[lane] || st.torp.t < ARRIVE[lane]) continue;
+      st.torp.done[lane] = true;
+      const x = 500 + (st.torp.aim - 500) * REACH[lane];
+      const ship = st.ships.find((s) => s.lane === lane && s.sinking === null && Math.abs(s.x - x) <= SHIPS[s.kind].w / 2);
+      if (ship) {
+        ship.sinking = 0;
+        st.score += SHIPS[ship.kind].points;
+        st.flash = { t: 0 };
+        st.torp = null;
+        break;
+      }
+    }
+    if (st.torp && st.torp.t >= ARRIVE.far) st.torp = null;
+  }
+  if (st.flash) { st.flash.t += dt; if (st.flash.t > 1.4) st.flash = null; }
+}
+
+function cloud(ctx, x, y, w) {
+  const h = w * 0.16;
+  ctx.beginPath();
+  ctx.moveTo(x - w / 2, y);
+  ctx.bezierCurveTo(x - w * 0.44, y - h * 0.9, x - w * 0.3, y - h * 1.2, x - w * 0.18, y - h * 0.9);
+  ctx.bezierCurveTo(x - w * 0.12, y - h * 2, x + w * 0.14, y - h * 2.1, x + w * 0.2, y - h);
+  ctx.bezierCurveTo(x + w * 0.3, y - h * 1.4, x + w * 0.46, y - h * 0.8, x + w / 2, y);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function pillPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+}
+
+function draw(v) {
+  const ctx = v.canvas.getContext("2d");
+  ctx.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);
+  const { w, h } = v;
+  const c = camera(v);
+  ctx.fillStyle = "#020607";
+  ctx.fillRect(0, 0, w, h);
+
+  // The window: in A a pill that follows the sight; in B the whole lens.
+  const sightPx = st.mode === "slide" ? c.sx(st.sight) : w / 2;
+  const winW = st.mode === "slide" ? w * v.win : w;
+  const winH = h - 10;
+  const winR = st.mode === "slide" ? (v.wide ? winH / 2 : winW * 0.32) : 0;
+  ctx.save();
+  if (st.mode === "slide") { pillPath(ctx, sightPx - winW / 2, 5, winW, winH, winR); ctx.clip(); }
+
+  const sky = ctx.createLinearGradient(0, 0, 0, c.hor);
+  sky.addColorStop(0, "#3f7b9a"); sky.addColorStop(0.75, "#80adbd"); sky.addColorStop(1, "#a6c6cc");
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, w, c.hor);
+  const sea = ctx.createLinearGradient(0, c.hor, 0, h);
+  sea.addColorStop(0, "#1f5c65"); sea.addColorStop(1, "#0a2e35");
+  ctx.fillStyle = sea; ctx.fillRect(0, c.hor, w, h - c.hor);
+
+  ctx.fillStyle = "rgba(236, 223, 192, 0.92)";
+  const cs = Math.max(c.scale, 0.45);
+  for (const [x, rise, cw] of CLOUDS) cloud(ctx, c.sx(x), c.hor - rise * cs, cw * cs);
+  ctx.strokeStyle = "rgba(10, 40, 46, 0.5)"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, c.hor); ctx.lineTo(w, c.hor); ctx.stroke();
+
+  // Glints on the water, nearer rows wider apart.
+  ctx.fillStyle = "rgba(170, 215, 215, 0.2)";
+  for (let row = 0; row < 12; row++) {
+    const f = Math.pow(row / 11, 1.6);
+    const y = c.hor + 6 + f * (h - c.hor - 10);
+    const every = 60 + row * 26, gw = 10 + row * 7;
+    for (let x = -400 + ((row * 37) % 29); x < 1400; x += every) {
+      const px = c.sx(x + ((x * 7) % 23));
+      if (px > -gw && px < w + gw) ctx.fillRect(px - (gw * cs) / 2, y, gw * cs, row < 3 ? 1 : 2);
+    }
+  }
+
+  // A hit puts the sea in shadow so the fire glows.
+  const dusk = st.flash ? 0.62 * Math.max(0, 1 - st.flash.t / 1.2) : 0;
+  if (dusk) { ctx.fillStyle = `rgba(2, 9, 11, ${dusk})`; ctx.fillRect(0, 0, w, h); }
+
+  for (const lane of ["far", "mid", "near"]) {
+    for (const ship of st.ships.filter((s) => s.lane === lane)) {
+      const s = SHIPS[ship.kind];
+      const k = (s.w * c.scale) / 100;
+      const x = c.sx(ship.x), y = c.laneY(lane);
+      const sink = ship.sinking === null ? 0 : Math.min(1, ship.sinking / 1.2);
+      const hh = HEIGHT[ship.kind] * k;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x - 60 * k, 0, 120 * k, y + 1); ctx.clip();
+      ctx.translate(x, y + sink * hh);
+      ctx.scale(k * ship.dir, k);
+      ctx.translate(-50, 0);
+      ctx.globalAlpha = 1 - sink * 0.9;
+      ctx.fillStyle = "#121a1c";
+      ctx.fill(HULL[ship.kind]);
+      ctx.restore();
+      if (ship.sinking === null) {
+        ctx.fillStyle = "rgba(235, 245, 240, 0.55)";
+        ctx.fillRect(x - ship.dir * 50 * k - (ship.dir > 0 ? 30 * k : 0), y - 1, 30 * k, Math.max(1.5, 2 * k));
+      } else if (sink < 0.7) {
+        const fade = 1 - sink / 0.7;
+        const r = hh * (0.9 + sink * 2.6);
+        glow(ctx, x, y - hh * 0.4, r, fade);
+        // The fire's reflection: a column of light down the water.
+        ctx.save();
+        ctx.translate(x, y + hh * 1.3);
+        ctx.scale(0.45, 1.5);
+        glow(ctx, 0, 0, hh * 1.2, fade * 0.6);
+        ctx.restore();
+      }
+    }
+  }
+
+  // The torpedo's wake, lamp by lamp from the bow.
+  if (st.torp) {
+    for (let t = 0; t <= st.torp.t; t += 0.18) {
+      const p = torpedoAt(st.torp, t);
+      const y = c.tube - p.reach * (c.tube - c.hor);
+      const head = st.torp.t - t < 0.18;
+      const size = (head ? 8 : 6) * (1 - p.reach * 0.7) * Math.max(0.6, c.scale * 1.1);
+      ctx.fillStyle = head ? "#fff2cc" : "#ffd27a";
+      ctx.shadowColor = "rgba(255, 170, 80, 0.8)"; ctx.shadowBlur = 8;
+      ctx.globalAlpha = head ? 1 : 0.35 + 0.5 * p.reach;
+      ctx.beginPath(); ctx.arc(c.sx(p.x), y, size, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    }
+  }
+
+  // The reticle: only the two fine etched lines, as in the GIF; the aim is
+  // the middle between them.
+  ctx.strokeStyle = "rgba(4, 16, 18, 0.7)"; ctx.lineWidth = 1.2;
+  for (const side of [-1, 1]) {
+    const x = sightPx + (side * winW) / 6;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+
+  // Shade inside the window's edge.
+  const vig = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
+  vig.addColorStop(0, "rgba(0,0,0,0)"); vig.addColorStop(1, "rgba(0,0,0,0.55)");
+  ctx.fillStyle = vig; ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+  if (st.mode === "slide") {
+    ctx.strokeStyle = "#020607"; ctx.lineWidth = 6;
+    ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 12;
+    pillPath(ctx, sightPx - winW / 2, 5, winW, winH, winR); ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  // The bearing scale across the top: a tick every 5°, a figure every 15°.
+  ctx.fillStyle = "#f6ecd4"; ctx.strokeStyle = "#f6ecd4";
+  ctx.font = `${v.wide ? 12 : 11}px ${getComputedStyle(document.body).getPropertyValue("--font")}`;
+  ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 3;
+  for (let d = -60; d <= 60; d += 5) {
+    const x = c.sx(500 + d * PER_DEG);
+    if (x < 24 || x > w - 24) continue;
+    const major = d % 15 === 0;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x, 22); ctx.lineTo(x, major ? 30 : 27); ctx.stroke();
+    if (major) ctx.fillText(String((d + 360) % 360).padStart(3, "0"), x, 18);
+  }
+  const mark = st.mode === "slide" ? c.sx(st.sight) : w / 2;
+  ctx.fillStyle = "#ffd27a";
+  ctx.beginPath(); ctx.moveTo(mark - 6, 32); ctx.lineTo(mark + 6, 32); ctx.lineTo(mark, 25); ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+function glow(ctx, x, y, r, alpha) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, `rgba(255, 240, 200, ${0.95 * alpha})`);
+  g.addColorStop(0.3, `rgba(255, 160, 70, ${0.85 * alpha})`);
+  g.addColorStop(0.6, `rgba(209, 75, 45, ${0.45 * alpha})`);
+  g.addColorStop(1, "rgba(209, 75, 45, 0)");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+}
+
+function hud() {
+  for (const el of document.querySelectorAll("[data-score]")) el.textContent = st.score.toLocaleString("ru-RU");
+  for (const el of document.querySelectorAll("[data-clock]")) el.textContent = `${Math.ceil(st.clock)} s`;
+  for (const el of document.querySelectorAll("[data-lamps]")) {
+    if (el.children.length !== 10) el.innerHTML = '<span class="lamp"></span>'.repeat(10);
+    [...el.children].forEach((lamp, i) => lamp.classList.toggle("on", i < st.left));
+  }
+}
+
+// Input: keys, held buttons, a finger dragged on a lens.
+addEventListener("keydown", (e) => {
+  if (e.code === "ArrowLeft") { st.keys = -1; e.preventDefault(); }
+  if (e.code === "ArrowRight") { st.keys = 1; e.preventDefault(); }
+  if (e.code === "Space" && !e.repeat) { fire(); e.preventDefault(); }
+});
+addEventListener("keyup", (e) => {
+  if ((e.code === "ArrowLeft" && st.keys < 0) || (e.code === "ArrowRight" && st.keys > 0)) st.keys = 0;
+});
+for (const b of document.querySelectorAll("[data-turn]")) {
+  const turn = Number(b.dataset.turn);
+  b.addEventListener("pointerdown", () => { st.held = turn; });
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) b.addEventListener(ev, () => { if (st.held === turn) st.held = 0; });
+}
+for (const b of document.querySelectorAll("[data-fire]")) b.addEventListener("pointerdown", fire);
+for (const v of views) {
+  v.canvas.addEventListener("pointerdown", (e) => { v.canvas.setPointerCapture(e.pointerId); st.drag = { x: e.clientX, sight: st.sight, v }; aimAt(e); });
+  v.canvas.addEventListener("pointermove", (e) => { if (st.drag?.v === v) aimAt(e); });
+  v.canvas.addEventListener("pointerup", () => { st.drag = null; });
+}
+function aimAt(e) {
+  const { v } = st.drag;
+  const c = camera(v);
+  const px = e.clientX - v.canvas.getBoundingClientRect().left;
+  // A: the window goes where the finger is. B: dragging turns the periscope.
+  st.sight = st.mode === "slide" ? c.x0 + px / c.scale : st.drag.sight - (e.clientX - st.drag.x) / c.scale;
+  st.sight = Math.min(Math.max(st.sight, 500 - 34 * PER_DEG), 500 + 34 * PER_DEG);
+}
+for (const b of document.querySelectorAll("[data-mode]")) {
+  b.addEventListener("click", () => {
+    st.mode = b.dataset.mode;
+    for (const o of document.querySelectorAll("[data-mode]")) o.setAttribute("aria-pressed", String(o === b));
+  });
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  update(dt);
+  for (const v of views) { if (v.w !== v.canvas.getBoundingClientRect().width) size(v); draw(v); }
+  hud();
+  requestAnimationFrame(frame);
+}
+for (const v of views) size(v);
+addEventListener("resize", () => views.forEach(size));
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

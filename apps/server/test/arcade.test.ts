@@ -41,8 +41,8 @@ function playRun(variant: SputnikVariant, seed: number, skill = 0.95) {
 /** A Torpedo Run played by a gunner who leads the best ship in reach and fires
  *  when on it, starting the bonus round when it is earned. */
 function playTorpedo(seed: number) {
-  const { SHIPS, RANGE, MAX_BEARING } = Torpedo;
-  const lead = (ship: TorpedoShip) => ship.x + ship.dir * ship.speed * (RANGE[SHIPS[ship.kind].lane] + 1);
+  const { SHIPS, RANGE, MAX_BEARING, aimFor } = Torpedo;
+  const lead = (ship: TorpedoShip) => aimFor(ship.x + ship.dir * ship.speed * (RANGE[SHIPS[ship.kind].lane] + 1), SHIPS[ship.kind].lane);
   let state = Torpedo.createRun("standard", seed);
   let last: TorpedoInput = { turn: 0, fire: false };
   const log: [number, TorpedoInput][] = [];
