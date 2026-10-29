@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Torpedo, type TorpedoState } from "@isputnik/games-engine";
 import { SHIP_HEIGHT, SHIP_PATHS } from "./ships";
 import type { TorpedoMode } from "./useTorpedoRun";
-import { FIELD_W, HORIZON, K, LENS_H, formatScore, laneYs, screenX, shipScale, tubeOf, viewOf, wakePoint } from "./view";
+import { FIELD_W, HORIZON, K, LENS_H, SPAN, courseX, formatScore, laneYs, screenX, shipScale, tubeOf, viewOf, wakePoint } from "./view";
 
 const { SHIPS, SINK_TICKS, RANGE, TORPEDOES, BONUS_AT, TICK_MS, inSights } = Torpedo;
 
@@ -37,6 +37,64 @@ const SCALE: readonly number[] = Array.from({ length: 25 }, (_, i) => -60 + i * 
 /** One lamp of the wake every this many ticks of the torpedo's run. */
 const LAMP_EVERY = 4;
 const LAMP_RUNS = Array.from({ length: RANGE.far / LAMP_EVERY + 1 }, (_, i) => i * LAMP_EVERY);
+
+/** The gyro dial's graduations, in degrees either side of straight up. */
+const DIAL_TICKS = Array.from({ length: 13 }, (_, i) => -60 + i * 10);
+
+/** The gyro dial at the foot of the lens, as on a fire-control panel: a
+ *  graduated half-ring round the tube, a needle and chevrons along the course
+ *  a torpedo fired now would take (from under the sight, leaning the way the
+ *  periscope is turned), the course in degrees in a boxed readout, and the
+ *  tube lamp — green when ready, amber while a torpedo is in the water. */
+function GyroDial({ bearing, tubeY, ready, scale }: { bearing: number; tubeY: number; ready: boolean; scale: number }) {
+  const r = Math.min(44, 0.32 * (tubeY - HORIZON));
+  const cx = screenX(bearing);
+  const cy = tubeY;
+  // The course's direction on the lens: a straight line, so any two points give it.
+  const far = tubeY - (tubeY - HORIZON) / 2;
+  const dx = courseX(bearing, far, tubeY) - cx;
+  const dy = far - cy;
+  const length = Math.hypot(dx, dy) || 1;
+  const [ux, uy] = [dx / length, dy / length];
+  const at = (radius: number, along = 0) => [cx + ux * radius - uy * along, cy + uy * radius + ux * along];
+  const polar = (degrees: number, radius: number) => {
+    const a = (degrees * Math.PI) / 180;
+    return [cx + Math.sin(a) * radius, cy - Math.cos(a) * radius];
+  };
+  const course = Math.round((bearing * (1 + Torpedo.LEAN / 100)) / 10);
+  const [needleX, needleY] = at(r + 9);
+  const [baseL, baseR] = [at(r - 3, -5), at(r - 3, 5)];
+  const [arcL, arcR] = [polar(-64, r), polar(64, r)];
+  return (
+    // A deep lens shows more of the scene to a pixel: the dial is drawn larger there.
+    <g className={`torpedo-gyro${ready ? " is-ready" : ""}`} transform={`translate(${cx} ${cy}) scale(${scale}) translate(${-cx} ${-cy})`}>
+      <path d={`M${arcL[0]} ${arcL[1]} A${r} ${r} 0 0 1 ${arcR[0]} ${arcR[1]}`} className="is-ring" />
+      {DIAL_TICKS.map((d) => {
+        const major = d % 30 === 0;
+        const [x1, y1] = polar(d, r);
+        const [x2, y2] = polar(d, r - (major ? 8 : 4));
+        return <line key={d} x1={x1} y1={y1} x2={x2} y2={y2} className={major ? "is-major" : undefined} />;
+      })}
+      {ready && (
+        <>
+          <line x1={at(r * 0.3)[0]} y1={at(r * 0.3)[1]} x2={at(r - 3)[0]} y2={at(r - 3)[1]} className="is-needle" />
+          <polygon points={`${needleX},${needleY} ${baseL[0]},${baseL[1]} ${baseR[0]},${baseR[1]}`} className="is-head" />
+          {[r + 20, r + 34, r + 48].map((radius, i) => {
+            const [tipX, tipY] = at(radius);
+            const [lx, ly] = at(radius - 6, -6);
+            const [rx, ry] = at(radius - 6, 6);
+            return <polyline key={radius} points={`${lx},${ly} ${tipX},${tipY} ${rx},${ry}`} className="is-chevron" style={{ animationDelay: `${i * 0.18}s` }} />;
+          })}
+        </>
+      )}
+      <g transform={`translate(${cx + r + 10} ${cy - 22})`}>
+        <rect width={44} height={17} rx={2} className="is-box" />
+        <text x={22} y={12.5} textAnchor="middle" className="is-readout">{ready ? `${compass(course)}°` : "———"}</text>
+        <circle cx={-4} cy={8.5} r={2.6} className="is-lamp" />
+      </g>
+    </g>
+  );
+}
 
 /** What the lens's banner says for a moment: a hit and its points, or a miss. */
 export interface Banner {
@@ -192,7 +250,7 @@ export function Periscope({
           onPointerUp={onPointerEnd}
           onPointerCancel={onPointerEnd}
         >
-          <svg viewBox={`${view.left} ${top} ${view.width} ${height}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+          <svg viewBox={`${view.left} ${top} ${view.width} ${height}`} preserveAspectRatio="xMidYMid slice" shapeRendering="geometricPrecision" aria-hidden="true" focusable="false">
             <defs>
               <linearGradient id="torpedo-sky" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0" stopColor="#3f7b9a" />
@@ -257,6 +315,9 @@ export function Periscope({
                   </g>
                 );
               })}
+
+              {/* Which way a torpedo would go: the gyro dial at the tube. */}
+              {(mode === "play" || mode === "paused") && <GyroDial bearing={bearing} tubeY={tubeY} ready={!torpedo} scale={view.width > SPAN.wide ? 2.2 : 1} />}
 
               {torpedo && (
                 <g className="torpedo-wake">

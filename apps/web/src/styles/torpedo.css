@@ -190,8 +190,13 @@
   filter: drop-shadow(0 0 5px var(--tr-lamp-glow));
 }
 
+/* The torpedo itself: bright, ringed, over the ships, so it reads against a
+   hull far out on the horizon. */
 .torpedo-wake circle.is-head {
-  fill: #fff2cc;
+  fill: #fff6dc;
+  stroke: rgba(20, 12, 4, 0.55);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 7px rgba(255, 190, 90, 0.95));
 }
 
 /* The scene turns under the lens with the sight, gliding between ticks as
@@ -200,19 +205,99 @@
   transition: transform 50ms linear;
 }
 
+/* The gyro dial at the tube: amber phosphor on the glass, like a
+   fire-control panel. Dim while a torpedo is in the water. */
+.torpedo-gyro {
+  opacity: 0.55;
+  transition: opacity 200ms;
+}
+
+.torpedo-gyro.is-ready {
+  opacity: 1;
+}
+
+.torpedo-gyro line,
+.torpedo-gyro path,
+.torpedo-gyro polyline {
+  fill: none;
+  stroke: rgba(255, 210, 122, 0.8);
+  stroke-width: 1.2;
+}
+
+.torpedo-gyro .is-ring {
+  stroke-width: 1.5;
+  stroke-dasharray: 1 3;
+}
+
+.torpedo-gyro line.is-major {
+  stroke-width: 2;
+}
+
+.torpedo-gyro line.is-needle {
+  stroke: #ffe4a0;
+  stroke-width: 2;
+}
+
+.torpedo-gyro .is-head {
+  fill: #ffe4a0;
+  filter: drop-shadow(0 0 3px rgba(255, 170, 80, 0.9));
+}
+
+/* The chevrons run out along the course, one after another. */
+.torpedo-gyro polyline.is-chevron {
+  stroke: #ffd27a;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: torpedo-chevron 1.1s ease-in-out infinite;
+}
+
+@keyframes torpedo-chevron {
+  0%, 100% { opacity: 0.25; }
+  40% { opacity: 1; }
+}
+
+.torpedo-gyro .is-box {
+  fill: rgba(4, 16, 18, 0.72);
+  stroke: rgba(255, 210, 122, 0.55);
+  stroke-width: 1;
+}
+
+.torpedo-gyro .is-readout {
+  fill: #ffd27a;
+  font-family: var(--tr-font);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.torpedo-gyro .is-lamp {
+  fill: #e0a040;
+  filter: drop-shadow(0 0 3px rgba(255, 170, 80, 0.9));
+}
+
+.torpedo-gyro.is-ready .is-lamp {
+  fill: #6ee08a;
+  filter: drop-shadow(0 0 3px rgba(110, 224, 138, 0.9));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .torpedo-gyro polyline.is-chevron {
+    animation: none;
+  }
+}
+
 /* The reticle: two fine etched lines, dark as on the old cabinet's glass. */
 .torpedo-reticle line {
   stroke: rgba(4, 16, 18, 0.7);
   stroke-width: 1.5;
 }
 
-/* The lens's dark rim, and a paper grain over the scene like an old print's. */
+/* The lens's dark rim: a narrow shade at the edge, the scene clear inside it. */
 .torpedo-vignette {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.25 0 0 0 0 0.2 0 0 0 0 0.12 0 0 0 0.14 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
-  box-shadow: inset 0 0 50px 14px rgba(0, 0, 0, 0.8);
+  box-shadow: inset 0 0 28px 6px rgba(0, 0, 0, 0.65);
   pointer-events: none;
 }
 

@@ -117,7 +117,7 @@ describe("Torpedo Run rules", () => {
     ["patrol", 500]
   ] as const)("scores a %s at %i", (kind, points) => {
     const lane = SHIPS[kind].lane;
-    let state = run({ ships: [ship(kind, 20)], torpedo: { bearing: 0, run: RANGE[lane] - 1 }, torpedoesLeft: 5 });
+    let state = run({ ships: [ship(kind, 15)], torpedo: { bearing: 0, run: RANGE[lane] - 1 }, torpedoesLeft: 5 });
     const { state: after, cues } = tick(state, still);
     state = after;
     expect(cues).toContainEqual(expect.objectContaining({ kind: "hit", shipKind: kind, lane, points, score: points }));
@@ -132,16 +132,16 @@ describe("Torpedo Run rules", () => {
   });
 
   it("leaves from under the sight and leans the way the periscope is turned", () => {
-    // Fired turned 20° right: across the near lane (90% out) it has leant 75% of
-    // 90% of the turn again, to 33.5°; it is off the sight, not under it.
-    const onCourse = ship("tanker", 335);
+    // Fired turned 20° right: across the near lane (86% out) it has leant 75% of
+    // 86% of the turn again, to 32.9°; it is off the sight, not under it.
+    const onCourse = ship("tanker", 329);
     const underSight = ship("tanker", 200);
     expect(tick(run({ ships: [onCourse], torpedo: { bearing: 200, run: RANGE.near - 1 } }), still).cues).toContainEqual(expect.objectContaining({ kind: "hit" }));
     expect(tick(run({ ships: [underSight], torpedo: { bearing: 200, run: RANGE.near - 1 } }), still).cues).not.toContainEqual(expect.objectContaining({ kind: "hit" }));
     expect(inSights({ ships: [onCourse] }, 200)?.id).toBe(1);
     expect(inSights({ ships: [underSight] }, 200)).toBeUndefined();
-    // The far lane, turned left: 20° and 73.5% of it again.
-    expect(tick(run({ ships: [ship("destroyer", -347)], torpedo: { bearing: -200, run: RANGE.far - 1 } }), still).cues).toContainEqual(expect.objectContaining({ kind: "hit" }));
+    // The far lane, turned left: 20° and 72.75% of it again.
+    expect(tick(run({ ships: [ship("destroyer", -345)], torpedo: { bearing: -200, run: RANGE.far - 1 } }), still).cues).toContainEqual(expect.objectContaining({ kind: "hit" }));
     // Dead ahead it runs straight.
     expect(tick(run({ ships: [ship("cargo", 0)], torpedo: { bearing: 0, run: RANGE.mid - 1 } }), still).cues).toContainEqual(expect.objectContaining({ kind: "hit" }));
   });

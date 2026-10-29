@@ -8,8 +8,8 @@ import { Torpedo, type ShipKind, type TorpedoLane, type TorpedoShip } from "@isp
 // wider stretch and more sea below the horizon.
 
 export const LENS_H = 440;
-/** How much of the scene a lens shows across: about ±20° wide, ±26° deep. */
-export const SPAN = { wide: 560, deep: 720 } as const;
+/** How much of the scene a lens shows across: about ±24° wide, ±30° deep. */
+export const SPAN = { wide: 660, deep: 840 } as const;
 export const FIELD_W = 1000;
 /** View units per bearing unit: the field of attack spans the lens. */
 export const K = FIELD_W / (2 * Torpedo.FIELD_HALF);
@@ -66,7 +66,8 @@ export function wakePoint(bearing: number, run: number, tubeY: number): { x: num
     }
   }
   const depth = run / RANGE.far;
-  return { x: courseX(bearing, y, tubeY), y, size: 16 - depth * 11 };
+  // Far out it keeps a lamp big enough to see against a ship.
+  return { x: courseX(bearing, y, tubeY), y, size: 15 - depth * 7 };
 }
 
 /** The ship's draw scale: its hull, 100 units long, to its width in the lens. */

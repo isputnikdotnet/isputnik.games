@@ -46,10 +46,10 @@ interface ShipClass {
 }
 
 export const SHIPS: Record<ShipKind, ShipClass> = {
-  tanker: { points: 100, lane: "near", speed: 2, half: 70 },
-  cargo: { points: 200, lane: "mid", speed: 3, half: 52 },
-  destroyer: { points: 300, lane: "far", speed: 4, half: 38 },
-  patrol: { points: 500, lane: "mid", speed: 6, half: 28 }
+  tanker: { points: 100, lane: "near", speed: 2, half: 52 },
+  cargo: { points: 200, lane: "mid", speed: 3, half: 38 },
+  destroyer: { points: 300, lane: "far", speed: 4, half: 26 },
+  patrol: { points: 500, lane: "mid", speed: 6, half: 19 }
 };
 
 /** One tick, in milliseconds: twenty a second. */
@@ -64,10 +64,11 @@ export const MAX_BEARING = 200;
 /** Bearing units the sight moves in a tick. */
 export const SIGHT_SPEED = 10;
 /** Ticks a torpedo runs before it reaches each lane. */
-export const RANGE: Record<Lane, number> = { near: 16, mid: 30, far: 46 };
+export const RANGE: Record<Lane, number> = { near: 24, mid: 38, far: 56 };
 /** How far out to the horizon each lane is, in percent of the way: the
- *  ships keep far off, every lane close under the horizon. */
-export const REACH: Record<Lane, number> = { near: 90, mid: 95, far: 98 };
+ *  ships keep far off, under the horizon, with the lanes far enough apart to
+ *  see which one a torpedo has got to. */
+export const REACH: Record<Lane, number> = { near: 86, mid: 92, far: 97 };
 /** How much a torpedo leans the way the periscope is turned, in percent of
  *  the turn: on the horizon its course is off dead ahead by the sight's
  *  bearing and LEAN of it again. */

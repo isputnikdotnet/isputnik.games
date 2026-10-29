@@ -690,21 +690,23 @@ design canvas (desktop mid-round, phone mid-round, phone round-over).
 
 - **Rules** (`packages/engine/src/arcade/torpedo/rules.ts`). 20 ticks a
   second, all whole numbers (bearings in tenths of a degree). The field of attack is ±36° (±45° until
-  2026-10-29, when the owner asked for bigger ships; ships were widened a
-  quarter too); the player turns the **sight** left and right along the
+  2026-10-29, when the owner asked for bigger ships). Ship half-widths are
+  tanker 52, cargo 38, destroyer 26, patrol 19 (owner, 2026-10-29: "too
+  easy, smaller ships, longer distance"); the player turns the **sight** left and right along the
   horizon (to ±20° since 2026-10-29, ±34° before; 20°/s). The engine knows
   only bearings; how the view shows them is the web app's (below). The
   torpedo leaves from under the sight and leans the way the periscope is
   turned (owner, 2026-10-29, option C of the mock): a straight course from
   the sight's bearing to `LEAN` (75 %) more of it again on the horizon. The
-  lanes are `REACH` of the way out to the horizon (near 90 %, mid 95 %, far
-  98 %), so the ships keep far off, and a torpedo crosses a lane at
+  lanes are `REACH` of the way out to the horizon (near 86 %, mid 92 %, far
+  97 %), so the ships keep far off, and a torpedo crosses a lane at
   bearing × (1 + LEAN × REACH) — `courseAt()`, inverted by `aimFor()`. Three lanes:
   tanker 100 (slow, near, ~25 s to cross), cargo ship 200 (steady, mid,
   ~15 s), destroyer 300 (fast, far, ~11 s), patrol boat 500 (mid, changes
   speed every so often — a quarter of the mid lane's ships). At most one
   ship to a lane; an empty lane sends the next after a seeded wait. A
-  torpedo reaches the near lane after 16 ticks, mid 30, far 46; the first
+  torpedo reaches the near lane after 24 ticks, mid 38, far 56 (16, 30, 46
+  before the owner asked for a longer distance); the first
   ship afloat covering its course when it gets to a lane is hit (a nearer
   ship shields a farther one). One torpedo in the water at a time, ten a round, and a round clock of
   90 s so a run without a shot still ends.
@@ -725,15 +727,18 @@ design canvas (desktop mid-round, phone mid-round, phone round-over).
   paper grain, after the owner's print-style mock (2026-10-29; it was dusk); the panel and round-over card follow the theme.
   **The view turns** (owner, 2026-10-29, choosing B of
   `docs/mocks/torpedo-periscope-mock.html` after the old cabinet's GIF; it
-  held still with a moving sight from 2026-10-27): the lens shows ±20°
-  (a phone's deep lens ±26°) with the sight always in its middle, between
+  held still with a moving sight from 2026-10-27): the lens shows ±24°
+  (a phone's deep lens ±30°) with the sight always in its middle, between
   two fine etched lines — no target line; the torpedo leaves from the foot
   of the lens between them — and the scene and the bearing
   scale move past as the periscope turns, so a ship off to the side is out
   of sight. A deep lens puts the horizon in its upper part and spreads the
   lanes down it so the torpedo's course stays straight. A hit puts the sea
   in shadow for a moment and the fire throws a column of light down the
-  water.
+  water. A gyro dial at the tube (owner asked for a military-looking
+  direction indicator, 2026-10-29) shows the course a torpedo would take: a
+  graduated half-ring, a needle and running chevrons, the course in degrees
+  and a tube lamp, green ready, amber while a torpedo runs.
   Space fires, ← → (or A D) move the sight, P pauses; on a phone, drag the
   lens to turn the periscope or hold the arrows, and the round
   FIRE. A phone held upright gives the lens its height (owner, 2026-10-29):

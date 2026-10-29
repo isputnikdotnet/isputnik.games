@@ -77,7 +77,7 @@ describe("TorpedoPage", () => {
       press("Space");
       // The last shot is watched closely: a hit on a near ship ends the run
       // early, and the card's hold below counts from then.
-      if (i < 9) act(() => vi.advanceTimersByTime(2100));
+      if (i < 9) act(() => vi.advanceTimersByTime(3000));
     }
     for (let i = 0; i < 1000 && !screen.queryByText(/^Run over/); i++) act(() => vi.advanceTimersByTime(50));
     await act(async () => undefined);
