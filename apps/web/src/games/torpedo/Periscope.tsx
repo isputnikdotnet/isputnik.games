@@ -38,60 +38,36 @@ const SCALE: readonly number[] = Array.from({ length: 25 }, (_, i) => -60 + i * 
 const LAMP_EVERY = 4;
 const LAMP_RUNS = Array.from({ length: RANGE.far / LAMP_EVERY + 1 }, (_, i) => i * LAMP_EVERY);
 
-/** The gyro dial's graduations, in degrees either side of straight up. */
 const DIAL_TICKS = Array.from({ length: 13 }, (_, i) => -60 + i * 10);
 
-/** The gyro dial at the foot of the lens, as on a fire-control panel: a
- *  graduated half-ring round the tube, a needle and chevrons along the course
- *  a torpedo fired now would take (from under the sight, leaning the way the
- *  periscope is turned), the course in degrees in a boxed readout, and the
- *  tube lamp — green when ready, amber while a torpedo is in the water. */
+/** A mechanical course instrument; its single needle follows the launch path. */
 function GyroDial({ bearing, tubeY, ready, scale }: { bearing: number; tubeY: number; ready: boolean; scale: number }) {
-  const r = Math.min(44, 0.32 * (tubeY - HORIZON));
+  const r = Math.min(38, 0.3 * (tubeY - HORIZON));
   const cx = screenX(bearing);
-  const cy = tubeY;
-  // The course's direction on the lens: a straight line, so any two points give it.
   const far = tubeY - (tubeY - HORIZON) / 2;
-  const dx = courseX(bearing, far, tubeY) - cx;
-  const dy = far - cy;
-  const length = Math.hypot(dx, dy) || 1;
-  const [ux, uy] = [dx / length, dy / length];
-  const at = (radius: number, along = 0) => [cx + ux * radius - uy * along, cy + uy * radius + ux * along];
-  const polar = (degrees: number, radius: number) => {
-    const a = (degrees * Math.PI) / 180;
-    return [cx + Math.sin(a) * radius, cy - Math.cos(a) * radius];
-  };
+  const angle = Math.atan2(courseX(bearing, far, tubeY) - cx, tubeY - far) * 180 / Math.PI;
   const course = Math.round((bearing * (1 + Torpedo.LEAN / 100)) / 10);
-  const [needleX, needleY] = at(r + 9);
-  const [baseL, baseR] = [at(r - 3, -5), at(r - 3, 5)];
-  const [arcL, arcR] = [polar(-64, r), polar(64, r)];
+  // Lift the face clear of the lower rim, including on a deep phone lens.
   return (
-    // A deep lens shows more of the scene to a pixel: the dial is drawn larger there.
-    <g className={`torpedo-gyro${ready ? " is-ready" : ""}`} transform={`translate(${cx} ${cy}) scale(${scale}) translate(${-cx} ${-cy})`}>
-      <path d={`M${arcL[0]} ${arcL[1]} A${r} ${r} 0 0 1 ${arcR[0]} ${arcR[1]}`} className="is-ring" />
+    <g className={`torpedo-gyro${ready ? " is-ready" : ""}`} transform={`translate(${cx} ${tubeY - 18 * scale}) scale(${scale})`}>
+      <path d={`M${-r - 7} 13 V0 A${r + 7} ${r + 7} 0 0 1 ${r + 7} 0 V13 Z`} className="is-face" />
+      <path d={`M${-r - 3} 0 A${r + 3} ${r + 3} 0 0 1 ${r + 3} 0`} className="is-ring" />
       {DIAL_TICKS.map((d) => {
-        const major = d % 30 === 0;
-        const [x1, y1] = polar(d, r);
-        const [x2, y2] = polar(d, r - (major ? 8 : 4));
-        return <line key={d} x1={x1} y1={y1} x2={x2} y2={y2} className={major ? "is-major" : undefined} />;
+        const a = d * Math.PI / 180;
+        const inner = r - (d % 30 === 0 ? 8 : 4);
+        return <g key={d}>
+          <line x1={Math.sin(a) * inner} y1={-Math.cos(a) * inner} x2={Math.sin(a) * r} y2={-Math.cos(a) * r} />
+          {d % 30 === 0 && <text x={Math.sin(a) * (r - 16)} y={-Math.cos(a) * (r - 16) + 3} className="is-number">{Math.abs(d)}</text>}
+        </g>;
       })}
-      {ready && (
-        <>
-          <line x1={at(r * 0.3)[0]} y1={at(r * 0.3)[1]} x2={at(r - 3)[0]} y2={at(r - 3)[1]} className="is-needle" />
-          <polygon points={`${needleX},${needleY} ${baseL[0]},${baseL[1]} ${baseR[0]},${baseR[1]}`} className="is-head" />
-          {[r + 20, r + 34, r + 48].map((radius, i) => {
-            const [tipX, tipY] = at(radius);
-            const [lx, ly] = at(radius - 6, -6);
-            const [rx, ry] = at(radius - 6, 6);
-            return <polyline key={radius} points={`${lx},${ly} ${tipX},${tipY} ${rx},${ry}`} className="is-chevron" style={{ animationDelay: `${i * 0.18}s` }} />;
-          })}
-        </>
-      )}
-      <g transform={`translate(${cx + r + 10} ${cy - 22})`}>
-        <rect width={44} height={17} rx={2} className="is-box" />
-        <text x={22} y={12.5} textAnchor="middle" className="is-readout">{ready ? `${compass(course)}°` : "———"}</text>
-        <circle cx={-4} cy={8.5} r={2.6} className="is-lamp" />
+      <path d={`M0 ${-r + 5} L-2.4 5 L0 8 L2.4 5 Z`} transform={`rotate(${angle})`} className="is-needle" />
+      <circle r={3.5} className="is-pivot" />
+      <g transform={`translate(${r + 13} -23)`}>
+        <text x={21} y={-5} className="is-label">КУРС</text>
+        <rect width={42} height={21} className="is-box" />
+        <text x={21} y={14} className="is-readout">{compass(course)}°</text>
       </g>
+      <circle cx={-r - 16} cy={-11} r={2.8} className="is-lamp" />
     </g>
   );
 }
@@ -220,6 +196,7 @@ export function Periscope({
   return (
     <div className={`torpedo-scope is-${mode}`}>
       <div className="torpedo-cabinet">
+        <div className="torpedo-marquee" aria-hidden="true"><span className="torpedo-anchor">⚓︎</span><div><small>ПЕРИСКОПНЫЙ ИГРОВОЙ АВТОМАТ</small><strong>ТОРПЕДНАЯ АТАКА</strong><small>TORPEDO RUN</small></div><span className="torpedo-coin">15<small>КОП.</small></span></div>
         {/* The scale turns with the view: each figure in percent of the lens's
             width over the bearing it names, the strip moved by the sight. */}
         <div className="torpedo-bearings" aria-hidden="true">
@@ -253,13 +230,13 @@ export function Periscope({
           <svg viewBox={`${view.left} ${top} ${view.width} ${height}`} preserveAspectRatio="xMidYMid slice" shapeRendering="geometricPrecision" aria-hidden="true" focusable="false">
             <defs>
               <linearGradient id="torpedo-sky" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#3f7b9a" />
-                <stop offset="0.75" stopColor="#80adbd" />
-                <stop offset="1" stopColor="#a6c6cc" />
+                <stop offset="0" stopColor="#526b70" />
+                <stop offset="0.75" stopColor="#889b98" />
+                <stop offset="1" stopColor="#b2b8a6" />
               </linearGradient>
               <linearGradient id="torpedo-sea" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#1f5c65" />
-                <stop offset="1" stopColor="#0a2e35" />
+                <stop offset="0" stopColor="#345652" />
+                <stop offset="1" stopColor="#192f2a" />
               </linearGradient>
               <radialGradient id="torpedo-burst">
                 <stop offset="0" stopColor="#fff0c8" stopOpacity="0.95" />

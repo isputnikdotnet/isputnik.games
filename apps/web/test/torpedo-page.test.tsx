@@ -54,6 +54,24 @@ describe("TorpedoPage", () => {
     expect(screen.getByRole("img", { name: "9 torpedoes left" })).toBeInTheDocument();
   });
 
+  it("turns the single course needle with the sight and keeps it while a torpedo runs", () => {
+    const { container } = render(<TorpedoPage />);
+    press("Space");
+    act(() => vi.advanceTimersByTime(START_DELAY + 100));
+    const needle = () => container.querySelector(".torpedo-gyro .is-needle")!;
+    expect(container.querySelectorAll(".torpedo-gyro .is-needle")).toHaveLength(1);
+    const straight = needle().getAttribute("transform");
+    fireEvent.keyDown(window, { code: "ArrowRight" });
+    act(() => vi.advanceTimersByTime(300));
+    fireEvent.keyUp(window, { code: "ArrowRight" });
+    expect(needle().getAttribute("transform")).not.toBe(straight);
+    press("Space");
+    act(() => vi.advanceTimersByTime(100));
+    expect(needle()).toBeInTheDocument();
+    expect(container.querySelector(".torpedo-gyro")).not.toHaveClass("is-ready");
+    expect(container.querySelector(".torpedo-gyro .is-readout")).not.toHaveTextContent("———");
+  });
+
   it("pauses and carries on", () => {
     render(<TorpedoPage />);
     press("Space");
