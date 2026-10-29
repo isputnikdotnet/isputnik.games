@@ -14,11 +14,11 @@
   },
   "dependencies": {
     "@isputnik/games-engine": "0.18.0",
-    "i18next": "^26.4.6",
+    "i18next": "^26.5.11",
     "lucide-react": "^1.57.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-i18next": "^17.0.18"
+    "react-i18next": "^17.1.9"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
