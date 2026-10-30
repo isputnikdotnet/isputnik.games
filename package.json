@@ -1,7 +1,7 @@
 {
   "name": "isputnik-games",
   "private": true,
-  "version": "0.21.0",
+  "version": "0.22.0",
   "stage": "alpha",
   "description": "Family games for isputnik.home — Dots first.",
   "license": "AGPL-3.0-only",
