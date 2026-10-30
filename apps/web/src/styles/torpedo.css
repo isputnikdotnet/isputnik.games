@@ -220,6 +220,32 @@
 .torpedo-gyro .is-lamp { fill: #c69b53; }
 .torpedo-gyro.is-ready .is-lamp { fill: #8d9f75; }
 
+/* The range lines along each lane's waterline: faint, so a torpedo far out
+   reads against the lane it has got to. */
+.torpedo-lanes line {
+  stroke: rgba(225, 235, 220, 0.16);
+  stroke-width: 1;
+  stroke-dasharray: 3 9;
+}
+
+/* A torpedo's splash where it crossed a lane and went on. */
+.torpedo-crossing ellipse {
+  fill: none;
+  stroke: rgba(240, 248, 240, 0.85);
+  stroke-width: 1.4;
+}
+
+.torpedo-crossing path {
+  fill: none;
+  stroke: rgba(240, 248, 240, 0.75);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.torpedo-reticle line.is-range {
+  stroke-width: 1.5;
+}
+
 /* The reticle: two fine etched lines, dark as on the old cabinet's glass. */
 .torpedo-reticle line {
   stroke: rgba(4, 16, 18, 0.7);
@@ -239,7 +265,8 @@
 .torpedo-prompt {
   position: absolute;
   left: 50%;
-  bottom: 8%;
+  /* Clear of the course dial at the foot of the lens. */
+  bottom: 36%;
   margin: 0;
   transform: translateX(-50%);
   font-family: var(--tr-font);

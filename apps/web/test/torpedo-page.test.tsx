@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { replayRun, Torpedo, torpedo, type TorpedoInput } from "@isputnik/games-engine";
 import { Periscope } from "../src/games/torpedo/Periscope";
+import { courseX, laneYs, screenX } from "../src/games/torpedo/view";
 import { TorpedoPage } from "../src/games/torpedo/TorpedoPage";
 import { soundsOf } from "../src/games/torpedo/sounds";
 import { CARD_HOLD_MS, START_DELAY } from "../src/games/torpedo/useTorpedoRun";
@@ -29,6 +30,17 @@ describe("the periscope's sounds", () => {
 });
 
 describe("the periscope's lens", () => {
+  it("spreads the lanes down the sea yet draws the course through each where the engine counts the torpedo", () => {
+    const tubeY = 400;
+    const lanes = laneYs(tubeY);
+    expect(lanes.near - lanes.mid).toBeGreaterThan(20);
+    expect(lanes.mid - lanes.far).toBeGreaterThan(20);
+    for (const bearing of [-200, -73, 0, 150, 200])
+      for (const lane of ["near", "mid", "far"] as const)
+        // The engine rounds this to whole bearing units; the drawing does not.
+        expect(courseX(bearing, lanes[lane], tubeY)).toBeCloseTo(screenX((bearing * (10_000 + Torpedo.LEAN * Torpedo.REACH[lane])) / 10_000), 6);
+  });
+
   it("ignores a hit banner from an earlier run, whose tick lies ahead of the new run's clock", () => {
     // A run ended on a hit at tick 900; "Play again" starts a run at tick 0.
     const state = Torpedo.createRun("standard", 1);

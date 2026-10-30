@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Torpedo, type TorpedoState } from "@isputnik/games-engine";
+import { Torpedo, type TorpedoLane, type TorpedoState } from "@isputnik/games-engine";
 import { SHIP_HEIGHT, SHIP_PATHS } from "./ships";
 import type { TorpedoMode } from "./useTorpedoRun";
 import { FIELD_W, HORIZON, K, LENS_H, SPAN, courseX, formatScore, laneYs, screenX, shipScale, tubeOf, viewOf, wakePoint } from "./view";
@@ -72,6 +72,17 @@ function GyroDial({ bearing, tubeY, ready, scale }: { bearing: number; tubeY: nu
   );
 }
 
+/** Where a torpedo crossed a lane without hitting anything: a splash left on
+ *  the water for a moment, so a player sees how far ahead of or behind the
+ *  ship the shot went. */
+export interface Crossing {
+  lane: TorpedoLane;
+  bearing: number;
+  tick: number;
+}
+const CROSSING_TICKS = 40;
+const LANE_ORDER: readonly TorpedoLane[] = ["far", "mid", "near"];
+
 /** What the lens's banner says for a moment: a hit and its points, or a miss. */
 export interface Banner {
   kind: "hit" | "miss" | "bonus";
@@ -122,6 +133,7 @@ export function Periscope({
   banner,
   overlay,
   tools,
+  crossings = [],
   onFire,
   onHold,
   onAim
@@ -129,6 +141,8 @@ export function Periscope({
   mode: TorpedoMode;
   state: TorpedoState;
   banner: Banner | null;
+  /** The splashes of the last shots, where they crossed a lane. */
+  crossings?: readonly Crossing[];
   /** The round-over card, laid over the lens. */
   overlay?: ReactNode;
   /** Small buttons laid on the lens's foot, where a phone has no panel for them. */
@@ -262,6 +276,11 @@ export function Periscope({
                   <rect key={`${x}:${y}`} x={x - width / 2} y={y} width={width} height={y < 260 ? 1.5 : 2.5} rx={1} />
                 ))}
               </g>
+              {/* The range lines: each lane's waterline, faint, so a torpedo far out
+                  can be read against the lane it has got to. */}
+              <g className="torpedo-lanes">
+                {LANE_ORDER.map((lane) => <line key={lane} x1={SEA_FROM} x2={SEA_TO} y1={lanes[lane]} y2={lanes[lane]} />)}
+              </g>
               <rect x={SEA_FROM} y={top} width={SEA_TO - SEA_FROM} height={height} fill="#02090b" opacity={dusk} />
 
               {ships.map((ship) => {
@@ -298,6 +317,20 @@ export function Periscope({
               {/* Which way a torpedo would go: the gyro dial at the tube. */}
               {(mode === "play" || mode === "paused") && <GyroDial bearing={bearing} tubeY={tubeY} ready={!torpedo} scale={view.width > SPAN.wide ? 2.2 : 1} />}
 
+              {crossings.map((crossing) => {
+                const age = state.tick - crossing.tick;
+                if (age < 0 || age >= CROSSING_TICKS) return null;
+                const y = lanes[crossing.lane];
+                const x = courseX(crossing.bearing, y, tubeY);
+                const grow = age / CROSSING_TICKS;
+                return (
+                  <g key={`${crossing.tick}:${crossing.lane}`} className="torpedo-crossing" opacity={1 - grow}>
+                    <ellipse cx={x} cy={y} rx={6 + grow * 10} ry={1.8 + grow * 2} />
+                    <path d={`M${x - 4} ${y - 1} l-2 -6 M${x} ${y - 1} v-8 M${x + 4} ${y - 1} l2 -6`} />
+                  </g>
+                );
+              })}
+
               {torpedo && (
                 <g className="torpedo-wake">
                   {LAMP_RUNS.filter((run) => run <= torpedo.run).map((run) => {
@@ -323,7 +356,15 @@ export function Periscope({
             <g className="torpedo-reticle">
               {[-1, 1].map((side) => {
                 const x = view.left + view.width / 2 + (side * view.width) / 6;
-                return <line key={side} x1={x} x2={x} y1={top} y2={bottom} />;
+                return (
+                  <g key={side}>
+                    <line x1={x} x2={x} y1={top} y2={bottom} />
+                    {/* Range marks where the lanes cross the line, pointing in. */}
+                    {LANE_ORDER.map((lane, i) => (
+                      <line key={lane} x1={x} x2={x - side * (6 + i * 3)} y1={lanes[lane]} y2={lanes[lane]} className="is-range" />
+                    ))}
+                  </g>
+                );
               })}
             </g>
           </svg>

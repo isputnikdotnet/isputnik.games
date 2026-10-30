@@ -9,7 +9,7 @@ import { PHONE, useMediaQuery } from "../../shared/useMediaQuery";
 import { follow, href } from "../../router";
 import { useArcadeReport, type ReportState } from "../sputnik/useArcadeReport";
 import { useFullscreen } from "../sputnik/useFullscreen";
-import { Periscope, type Banner } from "./Periscope";
+import { Periscope, type Banner, type Crossing } from "./Periscope";
 import { soundsOf } from "./sounds";
 import { useTorpedoRun, type TorpedoMode } from "./useTorpedoRun";
 import { formatScore } from "./view";
@@ -27,12 +27,23 @@ const BY_POINTS: readonly ShipKind[] = [...SHIP_KINDS].sort((a, b) => SHIPS[b].p
 export function TorpedoPage() {
   const { t } = useTranslation();
   const [banner, setBanner] = useState<Banner | null>(null);
+  const [crossings, setCrossings] = useState<readonly Crossing[]>([]);
   const onCues = useCallback((cues: ArcadeCue[], mode: TorpedoMode, state: TorpedoState) => {
     play(...soundsOf(cues, mode));
     if (mode !== "play") return;
     // A new run restarts the clock: a banner from the last run would sit in its
     // future (and darken the sea for good), so it goes.
     setBanner((last) => (last && last.tick > state.tick ? null : last));
+    // Where a shot crossed a lane and went on, or ran out at the far one.
+    const crossed: Crossing[] = [];
+    for (const cue of cues) {
+      if (cue.kind === "pass" && state.torpedo) crossed.push({ lane: cue.lane as Crossing["lane"], bearing: state.torpedo.bearing, tick: state.tick });
+      if (cue.kind === "miss") crossed.push({ lane: "far", bearing: cue.bearing as number, tick: state.tick });
+    }
+    setCrossings((last) => {
+      const kept = last.filter((crossing) => crossing.tick <= state.tick && state.tick - crossing.tick < 60);
+      return crossed.length || kept.length !== last.length ? [...kept, ...crossed] : last;
+    });
     const hit = cues.find((cue) => cue.kind === "hit");
     if (cues.some((cue) => cue.kind === "bonus")) setBanner({ kind: "bonus", tick: state.tick });
     else if (hit) setBanner({ kind: "hit", points: hit.points as number, tick: state.tick });
@@ -172,7 +183,7 @@ export function TorpedoPage() {
     <GameStage
       className="is-torpedo"
       title={t("games.torpedo.name")}
-      board={<Periscope mode={mode} state={state} banner={banner} overlay={card} tools={tools} onFire={onFire} onHold={hold} onAim={aim} />}
+      board={<Periscope mode={mode} state={state} banner={banner} overlay={card} tools={tools} crossings={crossings} onFire={onFire} onHold={hold} onAim={aim} />}
       score={phone ? undefined : best}
       notices={
         <>
