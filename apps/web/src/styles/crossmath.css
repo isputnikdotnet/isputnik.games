@@ -322,9 +322,31 @@
   flex: 1;
 }
 
+/* A phone fits the menu, the number, the clock and its switch on one line, and
+   sends the clock to a line of its own only on the narrowest. */
+.game-stage.crossmath.is-phone .crossmath-edition {
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.game-stage.crossmath.is-phone .crossmath-edition .icon-button,
+.game-stage.crossmath.is-phone .crossmath-edition .chip-button {
+  flex: none;
+  justify-content: center;
+  width: 36px;
+  min-width: 36px;
+  padding-inline: 0;
+}
+
+.game-stage.crossmath.is-phone .crossmath-clock {
+  margin-left: auto;
+  padding-inline: 4px;
+}
+
 .crossmath-clock {
   font: 600 1rem/1 var(--cm-serif);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .crossmath-size {
@@ -332,6 +354,33 @@
   color: var(--cm-op);
   font-family: var(--cm-serif);
   font-size: var(--text-sm);
+}
+
+.crossmath-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+  margin: 0;
+  color: var(--cm-op);
+  font-family: var(--cm-serif);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.crossmath-stats strong {
+  color: var(--cm-ink);
+}
+
+.crossmath-result {
+  margin: 0;
+  font-family: var(--cm-serif);
+  font-size: var(--text-sm);
+}
+
+.crossmath-next {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .crossmath-bank-label {
@@ -470,6 +519,11 @@
 
 /* The rules take what height the panel has left and scroll inside it. */
 .game-stage.crossmath:not(.is-phone) .game-stage-log {
+  overflow-y: auto;
+}
+
+/* A low window and a solved notice with its offer: the panel scrolls, its buttons stay inside it. */
+.game-stage.crossmath:not(.is-phone) .game-stage-panel {
   overflow-y: auto;
 }
 

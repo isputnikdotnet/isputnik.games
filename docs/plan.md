@@ -894,12 +894,27 @@ bank, each tile once (two 5s are two tiles). Mock: `docs/mocks/crossmath-mock.ht
   6 × 6 (all four).
 - Registry: neither a `GameDefinition` (no seats) nor an arcade game (no clock
   of record): `SOLO_GAMES` in `packages/engine/src/solo.ts`, lobby mode
-  "Puzzle". Nothing reaches the server; progress per puzzle, the open level and
-  puzzle, and the timer switch live in this device's storage.
+  "Puzzle". Tiles in play, the open level and puzzle, and the clock switch live
+  in this device's storage; a solve goes to the server (below).
+- Tracking (`apps/server/src/crossmath.ts`, table `crossmath_results`): the page
+  sends the finished tiles, the seconds and the hints; the tiles are checked
+  through the rules. The first solve of a puzzle moves the member's rating and
+  is kept; solving it again is practice and can only better its best time. The
+  clock always counts while the puzzle is open and in view (the switch only hides
+  it), and a hint counts even if its tile is taken back. A solve that could not
+  be sent goes when the page next opens; a guest's stay on their device.
+- Rating (`crossmath/rating.ts`, numbers to tune): starts at 800, each level is an
+  opponent of a fixed rating (800 · 1100 · 1400 · 1700), a solve scores 1 inside
+  par (60 s · 3 · 7 · 15 min), falling to ½ at three times par, times the share
+  of squares filled without a hint.
+- What comes next: a level opens on its next unsolved puzzle and Next puzzle
+  steps over solved ones (any device's); the arrows still go back to one. Three
+  first solves in a row at a level scoring ¾ or better offer the next level under
+  the solved notice, beside Next puzzle; a finished level offers it instead.
 - Web: `/games/crossmath` on GameStage, paper on every theme. Tap a tile then a
   square, or a square then a tile; tap a placed tile to send it back. Undo
   (Ctrl+Z), Hint, Check (tells empty squares from wrong lines), Restart with a
-  confirmation. Optional timer; sound through the top bar's switch. The board is
+  confirmation. A clock that can be hidden; sound through the top bar's switch. The board is
   a grid of buttons with arrow-key movement, digits to lay a tile and each square
   described by its row's and column's equations.
-- Not yet: a daily puzzle picked by date, and family scores on the server.
+- Not yet: a daily puzzle picked by date, and a family leaderboard tab.

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import { useTranslation } from "react-i18next";
 import { Check, ChevronLeft, ChevronRight, Lightbulb, RotateCcw, Timer, Undo2 } from "lucide-react";
 import { Crossmath, type CrossmathLevel, type CrossmathPlay, type CrossmathPuzzle } from "@isputnik/games-engine";
+import { fetchCrossmathMe, reportCrossmathResult, type CrossmathMe, type CrossmathResult } from "../../api";
 import { Button } from "../../shared/Button";
 import { Dialog } from "../../shared/Dialog";
 import { GameStage } from "../../shared/GameStage";
@@ -13,13 +14,35 @@ import { loadCrossmath, saveCrossmath, type CrossmathSave, type PuzzleProgress }
 
 // Crossmath on screen: the printed board, the tile bank, and Undo · Hint ·
 // Check · Restart. The page keeps what lasts (the save: level, puzzle, tiles,
-// time); the game below it, keyed by puzzle, keeps what does not (the undo
-// trail, the chosen tile, what Check last marked).
+// time; the member's record from the server: rating and solves); the game below
+// it, keyed by puzzle, keeps what does not (the undo trail, the chosen tile,
+// what Check last marked). Solved puzzles are stepped over when a level opens
+// and by Next puzzle; the arrows still go back to one to play it again.
 
-const fresh = (puzzle: CrossmathPuzzle): PuzzleProgress => ({ play: Crossmath.emptyPlay(puzzle), elapsed: 0, solved: false });
+const fresh = (puzzle: CrossmathPuzzle): PuzzleProgress => ({ play: Crossmath.emptyPlay(puzzle), elapsed: 0, hintsUsed: 0, solved: false, reported: false });
+
+/** Solved on this device, or on the member's record from any device. */
+const isDone = (save: CrossmathSave, me: CrossmathMe | null, id: string) => save.puzzles[id]?.solved === true || me?.puzzles[id] !== undefined;
+
+/** Moves an opening level off a solved puzzle onto the next one to do. A solved
+ *  puzzle being played again keeps its place, and a level with none left stays put. */
+function skipDone(save: CrossmathSave, me: CrossmathMe | null, level: CrossmathLevel): CrossmathSave {
+  const number = save.current[level] ?? 1;
+  const id = `${level}-${number}`;
+  const replaying = !save.puzzles[id]?.solved && save.puzzles[id]?.play.cells.some((tile) => tile !== null);
+  if (replaying || !isDone(save, me, id)) return save;
+  const next = Crossmath.nextUndone(level, number, (each) => isDone(save, me, each));
+  return next === null ? save : { ...save, current: { ...save.current, [level]: next } };
+}
 
 export function CrossmathPage() {
-  const [save, setSave] = useState<CrossmathSave>(loadCrossmath);
+  const [save, setSave] = useState<CrossmathSave>(() => {
+    const loaded = loadCrossmath();
+    return skipDone(loaded, null, loaded.level);
+  });
+  /** The member's record; null for a guest, offline, or until it arrives. */
+  const [me, setMe] = useState<CrossmathMe | null>(null);
+  const [answers, setAnswers] = useState<Record<string, CrossmathResult>>({});
   const level = save.level;
   const number = save.current[level] ?? 1;
   const puzzle = useMemo(() => Crossmath.puzzleOf(level, number), [level, number]);
@@ -27,8 +50,45 @@ export function CrossmathPage() {
 
   useEffect(() => saveCrossmath(save), [save]);
 
-  // The clock runs only while it is shown, the puzzle open and unsolved, and the page in view.
-  const running = save.timer && !progress.solved;
+  useEffect(() => {
+    let live = true;
+    fetchCrossmathMe().then((answer) => {
+      if (!live) return;
+      setMe(answer);
+      setSave((prev) => skipDone(prev, answer, prev.level));
+    }, () => {
+      /* a guest, or offline: the puzzles still play, on this device */
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  // Every solve the server does not have yet goes to it, one at a time so the
+  // ratings follow in order: this one, and any left unsent by an earlier visit.
+  // One that fails waits for the page's next opening, not the next clock tick.
+  const sent = useRef(new Set<string>());
+  const sending = useRef<Promise<unknown>>(Promise.resolve());
+  useEffect(() => {
+    if (!me) return;
+    for (const [id, done] of Object.entries(save.puzzles)) {
+      if (!done.solved || done.reported || sent.current.has(id)) continue;
+      sent.current.add(id);
+      sending.current = sending.current.then(() =>
+        reportCrossmathResult(id, { play: done.play, hints: done.hintsUsed, seconds: Math.min(done.elapsed, 86_400) || null }).then((answer) => {
+          setMe(answer.me);
+          setAnswers((prev) => ({ ...prev, [id]: answer }));
+          setSave((prev) => {
+            const now = prev.puzzles[id];
+            return now?.solved ? { ...prev, puzzles: { ...prev.puzzles, [id]: { ...now, reported: true } } } : prev;
+          });
+        }, () => undefined)
+      );
+    }
+  }, [me, save.puzzles]);
+
+  // The clock runs while the puzzle is open and unsolved and the page in view, shown or not.
+  const running = !progress.solved;
   useEffect(() => {
     if (!running) return;
     const timer = window.setInterval(() => {
@@ -43,9 +103,20 @@ export function CrossmathPage() {
   }, [running, puzzle]);
 
   const setProgress = (next: PuzzleProgress) => setSave((prev) => ({ ...prev, puzzles: { ...prev.puzzles, [puzzle.id]: { ...next, elapsed: prev.puzzles[puzzle.id]?.elapsed ?? next.elapsed } } }));
-  const restart = () => setSave((prev) => ({ ...prev, puzzles: { ...prev.puzzles, [puzzle.id]: fresh(puzzle) } }));
-  const open = (nextLevel: CrossmathLevel, nextNumber = save.current[nextLevel] ?? 1) =>
-    setSave((prev) => ({ ...prev, level: nextLevel, current: { ...prev.current, [nextLevel]: nextNumber } }));
+  const restart = () => {
+    sent.current.delete(puzzle.id);
+    setAnswers((prev) => {
+      const { [puzzle.id]: _gone, ...rest } = prev;
+      return rest;
+    });
+    setSave((prev) => ({ ...prev, puzzles: { ...prev.puzzles, [puzzle.id]: fresh(puzzle) } }));
+  };
+  /** A number goes to that puzzle; a level alone opens on its next one to do. */
+  const open = (nextLevel: CrossmathLevel, nextNumber?: number) =>
+    setSave((prev) => {
+      const moved = { ...prev, level: nextLevel };
+      return nextNumber === undefined ? skipDone(moved, me, nextLevel) : { ...moved, current: { ...prev.current, [nextLevel]: nextNumber } };
+    });
 
   return (
     <CrossmathGame
@@ -53,12 +124,15 @@ export function CrossmathPage() {
       puzzle={puzzle}
       number={number}
       progress={progress}
-      timer={save.timer}
-      solvedIds={save.puzzles}
+      timer={!save.clockHidden}
+      done={isDone(save, me, puzzle.id)}
+      nextNumber={Crossmath.nextUndone(level, number, (id) => isDone(save, me, id))}
+      me={me}
+      answer={answers[puzzle.id] ?? null}
       onProgress={setProgress}
       onRestart={restart}
       onOpen={open}
-      onTimer={() => setSave((prev) => ({ ...prev, timer: !prev.timer }))}
+      onTimer={() => setSave((prev) => ({ ...prev, clockHidden: !prev.clockHidden }))}
     />
   );
 }
@@ -73,13 +147,17 @@ interface Message {
 
 const lineKey = (line: Crossmath.Line) => `${line.kind}${line.index}`;
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+const signed = (change: number) => (change > 0 ? `+${change}` : change < 0 ? `−${-change}` : "±0");
 
 function CrossmathGame({
   puzzle,
   number,
   progress,
   timer,
-  solvedIds,
+  done: alreadyDone,
+  nextNumber,
+  me,
+  answer,
   onProgress,
   onRestart,
   onOpen,
@@ -89,7 +167,12 @@ function CrossmathGame({
   number: number;
   progress: PuzzleProgress;
   timer: boolean;
-  solvedIds: Record<string, PuzzleProgress>;
+  done: boolean;
+  /** The next puzzle to do in this level; null when none is left. */
+  nextNumber: number | null;
+  me: CrossmathMe | null;
+  /** What the server made of this solve, once it has answered. */
+  answer: CrossmathResult | null;
   onProgress: (next: PuzzleProgress) => void;
   onRestart: () => void;
   onOpen: (level: CrossmathLevel, number?: number) => void;
@@ -121,17 +204,17 @@ function CrossmathGame({
   const count = Crossmath.puzzleCount(level);
 
   function solvedMessage(done: PuzzleProgress): Message {
-    const hints = done.play.hinted.length;
+    const hints = done.hintsUsed;
     const body = [hints ? t("crossmath.solved.hints", { count: hints }) : t("crossmath.solved.noHints")];
-    if (timer) body.push(t("crossmath.solved.time", { time: clock(done.elapsed) }));
+    if (done.elapsed) body.push(t("crossmath.solved.time", { time: clock(done.elapsed) }));
     return { tone: "success", title: t("crossmath.solved.title"), body: body.join(" "), next: true };
   }
 
   /** Every change of tiles goes through here: the undo trail, the save, and the solved check. */
-  const commit = (next: CrossmathPlay, note: Message | null = null) => {
+  const commit = (next: CrossmathPlay, note: Message | null = null, byHint = false) => {
     setUndo((trail) => [...trail, play].slice(-200));
     const done = Crossmath.isSolved(puzzle, next);
-    const nextProgress = { ...progress, play: next, solved: done };
+    const nextProgress = { ...progress, play: next, solved: done, hintsUsed: progress.hintsUsed + (byHint ? 1 : 0) };
     onProgress(nextProgress);
     setMarks({});
     if (done) {
@@ -151,7 +234,7 @@ function CrossmathGame({
     setFocus(cell);
     sound("tilePlace");
     setSpoken(t("crossmath.placed", { value: tiles[tile], ...where(cell) }));
-    commit(next, note);
+    commit(next, note, byHint);
   };
 
   const sendBack = (cell: number) => {
@@ -271,6 +354,9 @@ function CrossmathGame({
 
   const levelName = t(`crossmath.levels.${level}`);
   const left = tiles.length - used.size;
+  const standing = me?.levels[level];
+  const harder = Crossmath.harderLevel(level);
+  const offerHarder = harder !== null && standing?.ready === true;
 
   // A phone has no room for four chips beside the puzzle number: a menu there.
   const levels = phone ? (
@@ -300,7 +386,7 @@ function CrossmathGame({
         </Button>
         <span className="crossmath-number">
           {t("crossmath.number", { number, count })}
-          {solvedIds[puzzle.id]?.solved && <Check size={14} className="crossmath-solved-mark" aria-label={t("crossmath.solvedMark")} />}
+          {alreadyDone && <Check size={14} className="crossmath-solved-mark" aria-label={t("crossmath.solvedMark")} />}
         </span>
         <Button variant="icon" aria-label={t("crossmath.next")} title={t("crossmath.next")} disabled={number >= count} onClick={() => onOpen(level, number + 1)}>
           <ChevronRight size={16} aria-hidden="true" />
@@ -309,10 +395,16 @@ function CrossmathGame({
         {timer && <span className="crossmath-clock" aria-label={t("crossmath.time")}>{clock(progress.elapsed)}</span>}
         <Button variant="chip" selected={timer} onClick={onTimer} aria-label={t("crossmath.timer")} title={t("crossmath.timer")}>
           <Timer size={14} aria-hidden="true" />
-          {!phone && ` ${t("crossmath.timer")}`}
         </Button>
       </div>
       {!phone && <p className="crossmath-size">{t(`crossmath.levelHint.${level}`)}</p>}
+      {me && standing && (
+        <p className="crossmath-stats">
+          <strong>{t("crossmath.stats.rating", { rating: me.rating })}</strong>
+          <span>{t("crossmath.stats.solved", { solved: standing.solved, total: standing.count })}</span>
+          {standing.bestSeconds !== null && <span>{t("crossmath.stats.best", { time: clock(standing.bestSeconds) })}</span>}
+        </p>
+      )}
     </div>
   );
 
@@ -351,8 +443,25 @@ function CrossmathGame({
   const notice = message && (
     <div className="crossmath-message">
       <MessageBox tone={message.tone} title={message.title}>{message.body}</MessageBox>
-      {message.next && number < count && (
-        <Button variant="primary" onClick={() => onOpen(level, number + 1)}>{t("crossmath.nextPuzzle")}</Button>
+      {message.next && (
+        <>
+          {answer && (
+            <p className="crossmath-result">
+              {answer.recorded ? t("crossmath.result.rated", { after: answer.after, change: signed(answer.after - answer.before) }) : t("crossmath.result.practice", { rating: answer.after })}
+              {answer.newBest && ` ${t("crossmath.result.newBest")}`}
+            </p>
+          )}
+          {nextNumber === null && <p className="crossmath-result">{t("crossmath.result.levelDone")}</p>}
+          {offerHarder && harder && <p className="crossmath-result">{t("crossmath.result.offer", { level: levelName, harder: t(`crossmath.levels.${harder}`) })}</p>}
+          <div className="crossmath-next">
+            {nextNumber !== null && <Button variant="primary" onClick={() => onOpen(level, nextNumber)}>{t("crossmath.nextPuzzle")}</Button>}
+            {harder && (offerHarder || nextNumber === null) && (
+              <Button variant={nextNumber === null ? "primary" : "secondary"} onClick={() => onOpen(harder)}>
+                {t("crossmath.result.tryLevel", { level: t(`crossmath.levels.${harder}`) })}
+              </Button>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
@@ -389,6 +498,7 @@ function CrossmathGame({
         <li>{t("crossmath.rules.givens")}</li>
         <li>{t("crossmath.rules.taps")}</li>
         <li className="crossmath-keys">{t("crossmath.rules.keys")}</li>
+        <li>{t("crossmath.rules.rating")}</li>
       </ul>
     </details>
   );
@@ -402,7 +512,7 @@ function CrossmathGame({
         score={header}
         board={phone ? <>{board}{bank}</> : board}
         notices={phone ? notice : <>{bank}{notice}</>}
-        log={rules}
+        log={message?.next ? undefined : rules}
         actions={actions}
       />
       <div className="visually-hidden" aria-live="polite">{spoken}</div>

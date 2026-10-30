@@ -108,6 +108,24 @@ CREATE TABLE IF NOT EXISTS puzzle_attempts (
   UNIQUE (member_id, puzzle_id)
 );
 
+-- Crossmath: a member's first solve of each puzzle, with their rating before and
+-- after it (their rating is their latest row's). best_seconds is the quickest
+-- solve with no hints, this one or a later try; seconds is NULL for a solve from
+-- before the clock always ran.
+CREATE TABLE IF NOT EXISTS crossmath_results (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  member_id     TEXT NOT NULL,
+  puzzle_id     TEXT NOT NULL,
+  level         TEXT NOT NULL CHECK (level IN ('easy', 'medium', 'hard', 'expert')),
+  hints         INTEGER NOT NULL,
+  seconds       INTEGER,
+  best_seconds  INTEGER,
+  rating_before INTEGER NOT NULL,
+  rating_after  INTEGER NOT NULL,
+  finished_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  UNIQUE (member_id, puzzle_id)
+);
+
 -- A finished game played on one device (against the computer, or two at one
 -- screen), kept for review. Online matches are in matches already. game_key
 -- is the browser's own id for the game, so a resend changes nothing; moves

@@ -31,6 +31,7 @@ import {
   summaryFor,
   type Member
 } from "./matches.js";
+import { crossmathMe, recordCrossmathResult } from "./crossmath.js";
 import { nextPuzzle, recordPuzzleResult, UnknownPuzzleError } from "./puzzles.js";
 import { getRecord, listReviews, saveRecord } from "./records.js";
 import { chessRatingOf } from "./chess-rating.js";
@@ -122,6 +123,16 @@ const puzzleResultSchema = z.object({
 });
 
 const puzzleId = (request: FastifyRequest) => z.string().regex(/^[A-Za-z0-9]{1,16}$/).parse((request.params as { id?: string }).id);
+
+// A solved Crossmath: the tiles are checked through the rules (crossmath.ts).
+// No time is sent for a solve from before the clock always ran.
+const crossmathResultSchema = z.object({
+  play: z.unknown(),
+  hints: z.number().int().min(0).max(64),
+  seconds: z.number().int().min(1).max(86_400).nullable()
+});
+
+const crossmathId = (request: FastifyRequest) => z.string().max(16).parse((request.params as { id?: string }).id);
 
 // A finished chess game from one device, kept for review; the moves are
 // checked by replaying them (records.ts), so only their count is capped here.
@@ -364,6 +375,18 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     if (request.identity!.role === "guest") return reply.code(403).send({ error: "Puzzles are for the family" });
     const input = puzzleResultSchema.parse(request.body ?? {});
     return recordPuzzleResult(db, request.identity!.id, puzzleId(request), input);
+  });
+
+  // Crossmath results, for members: a guest's puzzles stay on their device.
+  app.get(`${API}/crossmath/me`, { preHandler: requireIdentity }, async (request, reply) => {
+    if (request.identity!.role === "guest") return reply.code(403).send({ error: "Puzzles are for the family" });
+    return crossmathMe(db, request.identity!.id);
+  });
+
+  app.post(`${API}/crossmath/:id/result`, { preHandler: requireIdentity }, async (request, reply) => {
+    if (request.identity!.role === "guest") return reply.code(403).send({ error: "Puzzles are for the family" });
+    const input = crossmathResultSchema.parse(request.body ?? {});
+    return recordCrossmathResult(db, request.identity!.id, crossmathId(request), input);
   });
 
   // The member's chess rating, for the panel once an online game is over.

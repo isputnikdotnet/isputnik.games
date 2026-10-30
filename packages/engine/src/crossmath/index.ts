@@ -22,6 +22,17 @@ export function isLevel(value: unknown): value is CrossmathLevel {
   return (LEVELS as readonly unknown[]).includes(value);
 }
 
+/** The next puzzle after `number` that is not done, going round the level; null when none is left. */
+export function nextUndone(level: CrossmathLevel, number: number, isDone: (id: string) => boolean): number | null {
+  const count = puzzleCount(level);
+  for (let step = 1; step < count; step++) {
+    const candidate = ((number - 1 + step) % count) + 1;
+    if (!isDone(`${level}-${candidate}`)) return candidate;
+  }
+  return null;
+}
+
 export * from "./rules.js";
+export * from "./rating.js";
 export { countSolutions } from "./solver.js";
 export { generatePuzzle, LEVEL_RULES, seedOf } from "./generate.js";

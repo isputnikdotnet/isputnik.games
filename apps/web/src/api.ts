@@ -1,7 +1,7 @@
 // The games API, under the same /games prefix the pages live at. The home gateway
 // authenticates every call; this module only needs to echo its CSRF token on
 // state-changing requests, the way the home SPA does.
-import type { AiLevel, ChessMove, ChessPuzzle, GameEvent, GameStatus, PlayerIndex, PuzzleLevel, PuzzleType } from "@isputnik/games-engine";
+import type { AiLevel, ChessMove, ChessPuzzle, CrossmathLevel, CrossmathPlay, GameEvent, GameStatus, PlayerIndex, PuzzleLevel, PuzzleType } from "@isputnik/games-engine";
 
 export const API_BASE = "/games/api";
 
@@ -308,6 +308,43 @@ export function fetchNextPuzzle(level: PuzzleLevel | "auto", type: PuzzleType | 
 /** How a first try went; a second try is practice and moves nothing. */
 export function reportPuzzleResult(id: string, result: { solved: boolean; hints: number }): Promise<PuzzleResult> {
   return post<PuzzleResult>(`/puzzles/${encodeURIComponent(id)}/result`, result);
+}
+
+// ── Crossmath ────────────────────────────────────────────────────────────────
+
+export interface CrossmathLevelStats {
+  solved: number;
+  count: number;
+  /** The quickest solve here with no hints; null before one. */
+  bestSeconds: number | null;
+  /** The latest first solves here have gone well: time to offer the next level. */
+  ready: boolean;
+}
+
+export interface CrossmathMe {
+  rating: number;
+  played: number;
+  levels: Record<CrossmathLevel, CrossmathLevelStats>;
+  /** By puzzle id ("easy-3"). */
+  puzzles: Record<string, { seconds: number | null; hints: number; bestSeconds: number | null }>;
+}
+
+export interface CrossmathResult {
+  /** False for a puzzle already solved: practice, the rating stays. */
+  recorded: boolean;
+  before: number;
+  after: number;
+  /** This solve bettered the puzzle's earlier best time. */
+  newBest: boolean;
+  me: CrossmathMe;
+}
+
+export function fetchCrossmathMe(): Promise<CrossmathMe> {
+  return apiFetch<CrossmathMe>("/crossmath/me");
+}
+
+export function reportCrossmathResult(id: string, result: { play: CrossmathPlay; hints: number; seconds: number | null }): Promise<CrossmathResult> {
+  return post<CrossmathResult>(`/crossmath/${encodeURIComponent(id)}/result`, result);
 }
 
 // ── Online matches ───────────────────────────────────────────────────────────

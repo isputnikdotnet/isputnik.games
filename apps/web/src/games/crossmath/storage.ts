@@ -1,20 +1,26 @@
 import { Crossmath, type CrossmathLevel, type CrossmathPlay } from "@isputnik/games-engine";
 
-// Crossmath keeps everything on this device: which level is open and which
-// puzzle in each, whether the timer shows, and for every puzzle touched its
-// tiles, hints and time — so moving to another puzzle and back loses nothing.
-// Nothing goes to the server: a puzzle is solved or not, here.
+// Crossmath plays on this device: which level is open and which puzzle in each,
+// whether the clock shows, and for every puzzle touched its tiles, hints and
+// time — so moving to another puzzle and back loses nothing. A solve also goes
+// to the server, which keeps the member's results and rating; one that could not
+// be sent stays unreported here and goes when the page next opens.
 
 export interface PuzzleProgress {
   play: CrossmathPlay;
-  /** Seconds on the clock, counted only while the timer is on. */
+  /** Seconds the puzzle has been open and in view. */
   elapsed: number;
+  /** Hints taken, including one whose tile was since taken back. */
+  hintsUsed: number;
   solved: boolean;
+  /** The server has this solve. */
+  reported: boolean;
 }
 
 export interface CrossmathSave {
   level: CrossmathLevel;
-  timer: boolean;
+  /** The clock always counts; this only takes it off the screen. */
+  clockHidden: boolean;
   /** The puzzle number open in each level, from 1. */
   current: Partial<Record<CrossmathLevel, number>>;
   /** By puzzle id ("easy-3"). */
@@ -23,7 +29,7 @@ export interface CrossmathSave {
 
 const KEY = "isputnik-games.crossmath";
 
-export const DEFAULT_SAVE: CrossmathSave = { level: "easy", timer: false, current: {}, puzzles: {} };
+export const DEFAULT_SAVE: CrossmathSave = { level: "easy", clockHidden: false, current: {}, puzzles: {} };
 
 const ID = /^(easy|medium|hard|expert)-(\d+)$/;
 
@@ -37,7 +43,8 @@ function parseProgress(id: string, input: unknown): PuzzleProgress | null {
   try {
     const play = Crossmath.parsePlay(Crossmath.puzzleOf(level, number), value.play);
     const elapsed = Number.isInteger(value.elapsed) && value.elapsed! >= 0 ? value.elapsed! : 0;
-    return { play, elapsed, solved: value.solved === true };
+    const hintsUsed = Number.isInteger(value.hintsUsed) && value.hintsUsed! >= play.hinted.length ? value.hintsUsed! : play.hinted.length;
+    return { play, elapsed, hintsUsed, solved: value.solved === true, reported: value.reported === true };
   } catch {
     return null;
   }
@@ -57,7 +64,7 @@ export function loadCrossmath(): CrossmathSave {
       const progress = parseProgress(id, value);
       if (progress) puzzles[id] = progress;
     }
-    return { level: Crossmath.isLevel(raw.level) ? raw.level : "easy", timer: raw.timer === true, current, puzzles };
+    return { level: Crossmath.isLevel(raw.level) ? raw.level : "easy", clockHidden: raw.clockHidden === true, current, puzzles };
   } catch {
     return DEFAULT_SAVE;
   }

@@ -974,6 +974,19 @@
     "previous": "Go to the previous puzzle",
     "next": "Go to the next puzzle",
     "nextPuzzle": "Next puzzle",
+    "stats": {
+      "rating": "Rating {{rating}}",
+      "solved": "{{solved}} of {{total}} solved",
+      "best": "Best {{time}}"
+    },
+    "result": {
+      "rated": "Rating {{after}} ({{change}}).",
+      "practice": "You had solved this one already, so your rating stays at {{rating}}.",
+      "newBest": "A new best time for this puzzle.",
+      "offer": "You're doing well at {{level}}. Ready for {{harder}}?",
+      "tryLevel": "Try {{level}}",
+      "levelDone": "That's every puzzle at this level solved."
+    },
     "timer": "Timer",
     "time": "Time",
     "cell": {
@@ -1044,7 +1057,8 @@
       "whole": "Every step is a whole number: no remainders, nothing below zero.",
       "givens": "Shaded numbers are given. Each tile is used once; two 5s are two tiles.",
       "taps": "Tap a tile, then a square — or a square, then a tile. Tap a placed tile to send it back.",
-      "keys": "Keyboard: the arrows move, a digit lays that tile, Backspace takes it back, Ctrl+Z undoes."
+      "keys": "Keyboard: the arrows move, a digit lays that tile, Backspace takes it back, Ctrl+Z undoes.",
+      "rating": "Your first solve of a puzzle moves your rating: harder levels, quicker times and fewer hints earn more. Solving it again is practice."
     }
   }
 }
