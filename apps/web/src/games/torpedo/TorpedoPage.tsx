@@ -30,6 +30,9 @@ export function TorpedoPage() {
   const onCues = useCallback((cues: ArcadeCue[], mode: TorpedoMode, state: TorpedoState) => {
     play(...soundsOf(cues, mode));
     if (mode !== "play") return;
+    // A new run restarts the clock: a banner from the last run would sit in its
+    // future (and darken the sea for good), so it goes.
+    setBanner((last) => (last && last.tick > state.tick ? null : last));
     const hit = cues.find((cue) => cue.kind === "hit");
     if (cues.some((cue) => cue.kind === "bonus")) setBanner({ kind: "bonus", tick: state.tick });
     else if (hit) setBanner({ kind: "hit", points: hit.points as number, tick: state.tick });

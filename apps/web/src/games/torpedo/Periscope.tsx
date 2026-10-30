@@ -174,7 +174,9 @@ export function Periscope({
 
   const degrees = bearing / 10;
 
-  const shown = banner && state.tick - banner.tick < BANNER_TICKS ? banner : null;
+  // A banner from an earlier run lies "ahead" of a new run's clock: never show it.
+  const bannerAge = banner ? state.tick - banner.tick : -1;
+  const shown = banner && bannerAge >= 0 && bannerAge < BANNER_TICKS ? banner : null;
   let bannerText: string | null = null;
   if (shown?.kind === "hit") bannerText = t("torpedo.lens.hit", { points: shown.points });
   if (shown?.kind === "miss") bannerText = t("torpedo.lens.miss");

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { replayRun, torpedo, type TorpedoInput } from "@isputnik/games-engine";
+import { replayRun, Torpedo, torpedo, type TorpedoInput } from "@isputnik/games-engine";
+import { Periscope } from "../src/games/torpedo/Periscope";
 import { TorpedoPage } from "../src/games/torpedo/TorpedoPage";
 import { soundsOf } from "../src/games/torpedo/sounds";
 import { CARD_HOLD_MS, START_DELAY } from "../src/games/torpedo/useTorpedoRun";
@@ -24,6 +25,19 @@ describe("the periscope's sounds", () => {
 
   it("keeps the demo silent", () => {
     expect(soundsOf([{ kind: "hit" }], "demo")).toEqual([]);
+  });
+});
+
+describe("the periscope's lens", () => {
+  it("ignores a hit banner from an earlier run, whose tick lies ahead of the new run's clock", () => {
+    // A run ended on a hit at tick 900; "Play again" starts a run at tick 0.
+    const state = Torpedo.createRun("standard", 1);
+    const { container } = render(
+      <Periscope mode="play" state={state} banner={{ kind: "hit", points: 300, tick: 900 }} onFire={() => {}} onHold={() => {}} onAim={() => {}} />
+    );
+    const shade = container.querySelector('rect[fill="#02090b"]')!;
+    expect(Number(shade.getAttribute("opacity"))).toBe(0);
+    expect(container.querySelector(".torpedo-banner")).toBeNull();
   });
 });
 
