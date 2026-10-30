@@ -842,3 +842,28 @@ at that width. The lobby's foot names the games app's version and stage.
   now it is one item after Stories.
 - The Yandex game's exact edge cases (overlapping enclosures, scoring nested
   territories) are not published; the variant above is the common computer one.
+
+### Checkers (Русские шашки) — built 2026-10-29
+
+Russian draughts on an 8×8 board, id `checkers`, with twelve men each and White
+moving first. Men move forward and capture in both directions; kings fly along
+open diagonals. Captures are mandatory, with a choice of any complete sequence.
+A man is crowned immediately upon reaching the far rank, even in a capture;
+captured pieces remain blockers until the sequence ends. Rules reference:
+https://fmjd64.org/rules-of-the-game/ (sections 3, 4 and 7).
+
+- Engine: `packages/engine/src/checkers/`. Pure, immutable moves encoded as a
+  path including the origin and every landing. The server validates complete
+  paths through the shared registry. Losing all moves loses the game. Draws
+  include repetition, quiet king moves and material-dependent ending limits.
+- Computer: easy chooses randomly; normal and hard search with alpha-beta
+  pruning, material, promotion progress and central control, under a node budget.
+- Web: `/games/checkers`, with computer and two-player local games, replay-based
+  save/resume, undo, resignation and an agreed draw for local players. Online
+  invitations, guest links, move validation, polling and chat reuse the platform.
+- Presentation follows Chess: shared board theme variables and theme picker,
+  setup choices, player strips, GameStage, Comms, sounds and GameOverDialog.
+  Tap successive highlighted destinations to choose a multi-capture path.
+  Computer games face the human; local games turn to face the side to move.
+- English and Russian labels, a lobby preview, and computer result reporting
+  integrate with the existing catalog and family statistics.

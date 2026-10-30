@@ -1,16 +1,18 @@
-import { ChessKnight, CircleDot, Orbit, RectangleVertical, Satellite, Ship, type LucideIcon } from "lucide-react";
+import { Disc3, ChessKnight, CircleDot, Orbit, RectangleVertical, Satellite, Ship, type LucideIcon } from "lucide-react";
 import { ARCADE_GAMES, GAMES } from "@isputnik/games-engine";
 import { loadDotsGame } from "./dots/storage";
 import { loadStarBattleGame } from "./starbattle/storage";
 import { loadChessGame } from "./chess/storage";
 import { loadDominoesGame } from "./dominoes/storage";
 
+import { loadCheckersGame } from "./checkers/storage";
+
 // What the lobby and the invite dialog show for each game in the engine's
 // registries: an icon and the keys of its name and summary, the ways it can be
 // played, and whether a local game of it is in progress on this device. A game
 // without an entry here is not offered, whatever the engine knows.
-export type GameNameKey = "games.dots.name" | "games.starbattle.name" | "games.chess.name" | "games.dominoes.name" | "games.sputnik.name" | "games.torpedo.name";
-export type GameSummaryKey = "games.dots.summary" | "games.starbattle.summary" | "games.chess.summary" | "games.dominoes.summary" | "games.sputnik.summary" | "games.torpedo.summary";
+export type GameNameKey = "games.checkers.name" | "games.dots.name" | "games.starbattle.name" | "games.chess.name" | "games.dominoes.name" | "games.sputnik.name" | "games.torpedo.name";
+export type GameSummaryKey = "games.checkers.summary" | "games.dots.summary" | "games.starbattle.summary" | "games.chess.summary" | "games.dominoes.summary" | "games.sputnik.summary" | "games.torpedo.summary";
 
 /** Against the computer, two people at one screen, two people online, or an
  *  arcade game: one person against the clock. */
@@ -30,6 +32,7 @@ export interface CatalogEntry {
 }
 
 export const CATALOG: Record<string, CatalogEntry> = {
+  checkers: { icon: Disc3, name: "games.checkers.name", summary: "games.checkers.summary", modes: ["computer", "local", "online"], newUntil: "2026-11-29", inProgress: () => loadCheckersGame()?.state.status.kind === "playing" },
   dots: {
     icon: CircleDot,
     name: "games.dots.name",

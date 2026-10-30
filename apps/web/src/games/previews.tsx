@@ -6,6 +6,7 @@ import { pipsOf } from "./dominoes/DominoTile";
 // keeps its space, Chess its wooden board, Dominoes its felt, Sputnik Catch
 // its handheld and Torpedo Run its periscope on every theme, as their pages do.
 export function GamePreview({ game }: { game: string }) {
+  if (game === "checkers") return <CheckersPreview />;
   if (game === "dots") return <DotsPreview />;
   if (game === "starbattle") return <StarBattlePreview />;
   if (game === "chess") return <ChessPreview />;
@@ -221,4 +222,8 @@ function DominoesPreview() {
       <rect x="62" y="86" width="18" height="36" rx="3" fill="#6b2a24" stroke="#4a1c18" />
     </svg>
   );
+}
+
+function CheckersPreview() {
+  return <svg className="game-preview is-checkers" viewBox="0 0 200 112" aria-hidden="true"><rect width="200" height="112" fill="#77543a" />{Array.from({length:32},(_,i)=>{const r=Math.floor(i/8),c=i%8;return <rect key={i} x={c*25} y={r*28} width={25} height={28} fill={(r+c)%2 ? "#73523c" : "#dfc99e"}/>;})}{[[1,0],[3,0],[5,0],[7,0],[0,1],[6,1],[1,2],[3,2],[2,3],[6,3]].map(([c,r],i)=><circle key={i} cx={c*25+12.5} cy={r*28+14} r={10} fill={r<2?"#2e231d":"#ead9b2"} stroke={r<2?"#b49760":"#a88852"} strokeWidth="2"/>)}</svg>;
 }

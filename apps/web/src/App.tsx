@@ -20,6 +20,9 @@ import { DominoesMatchPage } from "./games/dominoes/DominoesMatchPage";
 import { SputnikPage } from "./games/sputnik/SputnikPage";
 import { TorpedoPage } from "./games/torpedo/TorpedoPage";
 
+import { CheckersPage } from "./games/checkers/CheckersPage";
+import { CheckersMatchPage } from "./games/checkers/CheckersMatchPage";
+
 function Routes() {
   const route = useRoute();
   const session = useSession();
@@ -44,6 +47,7 @@ function Routes() {
     if (route.gameId === "dots") return <DotsPage />;
     if (route.gameId === "starbattle") return <StarBattlePage />;
     if (route.gameId === "chess") return <ChessPage />;
+    if (route.gameId === "checkers") return <CheckersPage />;
     if (route.gameId === "dominoes") return <DominoesPage />;
   }
   // Games for one player have their own registry: they have no matches.
@@ -58,6 +62,7 @@ function Routes() {
     if (route.gameId === "dots") return <DotsMatchPage matchId={route.matchId} />;
     if (route.gameId === "starbattle") return <StarBattleMatchPage matchId={route.matchId} />;
     if (route.gameId === "chess") return <ChessMatchPage matchId={route.matchId} />;
+    if (route.gameId === "checkers") return <CheckersMatchPage matchId={route.matchId} />;
     if (route.gameId === "dominoes") return <DominoesMatchPage matchId={route.matchId} />;
   }
   return <MessageBox tone="info" title={t("app.notFound")} />;

@@ -22,3 +22,7 @@ export type { SputnikState, SputnikVariant, Rail as SputnikRail, Side as Sputnik
 export * as Torpedo from "./arcade/torpedo/index.js";
 export { torpedo } from "./arcade/torpedo/index.js";
 export type { TorpedoState, TorpedoVariant, TorpedoInput, Turn as TorpedoTurn, ShipKind, Ship as TorpedoShip, Lane as TorpedoLane, RoundTally } from "./arcade/torpedo/rules.js";
+
+export * as Checkers from "./checkers/index.js";
+export { checkers } from "./checkers/index.js";
+export type { CheckersState, CheckersMove, CheckersOptions, CheckersPiece } from "./checkers/rules.js";

@@ -8,6 +8,7 @@ import "./styles/app.css";
 import "./styles/dots.css";
 import "./styles/starbattle.css";
 import "./styles/chess.css";
+import "./styles/checkers.css";
 import "./styles/dominoes.css";
 import "./styles/sputnik.css";
 import "./styles/torpedo.css";

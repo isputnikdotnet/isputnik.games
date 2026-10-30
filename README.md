@@ -1,11 +1,9 @@
 # isputnik.games
 
 Family games for [isputnik.home](https://github.com/isputnikdotnet/isputnik.home),
-in a project and container of their own. Two games so far: **Dots** (Точки) —
-two players take turns placing dots on a grid, and a closed chain of your dots
-around the other side's dots captures them — and **Sea Battle** (Морской бой),
-the squared-paper game of hidden fleets: lay ten ships, call the squares, sink
-the other fleet first.
+in a project and container of their own. Board games: **Dots**, **Star Battle**,
+**Chess**, **Dominoes**, and **Checkers** (Russian draughts). Arcade games:
+**Sputnik Catch** and **Torpedo Run**.
 
 > **Alpha.** Two on one screen, against the computer, and online between family
 > members (invite, accept, play from any device; the page polls for the other

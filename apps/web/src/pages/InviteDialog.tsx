@@ -200,7 +200,7 @@ export function InviteDialog({ myId, game: initialGame = "dots", onClose, onSent
             ))}
           </>
         )}
-        {game === "chess" && row(t("invite.yourColour"), (
+        {(game === "chess" || game === "checkers") && row(t("invite.yourColour"), (
           <div className="chip-row">
             <Button variant="chip" selected={seat === 0} onClick={() => setSeat(0)}>{t("chess.players.white")}</Button>
             <Button variant="chip" selected={seat === 1} onClick={() => setSeat(1)}>{t("chess.players.black")}</Button>

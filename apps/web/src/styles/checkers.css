@@ -1,0 +1,145 @@
+/* Checkers shares Chess's board palette, theme picker and player strips. */
+.checkers-table {
+  text-align: center;
+}
+.checkers-board {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 8px;
+  position: relative;
+  border: var(--chess-frame-width) solid transparent;
+  background: var(--chess-frame-art), var(--chess-frame);
+  background-origin: border-box;
+  box-shadow: 0 10px 30px var(--shadow);
+  user-select: none;
+}
+.checkers-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: var(--chess-frame-rule);
+  pointer-events: none;
+}
+.checkers-square {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  aspect-ratio: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.checkers-square.is-light {
+  background: var(--chess-light-grain), var(--chess-light);
+}
+.checkers-square.is-dark {
+  background: var(--chess-dark-grain), var(--chess-dark);
+}
+.checkers-square:disabled {
+  cursor: default;
+  opacity: 1;
+}
+.checkers-square.is-last::before,
+.checkers-square.is-active::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--chess-last);
+}
+.checkers-square.is-active::before {
+  background: var(--chess-selected);
+}
+.checkers-square:focus-visible {
+  z-index: 1;
+  outline: 3px solid var(--mint);
+  outline-offset: -3px;
+}
+.checkers-piece {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 72%;
+  height: 72%;
+  border-radius: 50%;
+  font:
+    clamp(18px, 4vw, 38px) Georgia,
+    serif;
+  box-shadow:
+    0 3px 0 #0004,
+    inset 0 0 0 3px #ffffff20,
+    inset 0 0 0 5px #0002;
+  pointer-events: none;
+}
+.checkers-piece.is-white {
+  background: var(--chess-white-fill);
+  border: 2px solid var(--chess-white-line);
+  color: var(--chess-white-detail);
+}
+.checkers-piece.is-black {
+  background: var(--chess-black-fill);
+  border: 2px solid var(--chess-black-line);
+  color: var(--chess-black-detail);
+}
+.checkers-piece.is-king {
+  box-shadow:
+    0 5px 0 #816341,
+    0 6px 5px #0004,
+    inset 0 0 0 3px #c4a76b;
+}
+.checkers-coordinate {
+  position: absolute;
+  left: 4px;
+  bottom: 2px;
+  font: 10px var(--chess-coord-font);
+  color: var(--chess-light);
+  pointer-events: none;
+}
+.checkers-square.is-light .checkers-coordinate {
+  color: var(--chess-dark);
+}
+.checkers-dot {
+  position: absolute;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: var(--chess-mark);
+  pointer-events: none;
+}
+.checkers-hint {
+  min-height: 1.5em;
+  margin: 6px 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.checkers-remaining {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+.checkers-status {
+  margin-top: 0;
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+.checkers-counts {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+@media (max-width: 600px) {
+  .checkers-coordinate {
+    font-size: 8px;
+    left: 2px;
+  }
+  .checkers-piece {
+    border-width: 1px;
+  }
+}

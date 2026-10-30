@@ -197,6 +197,10 @@
     "torpedo": {
       "name": "Torpedo Run",
       "summary": "Up periscope at dusk: lead the passing ships with slow torpedoes. Ten a round — score 1 500 for a bonus round."
+    },
+    "checkers": {
+      "name": "Checkers",
+      "summary": "Plan your jumps, crown your kings. Russian draughts for two."
     }
   },
   "dots": {
@@ -903,5 +907,46 @@
       "enter": "Full screen",
       "exit": "Leave full screen"
     }
+  },
+  "checkers": {
+    "variant": "Russian draughts · 8 × 8",
+    "board": "Checkers board",
+    "white": "White",
+    "black": "Black",
+    "man": "{{player}} man",
+    "king": "{{player}} king",
+    "empty": "Empty",
+    "destination": "Legal destination",
+    "continue": "Continue the capture with the same piece.",
+    "chooseLanding": "Choose a highlighted landing square.",
+    "choosePiece": "Select a piece to see its legal moves.",
+    "cancelSelection": "Cancel selection",
+    "mode": "Play against",
+    "computer": "Computer",
+    "local": "Two on one device",
+    "colour": "Your colour",
+    "level": "Computer level",
+    "start": "Start game",
+    "rules": "White moves first. Captures are mandatory; choose any complete capture sequence. Men move forward and capture both ways. Kings slide along diagonals. Reaching the far rank crowns a man immediately, including during a capture. Win by leaving your opponent without a legal move.",
+    "thinking": "Computer is thinking…",
+    "turn": "{{player}} to move",
+    "draw": "Draw",
+    "winner": "{{player}} wins",
+    "undo": "Undo",
+    "flip": "Turn board",
+    "resign": "Resign",
+    "agreeDraw": "Agree a draw",
+    "new": "New game",
+    "confirm": {
+      "new": "Start a new game?",
+      "resign": "Resign this game?",
+      "draw": "Both players agree to a draw?",
+      "yes": "Confirm",
+      "no": "Cancel",
+      "body": "Your current game will end."
+    },
+    "remaining": "{{count}} pieces",
+    "noMoves": "The opponent has no legal moves.",
+    "repetition": "The position repeated three times."
   }
 }
