@@ -12,11 +12,17 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 export function openDatabase(file: string): Database.Database {
   if (file !== ":memory:") fs.mkdirSync(path.dirname(file), { recursive: true });
   const db = new Database(file);
+  upgradeDatabase(db);
+  return db;
+}
+
+/** This version's schema on a database of any older one: what opening does, and
+ *  what a backup goes through before it is restored (restore.ts). */
+export function upgradeDatabase(db: Database.Database): void {
   db.exec(fs.readFileSync(path.join(here, "schema.sql"), "utf8"));
   // 0.5.0: Sea Battle became Star Battle; matches recorded under the old game
   // id replay through the same rules under the new one. Idempotent.
   db.prepare("UPDATE matches SET game = 'starbattle' WHERE game = 'seabattle'").run();
-  return db;
 }
 
 export type Db = Database.Database;

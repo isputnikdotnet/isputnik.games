@@ -276,6 +276,14 @@ server; the home server asks, through the gateway, on an admin's behalf.
   `GET /games/api/admin/log`, the newest lines of the server log from an
   in-memory ring buffer (500 lines) that pino writes through on its way to
   stdout — what `docker logs` would show, without a shell on the host.
+- **Restore (2026-10-30).** `POST /games/api/admin/restore` takes a backup home
+  holds (`application/vnd.sqlite3`, `X-Isputnik-Backup-Version`) and replaces every
+  table's rows in one transaction on the open database, after bringing the copy up
+  to this version's schema: no restart, and a failure rolls back. A newer backup is
+  refused (409), and so is anything that is not this app's database (400). The
+  database it replaced stays as `<db>.pre-restore` until `POST …/restore/undo` puts
+  it back once; `GET …/restore/undo` describes it. Admin only, called by home's
+  Backup page directly; home's gateway refuses these paths. `restore.ts`.
 - **Backups (2026-10-25).** `GET /games/api/admin/backup` hands an admin the
   whole database as one consistent `db.serialize()` copy
   (`application/vnd.sqlite3`, `X-Isputnik-Backup-Version`), for the home

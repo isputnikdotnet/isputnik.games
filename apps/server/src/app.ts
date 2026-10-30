@@ -4,7 +4,8 @@ import { z } from "zod";
 import { AI_LEVELS, ARCADE_IDS, Chess, GAME_IDS, type AiLevel, type PuzzleLevel, type PuzzleType } from "@isputnik/games-engine";
 import { ARCADE_BODY_LIMIT, saveArcadeScore } from "./arcade.js";
 import { BASE_PATH } from "./config.js";
-import { openDatabase } from "./db.js";
+import { openDatabase, upgradeDatabase } from "./db.js";
+import { RESTORE_BODY_LIMIT, RestoreError, SQLITE_CONTENT_TYPE, restoreDatabase, undoInfo, undoRestore, type RestoreTarget } from "./restore.js";
 import {
   clientIpFrom,
   devIdentity,
@@ -249,6 +250,10 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       return reply.code(error.status).send({ error: error.message });
     }
     if (error instanceof UnknownPuzzleError) return reply.code(404).send({ error: error.message });
+    if (error instanceof RestoreError) {
+      note(request, "warn", "restore.refused", { detail: error.message });
+      return reply.code(error.status).send({ error: error.message });
+    }
     if (error instanceof z.ZodError) {
       const fields = [...new Set(error.issues.map((issue) => issue.path.join(".") || "(body)"))].join(", ");
       note(request, "warn", "request.invalid", { matchId: idOf(request), detail: `${request.method} ${pathOf(request)}: ${fields}` });
@@ -500,6 +505,37 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       .header("Cache-Control", "no-store")
       .header("X-Isputnik-Backup-Version", options.version)
       .send(bytes);
+  });
+
+  // And back (restore.ts): home sends a backup it holds, and it is in place when
+  // this answers. onRequest, so nobody but an admin gets as far as sending a file.
+  const restoreTarget: RestoreTarget = {
+    db,
+    dbPath: options.dbPath,
+    version: options.version,
+    tables: ["matches", "members"],
+    name: "the games",
+    upgrade: upgradeDatabase
+  };
+  app.addContentTypeParser(SQLITE_CONTENT_TYPE, { parseAs: "buffer", bodyLimit: RESTORE_BODY_LIMIT }, (_request, body, done) => done(null, body));
+
+  app.post(`${API}/admin/restore`, { onRequest: requireAdmin, bodyLimit: RESTORE_BODY_LIMIT }, async (request) => {
+    if (!Buffer.isBuffer(request.body)) throw new RestoreError(400, "Send the database itself.");
+    const from = request.headers["x-isputnik-backup-version"];
+    const fromVersion = typeof from === "string" && from ? from : null;
+    const { kept } = restoreDatabase(restoreTarget, request.body, fromVersion);
+    note(request, "info", "backup.restored", {
+      detail: `Database restored from a backup${fromVersion ? ` of version ${fromVersion}` : ""} (${request.body.length} bytes)${kept ? "; the one it replaced is kept to undo this" : ""}`
+    });
+    return { restored: true, version: options.version };
+  });
+
+  app.get(`${API}/admin/restore/undo`, { preHandler: requireAdmin }, async () => ({ undo: undoInfo(restoreTarget) }));
+
+  app.post(`${API}/admin/restore/undo`, { preHandler: requireAdmin }, async (request) => {
+    undoRestore(restoreTarget);
+    note(request, "info", "backup.undone", { detail: "The last restore was undone: the database it replaced is back" });
+    return { undone: true, version: options.version };
   });
 
   if (options.staticPath) {
