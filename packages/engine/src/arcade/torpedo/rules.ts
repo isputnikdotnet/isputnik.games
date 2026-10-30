@@ -66,9 +66,10 @@ export const SIGHT_SPEED = 10;
 /** Ticks a torpedo runs before it reaches each lane. */
 export const RANGE: Record<Lane, number> = { near: 24, mid: 38, far: 56 };
 /** How far out to the horizon each lane is, in percent of the way: the
- *  ships keep far off, under the horizon, with the lanes far enough apart to
- *  see which one a torpedo has got to. */
-export const REACH: Record<Lane, number> = { near: 86, mid: 92, far: 97 };
+ *  ships keep off under the horizon, with the lanes far enough apart to see
+ *  which one a torpedo has got to. The web app draws each lane this far up
+ *  the sea, so a torpedo's course on the lens is one straight line. */
+export const REACH: Record<Lane, number> = { near: 64, mid: 81, far: 93 };
 /** How much a torpedo leans the way the periscope is turned, in percent of
  *  the turn: on the horizon its course is off dead ahead by the sight's
  *  bearing and LEAN of it again. */

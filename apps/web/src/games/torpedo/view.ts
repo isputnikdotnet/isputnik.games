@@ -18,33 +18,17 @@ export const HORIZON = 207;
 /** Where a torpedo leaves: the foot of the lens, under the sight. */
 export const tubeOf = (bottom: number) => bottom - 12;
 
-/** How far below the horizon each lane's waterline lies, as a share of the
- *  way down to the tube. Spread well apart (owner, 2026-10-30: a torpedo far
- *  out was hard to read against a ship), though the engine counts the lanes
- *  far out (Torpedo.REACH): the course bends to meet them, as a straight track
- *  does in perspective. */
-const LANE_DEPTH: Record<TorpedoLane, number> = { far: 0.07, mid: 0.19, near: 0.36 };
-
-/** The waterline of each lane. */
+/** The waterline of each lane: Torpedo.REACH of the way up from the foot of
+ *  the lens to the horizon, spread well apart (owner, 2026-10-30: a torpedo far
+ *  out was hard to read against a ship), and on the torpedo's straight course
+ *  exactly where the engine counts it. */
 export function laneYs(tubeY: number): Record<TorpedoLane, number> {
-  const at = (lane: TorpedoLane) => HORIZON + LANE_DEPTH[lane] * (tubeY - HORIZON);
+  const at = (lane: TorpedoLane) => tubeY - (Torpedo.REACH[lane] / 100) * (tubeY - HORIZON);
   return { far: at("far"), mid: at("mid"), near: at("near") };
 }
 
-/** How far out a torpedo is at height `y`, as the engine counts it (0 at the
- *  tube, 1 on the horizon): exactly Torpedo.REACH at each lane's waterline,
- *  and straight between them. */
-function reachAt(y: number, tubeY: number) {
-  const lanes = laneYs(tubeY);
-  const { REACH } = Torpedo;
-  const stops: [number, number][] = [[tubeY, 0], [lanes.near, REACH.near / 100], [lanes.mid, REACH.mid / 100], [lanes.far, REACH.far / 100], [HORIZON, 1]];
-  for (let i = 1; i < stops.length; i++) {
-    const [y0, r0] = stops[i - 1];
-    const [y1, r1] = stops[i];
-    if (y >= y1) return r0 + ((y0 - y) / (y0 - y1)) * (r1 - r0);
-  }
-  return 1;
-}
+/** How far out a torpedo is at height `y`: 0 at the tube, 1 on the horizon. */
+const reachAt = (y: number, tubeY: number) => (tubeY - y) / (tubeY - HORIZON);
 
 /** The x of something at a bearing. */
 export const screenX = (bearing: number) => CENTRE + bearing * K;
