@@ -1,0 +1,494 @@
+/* ── Crossmath ──────────────────────────────────────────────────────────── */
+/* A puzzle page out of a newspaper, on every theme (as Chess keeps its wood):
+   cream paper, near-black serif numerals, grey operators, given numbers
+   shaded, empty squares dashed, warm beige tiles, amber for what is chosen,
+   a muted green once solved. The board and the panel are both paper; the
+   app's own chrome stays around them. docs/mocks/crossmath-mock.html. */
+.game-stage.crossmath {
+  --cm-paper: #f4edde;
+  --cm-paper-edge: #e2d8c3;
+  --cm-ink: #1c1915;
+  --cm-op: #8b8476;
+  --cm-rule: #cfc4ad;
+  --cm-given: #e2d9c5;
+  --cm-tile: #ebd3a6;
+  --cm-tile-hi: #f6e6c5;
+  --cm-tile-edge: #c8a874;
+  --cm-amber: #df9a1f;
+  --cm-amber-soft: rgba(223, 154, 31, 0.2);
+  --cm-amber-line: rgba(223, 154, 31, 0.08);
+  --cm-solved: #6e8c5c;
+  --cm-solved-soft: #dfe6cf;
+  --cm-brick: #a5432f;
+  --cm-brick-soft: rgba(165, 67, 47, 0.12);
+  --cm-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
+}
+
+.game-stage.crossmath .game-stage-board,
+.game-stage.crossmath .game-stage-panel {
+  color: var(--cm-ink);
+}
+
+.crossmath-board-frame {
+  container-type: inline-size;
+  padding: 4%;
+  border: 1px solid var(--cm-paper-edge);
+  border-radius: 6px;
+  background: var(--cm-paper);
+  box-shadow: 0 1px 0 var(--cm-paper-edge), 0 10px 30px rgba(40, 30, 12, 0.18);
+}
+
+.game-stage.crossmath:not(.is-phone) .crossmath-board-frame {
+  aspect-ratio: 1;
+  display: grid;
+  align-content: center;
+}
+
+/* The panel is paper on every theme, so the app's own controls in it (buttons,
+   notices) take a light palette in its colours — the paper's ink for the
+   accent, its amber, green and brick for the notices. */
+.game-stage.crossmath .game-stage-panel,
+.game-stage.crossmath.is-phone {
+  color-scheme: light;
+  --ink: var(--cm-ink);
+  --muted: #6f685b;
+  --line: var(--cm-rule);
+  --surface: var(--cm-paper);
+  --surface-raised: #fbf6ea;
+  --field: #fbf6ea;
+  --hover: #ebe2cf;
+  --active: #e2d7bf;
+  --mint: var(--cm-ink);
+  --gold: var(--cm-amber);
+  --amber: var(--cm-amber);
+  --rose: var(--cm-brick);
+  --blue: #5d6f73;
+  --success: var(--cm-solved);
+  --warning: var(--cm-amber);
+  --danger: var(--cm-brick);
+  --shadow: rgba(40, 30, 12, 0.14);
+  --icon-control-bg: transparent;
+  --icon-control-bg-hover: #ebe2cf;
+  /* Derived on :root, so restated here (tokens.css). */
+  --canvas: var(--cm-paper);
+  --surface-2: color-mix(in srgb, var(--cm-ink) 6%, transparent);
+  --accent: var(--cm-ink);
+  --error: var(--cm-brick);
+}
+
+.game-stage.crossmath .game-stage-panel {
+  border-color: var(--cm-paper-edge);
+  background: var(--cm-paper);
+}
+
+.game-stage.crossmath .game-stage-head {
+  border-bottom: 3px double var(--cm-ink);
+}
+
+.game-stage.crossmath .game-stage-head .text-link {
+  color: var(--cm-op);
+}
+
+.game-stage.crossmath .game-stage-title {
+  font-family: var(--cm-serif);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--cm-ink);
+}
+
+/* ── the grid ── */
+.crossmath-board {
+  --u: calc(100cqi / var(--tracks));
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1;
+  gap: calc(var(--u) * 0.06);
+  font-family: var(--cm-serif);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.crossmath-row {
+  display: contents;
+}
+
+.crossmath-slot,
+.crossmath-op,
+.crossmath-total {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+}
+
+.crossmath-op {
+  color: var(--cm-op);
+  font-size: calc(var(--u) * 0.5);
+}
+
+.crossmath-op.is-down {
+  transform: rotate(90deg);
+}
+
+.crossmath-total {
+  position: relative;
+  color: var(--cm-ink);
+  font-size: calc(var(--u) * 0.56);
+  font-weight: 700;
+}
+
+.crossmath-total.is-good {
+  color: var(--cm-solved);
+}
+
+.crossmath-total.is-bad {
+  color: var(--cm-brick);
+}
+
+.crossmath-total.is-bad::after {
+  content: "";
+  position: absolute;
+  inset: 12% 4%;
+  border: 1.5px solid var(--cm-brick);
+  border-radius: 50%;
+}
+
+.crossmath-cell.bare-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 1.5px dashed var(--cm-rule);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--cm-ink);
+  font: 600 calc(var(--u) * 0.56) / 1 var(--cm-serif);
+  font-variant-numeric: lining-nums tabular-nums;
+  cursor: pointer;
+  transition: background-color 0.15s, box-shadow 0.15s;
+}
+
+.crossmath-cell.is-given {
+  border: 1px solid var(--cm-rule);
+  background: var(--cm-given);
+  font-weight: 700;
+  cursor: default;
+}
+
+.crossmath-cell.is-placed {
+  border-color: transparent;
+}
+
+.crossmath-cell.is-line {
+  background-color: var(--cm-amber-line);
+}
+
+.crossmath-cell.is-given.is-line {
+  background-color: color-mix(in srgb, var(--cm-given) 88%, var(--cm-amber) 12%);
+}
+
+.crossmath-cell.is-target {
+  border: 2px solid var(--cm-amber);
+  box-shadow: 0 0 0 3px var(--cm-amber-soft);
+}
+
+.crossmath-cell:focus-visible {
+  outline: 2px solid var(--cm-amber);
+  outline-offset: 2px;
+}
+
+.crossmath-tile {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--cm-tile-edge);
+  border-radius: 4px;
+  background: linear-gradient(var(--cm-tile-hi), var(--cm-tile));
+  box-shadow: 0 2px 0 var(--cm-tile-edge);
+  color: var(--cm-ink);
+  font-family: var(--cm-serif);
+  font-weight: 600;
+}
+
+.crossmath-cell .crossmath-tile {
+  width: 94%;
+  height: 94%;
+}
+
+.crossmath-cell.is-flagged .crossmath-tile {
+  border-color: var(--cm-brick);
+  box-shadow: 0 2px 0 var(--cm-brick), 0 0 0 3px var(--cm-brick-soft);
+  color: var(--cm-brick);
+}
+
+.crossmath-cell.is-hinted::after {
+  content: "";
+  position: absolute;
+  top: 9%;
+  right: 9%;
+  width: calc(var(--u) * 0.11);
+  height: calc(var(--u) * 0.11);
+  border-radius: 50%;
+  background: var(--cm-amber);
+}
+
+.crossmath-board.is-solved .crossmath-cell {
+  cursor: default;
+}
+
+.crossmath-board.is-solved .crossmath-cell.is-given {
+  border-color: var(--cm-solved);
+  background: color-mix(in srgb, var(--cm-solved-soft) 70%, var(--cm-solved) 30%);
+}
+
+.crossmath-board.is-solved .crossmath-tile {
+  border-color: var(--cm-solved);
+  background: var(--cm-solved-soft);
+  box-shadow: none;
+}
+
+.crossmath-board.is-solved .crossmath-total {
+  color: var(--cm-solved);
+}
+
+@keyframes crossmath-settle {
+  from { transform: scale(0.82); }
+  to { transform: none; }
+}
+
+.crossmath-tile.is-dropped {
+  animation: crossmath-settle 0.16s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crossmath-tile.is-dropped { animation: none; }
+  .crossmath-cell.bare-button { transition: none; }
+}
+
+/* ── the panel ── */
+.crossmath-head {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.crossmath-levels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.game-stage.crossmath .chip-button {
+  border-color: var(--cm-rule);
+  background: transparent;
+  color: var(--cm-op);
+}
+
+.game-stage.crossmath .chip-button.is-selected {
+  border-color: var(--cm-ink);
+  background: var(--cm-ink);
+  color: var(--cm-paper);
+}
+
+.crossmath-edition {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--cm-serif);
+}
+
+.game-stage.crossmath .icon-button {
+  background: transparent;
+  color: var(--cm-ink);
+}
+
+.game-stage.crossmath .icon-button:disabled {
+  color: var(--cm-rule);
+}
+
+.crossmath-number {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.crossmath-solved-mark {
+  color: var(--cm-solved);
+}
+
+.crossmath-spacer {
+  flex: 1;
+}
+
+.crossmath-clock {
+  font: 600 1rem/1 var(--cm-serif);
+  font-variant-numeric: tabular-nums;
+}
+
+.crossmath-size {
+  margin: 0;
+  color: var(--cm-op);
+  font-family: var(--cm-serif);
+  font-size: var(--text-sm);
+}
+
+.crossmath-bank-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+  color: var(--cm-op);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.crossmath-bank {
+  display: grid;
+  grid-template-columns: repeat(var(--cols-wide, 6), minmax(0, 1fr));
+  gap: var(--space-2);
+  max-width: calc(var(--cols-wide, 6) * 64px);
+}
+
+.crossmath-bank-tile.bare-button {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cm-ink);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.crossmath-bank-tile.is-selected .crossmath-tile {
+  border-color: var(--cm-ink);
+  background: var(--cm-amber);
+  box-shadow: 0 2px 0 var(--cm-ink);
+  transform: translateY(-2px);
+}
+
+.crossmath-bank-tile.is-used .crossmath-tile {
+  border: 1.5px dashed var(--cm-rule);
+  background: transparent;
+  box-shadow: none;
+  color: transparent;
+}
+
+.crossmath-bank-tile:disabled {
+  cursor: default;
+}
+
+.crossmath-bank-tile:focus-visible {
+  outline: 2px solid var(--cm-amber);
+  outline-offset: 2px;
+}
+
+.crossmath-message {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.crossmath-message .message-box {
+  width: 100%;
+}
+
+.crossmath-rules {
+  font-family: var(--cm-serif);
+  font-size: var(--text-sm);
+}
+
+.crossmath-rules summary {
+  color: var(--cm-op);
+  font-family: var(--font-ui, inherit);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.crossmath-rules ul {
+  display: grid;
+  gap: 4px;
+  margin: var(--space-2) 0 0;
+  padding-left: 18px;
+}
+
+.crossmath-keys {
+  color: var(--cm-op);
+}
+
+/* A phone: the board and the bank first, the rest under the thumb. */
+.game-stage.crossmath.is-phone {
+  gap: var(--space-2);
+}
+
+.game-stage.crossmath.is-phone .game-stage-title {
+  font-size: var(--text-lg);
+}
+
+.game-stage.crossmath.is-phone .game-stage-board {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.game-stage.crossmath.is-phone .crossmath-board-frame {
+  padding: 3%;
+}
+
+.game-stage.crossmath.is-phone .crossmath-bank {
+  grid-template-columns: repeat(var(--cols-narrow, 8), minmax(0, 1fr));
+  gap: 6px;
+  max-width: calc(var(--cols-narrow, 8) * 60px);
+}
+
+.game-stage.crossmath.is-phone .game-stage-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.game-stage.crossmath.is-phone .game-stage-actions .primary-button,
+.game-stage.crossmath.is-phone .game-stage-actions .secondary-button {
+  padding-inline: 4px;
+  font-size: var(--text-sm);
+}
+
+/* With no panel on a phone, the whole stage is the page of paper. */
+.game-stage.crossmath.is-phone {
+  padding: var(--space-3);
+  border-radius: 8px;
+  background: var(--cm-paper);
+  color: var(--cm-ink);
+}
+
+.game-stage.crossmath.is-phone .crossmath-board-frame {
+  border: 0;
+  box-shadow: none;
+}
+
+/* The rules take what height the panel has left and scroll inside it. */
+.game-stage.crossmath:not(.is-phone) .game-stage-log {
+  overflow-y: auto;
+}
+
+/* No big header on a phone: the name is for screen readers, the strip says the rest. */
+.game-stage.crossmath.is-phone .game-stage-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.crossmath-level-menu select {
+  padding: 6px 8px;
+  border: 1px solid var(--cm-rule);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--cm-ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}

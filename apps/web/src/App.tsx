@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { getArcadeGame, getGame } from "@isputnik/games-engine";
+import { getArcadeGame, getGame, getSoloGame } from "@isputnik/games-engine";
 import { SessionProvider, useSession } from "./session";
 import { useRoute } from "./router";
 import { Shell } from "./shared/Shell";
@@ -19,6 +19,7 @@ import { DominoesPage } from "./games/dominoes/DominoesPage";
 import { DominoesMatchPage } from "./games/dominoes/DominoesMatchPage";
 import { SputnikPage } from "./games/sputnik/SputnikPage";
 import { TorpedoPage } from "./games/torpedo/TorpedoPage";
+import { CrossmathPage } from "./games/crossmath/CrossmathPage";
 
 import { CheckersPage } from "./games/checkers/CheckersPage";
 import { CheckersMatchPage } from "./games/checkers/CheckersMatchPage";
@@ -54,6 +55,10 @@ function Routes() {
   if (route.name === "game" && getArcadeGame(route.gameId)) {
     if (route.gameId === "sputnik") return <SputnikPage />;
     if (route.gameId === "torpedo") return <TorpedoPage />;
+  }
+  // Puzzles for one player: no matches and no clock of record.
+  if (route.name === "game" && getSoloGame(route.gameId)) {
+    if (route.gameId === "crossmath") return <CrossmathPage />;
   }
   if (route.name === "puzzles") return <ChessPuzzlePage />;
   if (route.name === "myGames") return <MyChessGamesPage />;

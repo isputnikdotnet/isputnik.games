@@ -49,7 +49,8 @@
       "computer": "Computer",
       "local": "One screen",
       "online": "Online",
-      "arcade": "Arcade"
+      "arcade": "Arcade",
+      "puzzle": "Puzzle"
     },
     "recent": {
       "title": "Recent games"
@@ -201,6 +202,10 @@
     "checkers": {
       "name": "Checkers",
       "summary": "Plan your jumps, crown your kings. Russian draughts for two."
+    },
+    "crossmath": {
+      "name": "Crossmath",
+      "summary": "A crossword of sums: lay the number tiles so every row and every column works out."
     }
   },
   "dots": {
@@ -948,5 +953,98 @@
     "remaining": "{{count}} pieces",
     "noMoves": "The opponent has no legal moves.",
     "repetition": "The position repeated three times."
+  },
+  "crossmath": {
+    "board": "Crossmath board",
+    "level": "Level",
+    "levels": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard",
+      "expert": "Expert"
+    },
+    "levelHint": {
+      "easy": "3 × 3 · + −",
+      "medium": "4 × 4 · + − ×",
+      "hard": "5 × 5 · + − × ÷",
+      "expert": "6 × 6 · + − × ÷"
+    },
+    "number": "No. {{number}} of {{count}}",
+    "solvedMark": "Solved",
+    "previous": "Go to the previous puzzle",
+    "next": "Go to the next puzzle",
+    "nextPuzzle": "Next puzzle",
+    "timer": "Timer",
+    "time": "Time",
+    "cell": {
+      "given": "Row {{row}}, column {{col}}, given {{value}}",
+      "tile": "Row {{row}}, column {{col}}, your tile {{value}}",
+      "hinted": "Row {{row}}, column {{col}}, your tile {{value}}, from a hint",
+      "empty": "Row {{row}}, column {{col}}, empty"
+    },
+    "equation": "{{line}}: {{words}} equals {{total}}.",
+    "row": "Row {{number}}",
+    "col": "Column {{number}}",
+    "rowLower": "row {{number}}",
+    "colLower": "column {{number}}",
+    "blank": "blank",
+    "ops": {
+      "plus": "plus",
+      "minus": "minus",
+      "times": "times",
+      "divided": "divided by"
+    },
+    "tiles": "Tiles",
+    "tilesLeft_one": "{{count}} left",
+    "tilesLeft_other": "{{count}} left",
+    "allPlaced": "All placed",
+    "tile": "Tile {{value}}",
+    "tilePlaced": "Tile {{value}}, placed",
+    "placed": "{{value}} placed in row {{row}}, column {{col}}.",
+    "returned": "{{value}} back in the tiles.",
+    "undone": "Undone.",
+    "noTile": "No {{value}} left in the tiles.",
+    "actions": {
+      "undo": "Undo",
+      "hint": "Hint",
+      "check": "Check",
+      "restart": "Restart"
+    },
+    "check": {
+      "incomplete": "No mistakes so far",
+      "empty_one": "{{count}} square is still empty.",
+      "empty_other": "{{count}} squares are still empty.",
+      "incorrect": "Not quite",
+      "wrongLines_one": "This line doesn't work out: {{lines}}.",
+      "wrongLines_other": "{{count}} lines don't work out: {{lines}}."
+    },
+    "hint": {
+      "wrongTitle": "A tile is out of place",
+      "wrongBody": "The {{value}} in row {{row}}, column {{col}} doesn't belong there. Tap it to send it back.",
+      "placedTitle": "Hint",
+      "placedBody": "{{value}} goes in row {{row}}, column {{col}}."
+    },
+    "solved": {
+      "title": "Solved",
+      "hints_one": "Every line holds, with {{count}} hint.",
+      "hints_other": "Every line holds, with {{count}} hints.",
+      "noHints": "Every line holds, with no hints.",
+      "time": "Time: {{time}}."
+    },
+    "restart": {
+      "title": "Start {{level}} No. {{number}} over?",
+      "body": "Every tile goes back to the bank, and the hints and the timer start again. Other puzzles keep their progress.",
+      "confirm": "Start over",
+      "cancel": "Keep playing"
+    },
+    "rules": {
+      "title": "How to play",
+      "goal": "Lay every tile so each row and each column works out to its total.",
+      "precedence": "× and ÷ come before + and −, as at school.",
+      "whole": "Every step is a whole number: no remainders, nothing below zero.",
+      "givens": "Shaded numbers are given. Each tile is used once; two 5s are two tiles.",
+      "taps": "Tap a tile, then a square — or a square, then a tile. Tap a placed tile to send it back.",
+      "keys": "Keyboard: the arrows move, a digit lays that tile, Backspace takes it back, Ctrl+Z undoes."
+    }
   }
 }

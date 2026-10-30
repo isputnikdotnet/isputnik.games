@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 
 // The games' sounds, made on the spot with Web Audio rather than shipped as
 // files: a soft wooden tick for a dot, a laser and a blast in space, a chime
-// when the move comes back to you, a handheld's piezo beeps for Sputnik Catch, a torpedo's run for Torpedo Run. Nothing plays until the player has touched
+// when the move comes back to you, a handheld's piezo beeps for Sputnik Catch, a torpedo's run for Torpedo Run, a tile on paper for Crossmath. Nothing plays until the player has touched
 // the page once (browsers keep an AudioContext silent until then), and nothing
 // at all while the top bar's switch says off — remembered per device, since
 // whether a phone beeps is the person's own business.
@@ -14,6 +14,7 @@ export type Cue =
   | "lcdStep0" | "lcdStep1" | "lcdStep2" | "lcdStep3"
   | "lcdCatch" | "lcdCrash" | "lcdAlien" | "lcdPardon" | "lcdStart" | "lcdOver"
   | "torpedoLaunch" | "torpedoPing" | "torpedoHit" | "torpedoMiss" | "torpedoBonus" | "torpedoStart" | "torpedoOver"
+  | "tilePlace" | "tileReturn"
   | "yourMove" | "message" | "invite" | "win" | "lose" | "draw";
 
 const STORAGE_KEY = "isputnik-games-sound";
@@ -152,6 +153,16 @@ function lcdBeep(ctx: AudioContext, out: AudioNode, at: number, freq: number, du
 // ── The cues: each draws itself from `at` and says how long it lasts ───────
 
 const cues: Record<Cue, (ctx: AudioContext, out: AudioNode, at: number) => number> = {
+  // Crossmath: a tile set down on paper, and lifted off it.
+  tilePlace: (ctx, out, at) => {
+    tone(ctx, out, { type: "triangle", freq: 620, to: 420, at, dur: 0.07, gain: 0.5 });
+    noise(ctx, out, { at, dur: 0.03, gain: 0.25, filter: "bandpass", freq: 1800 });
+    return 0.07;
+  },
+  tileReturn: (ctx, out, at) => {
+    tone(ctx, out, { type: "triangle", freq: 420, to: 640, at, dur: 0.07, gain: 0.35 });
+    return 0.07;
+  },
   dot: (ctx, out, at) => {
     tone(ctx, out, { type: "triangle", freq: 920, to: 640, at, dur: 0.09, gain: 0.7 });
     return 0.09;

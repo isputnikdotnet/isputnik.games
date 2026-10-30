@@ -26,3 +26,8 @@ export type { TorpedoState, TorpedoVariant, TorpedoInput, Turn as TorpedoTurn, S
 export * as Checkers from "./checkers/index.js";
 export { checkers } from "./checkers/index.js";
 export type { CheckersState, CheckersMove, CheckersOptions, CheckersPiece } from "./checkers/rules.js";
+
+export * from "./solo.js";
+export * as Crossmath from "./crossmath/index.js";
+export { crossmath } from "./crossmath/index.js";
+export type { CrossmathPuzzle, CrossmathPlay, CrossmathLevel, Op as CrossmathOp, Line as CrossmathLine, Verdict as CrossmathVerdict, Hint as CrossmathHint } from "./crossmath/rules.js";

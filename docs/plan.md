@@ -698,8 +698,9 @@ design canvas (desktop mid-round, phone mid-round, phone round-over).
   torpedo leaves from under the sight and leans the way the periscope is
   turned (owner, 2026-10-29, option C of the mock): a straight course from
   the sight's bearing to `LEAN` (75 %) more of it again on the horizon. The
-  lanes are `REACH` of the way out to the horizon (near 86 %, mid 92 %, far
-  97 %), so the ships keep far off, and a torpedo crosses a lane at
+  lanes are `REACH` of the way out to the horizon (near 64 %, mid 81 %, far
+  93 %; the lens draws each lane that far up the sea, so the course is one
+  straight line and the lanes read apart — owner, 2026-10-30), so the ships keep off under the horizon, and a torpedo crosses a lane at
   bearing × (1 + LEAN × REACH) — `courseAt()`, inverted by `aimFor()`. Three lanes:
   tanker 100 (slow, near, ~25 s to cross), cargo ship 200 (steady, mid,
   ~15 s), destroyer 300 (fast, far, ~11 s), patrol boat 500 (mid, changes
@@ -867,3 +868,38 @@ https://fmjd64.org/rules-of-the-game/ (sections 3, 4 and 7).
   Computer games face the human; local games turn to face the side to move.
 - English and Russian labels, a lobby preview, and computer result reporting
   integrate with the existing catalog and family statistics.
+
+### Crossmath (Числовой кроссворд) — built 2026-10-29
+
+A crossword of sums for one player, id `crossmath`. An n × n grid of numbers in
+which every row and every column is an equation with its operators and total
+printed; some numbers are given (shaded), the rest are filled from a fixed tile
+bank, each tile once (two 5s are two tiles). Mock: `docs/mocks/crossmath-mock.html`.
+
+- One reading everywhere: × and ÷ before + and −, then left to right; every
+  step a whole number (no remainder, nothing below zero). Printed in How to play.
+- Solved when every square is filled and every line works out. The validator
+  checks the equations, not the stored solution.
+- Every shipped puzzle has exactly one solution: `crossmath/generate.ts` deals a
+  seeded grid, then takes givens away while `crossmath/solver.ts` (backtracking,
+  a line checked as it fills and looked ahead at when one square is left) still
+  counts one. So Hint can lean on the stored solution: it first flags a misplaced
+  tile, then lays one correct tile (marked with an amber dot).
+- The set is built ahead of time, never in the browser:
+  `npm run build -w packages/engine && node scripts/build-crossmath-set.mjs`
+  writes `crossmath/set.ts` (easy 60 · medium 60 · hard 50 · expert 40). Easy
+  No. 1 is the proposal's sample. The engine tests recheck every puzzle and that
+  the generator still makes the set.
+- Levels: easy 3 × 3 (+ −), medium 4 × 4 (+ − ×), hard 5 × 5 (all four), expert
+  6 × 6 (all four).
+- Registry: neither a `GameDefinition` (no seats) nor an arcade game (no clock
+  of record): `SOLO_GAMES` in `packages/engine/src/solo.ts`, lobby mode
+  "Puzzle". Nothing reaches the server; progress per puzzle, the open level and
+  puzzle, and the timer switch live in this device's storage.
+- Web: `/games/crossmath` on GameStage, paper on every theme. Tap a tile then a
+  square, or a square then a tile; tap a placed tile to send it back. Undo
+  (Ctrl+Z), Hint, Check (tells empty squares from wrong lines), Restart with a
+  confirmation. Optional timer; sound through the top bar's switch. The board is
+  a grid of buttons with arrow-key movement, digits to lay a tile and each square
+  described by its row's and column's equations.
+- Not yet: a daily puzzle picked by date, and family scores on the server.

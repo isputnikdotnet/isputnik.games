@@ -4,7 +4,8 @@ import { pipsOf } from "./dominoes/DominoTile";
 // A small picture of each game for its lobby card: a corner of a game under
 // way, drawn as the game itself draws it. Dots follows the theme; Star Battle
 // keeps its space, Chess its wooden board, Dominoes its felt, Sputnik Catch
-// its handheld and Torpedo Run its periscope on every theme, as their pages do.
+// its handheld, Torpedo Run its periscope and Crossmath its paper on every
+// theme, as their pages do.
 export function GamePreview({ game }: { game: string }) {
   if (game === "checkers") return <CheckersPreview />;
   if (game === "dots") return <DotsPreview />;
@@ -13,6 +14,7 @@ export function GamePreview({ game }: { game: string }) {
   if (game === "dominoes") return <DominoesPreview />;
   if (game === "sputnik") return <SputnikPreview />;
   if (game === "torpedo") return <TorpedoPreview />;
+  if (game === "crossmath") return <CrossmathPreview />;
   return null;
 }
 
@@ -226,4 +228,42 @@ function DominoesPreview() {
 
 function CheckersPreview() {
   return <svg className="game-preview is-checkers" viewBox="0 0 200 112" aria-hidden="true"><rect width="200" height="112" fill="#77543a" />{Array.from({length:32},(_,i)=>{const r=Math.floor(i/8),c=i%8;return <rect key={i} x={c*25} y={r*28} width={25} height={28} fill={(r+c)%2 ? "#73523c" : "#dfc99e"}/>;})}{[[1,0],[3,0],[5,0],[7,0],[0,1],[6,1],[1,2],[3,2],[2,3],[6,3]].map(([c,r],i)=><circle key={i} cx={c*25+12.5} cy={r*28+14} r={10} fill={r<2?"#2e231d":"#ead9b2"} stroke={r<2?"#b49760":"#a88852"} strokeWidth="2"/>)}</svg>;
+}
+
+/** Crossmath: the corner of an easy puzzle on its paper — given numbers shaded,
+ *  tiles laid, one square still dashed, the totals printed at the row ends. */
+function CrossmathPreview() {
+  const S = 24;
+  const xs = [26, 64, 102];
+  const ys = [24, 62, 100];
+  // Row by row: [value, kind] — g given, t tile, e empty.
+  const grid: [string, "g" | "t" | "e"][][] = [
+    [["2", "g"], ["3", "t"], ["", "e"]],
+    [["4", "t"], ["1", "g"], ["5", "t"]],
+    [["6", "t"], ["", "e"], ["10", "g"]]
+  ];
+  const totals = ["10", "10", "20"];
+  const fills = { g: { fill: "#e2d9c5", stroke: "#cfc4ad", dash: undefined }, t: { fill: "#ebd3a6", stroke: "#c8a874", dash: undefined }, e: { fill: "none", stroke: "#cfc4ad", dash: "3 2" } };
+  return (
+    <svg className="game-preview is-crossmath" viewBox={VIEW} aria-hidden="true" focusable="false" fontFamily="'Source Serif 4', Georgia, serif" textAnchor="middle">
+      <rect width="200" height="112" fill="#f4edde" />
+      {grid.map((row, r) =>
+        row.map(([value, kind], c) => (
+          <g key={`${r}-${c}`}>
+            <rect x={xs[c]} y={ys[r]} width={S} height={S} rx="2.5" fill={fills[kind].fill} stroke={fills[kind].stroke} strokeDasharray={fills[kind].dash} />
+            {value && <text x={xs[c] + S / 2} y={ys[r] + 17} fontSize="15" fontWeight={kind === "g" ? 700 : 600} fill="#1c1915">{value}</text>}
+          </g>
+        ))
+      )}
+      {ys.map((y, r) => (
+        <g key={`ops${r}`} fill="#8b8476" fontSize="15">
+          <text x={xs[0] + S + 7} y={y + 17}>+</text>
+          <text x={xs[1] + S + 7} y={y + 17}>+</text>
+          <text x={xs[2] + S + 10} y={y + 17}>=</text>
+          <text x={172} y={y + 17} fill="#1c1915" fontWeight="700">{totals[r]}</text>
+        </g>
+      ))}
+      {[0, 1].map((r) => xs.map((x) => <text key={`down${r}-${x}`} x={x + S / 2} y={ys[r] + S + 11} fill="#8b8476" fontSize="12">+</text>))}
+    </svg>
+  );
 }
