@@ -13,7 +13,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@fastify/static": "^10.1.6",
+    "@fastify/static": "^10.1.8",
     "@isputnik/games-engine": "0.22.0",
     "better-sqlite3": "^13.0.3",
     "fastify": "^5.12.7",
