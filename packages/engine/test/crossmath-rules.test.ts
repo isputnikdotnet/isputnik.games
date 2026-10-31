@@ -72,7 +72,8 @@ describe("the shipped set", () => {
         if (!(level === "easy" && number === 1)) expect(tilesOf(puzzle)).toHaveLength(rule.blanks);
         expect(countSolutions(puzzle), puzzle.id).toBe(1);
       }
-    });
+      // Expert alone takes 2 s on a desktop and past vitest's default 5 s on a CI runner.
+    }, 30_000);
   }
 
   it("is what the seeded generator makes", () => {
