@@ -77,13 +77,14 @@ describe("a guest's frame", () => {
   it("names the guest, and offers neither the way home nor the tabs", () => {
     withSession(asGuest, <Shell><p>page</p></Shell>);
     expect(screen.getByText("Alex · guest")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Back to iSputnik" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "iSputnik home" })).not.toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Main tabs" })).not.toBeInTheDocument();
   });
 
   it("keeps both for a member", () => {
     withSession(asMum, <Shell><p>page</p></Shell>);
-    expect(screen.getByRole("link", { name: "Back to iSputnik" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "iSputnik home" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("navigation", { name: "Games" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Main tabs" })).toBeInTheDocument();
   });
 

@@ -1,22 +1,24 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Volume2, VolumeX } from "lucide-react";
-import { follow, href } from "../router";
+import { useRoute } from "../router";
 import { useSession } from "../session";
-import { Button } from "./Button";
 import { MobileNav } from "./MobileNav";
+import { SectionTabs } from "./SectionTabs";
+import { SoundSwitch, TopBar } from "./TopBar";
 import { play, setSoundEnabled, useSoundEnabled } from "./sound";
 
-// The one frame every page sits in: the way back to the home app (a full
-// navigation — it is another app on the same origin), the brand, and who is
-// playing. Pages carry their own headings. A guest (docs/plan.md → Guests) has
-// no home app to go back to and no tabs to switch between: the frame says who
-// they are and leaves it at that. The sound switch sits at the far end for
+// The one frame every page sits in: the home app's top bar over a row of the
+// games' tabs (shared/TopBar, shared/SectionTabs), so the games read as one more
+// section of iSputnik. Pages carry their own headings. A guest (docs/plan.md →
+// Guests) has no home app to go to and no tabs to switch between: the frame
+// says who they are and leaves it at that. The sound switch is in the bar for
 // everyone, a guest included.
 export function Shell({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const session = useSession();
-  const guest = session.status === "ready" && session.user.role === "guest";
+  const route = useRoute();
+  const ready = session.status === "ready";
+  const guest = ready && session.user.role === "guest";
   const sound = useSoundEnabled();
   const bar = useBarHeight();
   const toggleSound = () => {
@@ -27,34 +29,26 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="app-shell">
       <header className="app-bar" ref={bar}>
-        {guest ? (
-          <span className="app-bar-back is-placeholder" aria-hidden="true" />
+        {ready && !guest ? (
+          <>
+            <TopBar name={session.user.name} admin={session.user.role === "admin"} sound={sound} onToggleSound={toggleSound} />
+            <SectionTabs route={route} />
+          </>
         ) : (
-          <a className="app-bar-back" href="/">
-            <ArrowLeft size={18} aria-hidden="true" />
-            <span>{t("app.backHome")}</span>
-          </a>
+          <div className="topbar-row">
+            <span className="topbar-brand">
+              <img src={`${import.meta.env.BASE_URL}isputnik-app-icon.svg`} alt="" width={30} height={30} />
+              <strong>{t("app.title")}</strong>
+            </span>
+            <span className="topbar-end">
+              <span className="app-bar-user">{guest ? t("app.guestUser", { name: session.user.name }) : ""}</span>
+              <SoundSwitch sound={sound} onToggle={toggleSound} />
+            </span>
+          </div>
         )}
-        <a className="app-bar-brand" href={href()} onClick={(event) => follow(event, href())}>
-          {t("app.title")}
-        </a>
-        <span className="app-bar-end">
-          <span className="app-bar-user">
-            {session.status === "ready" ? (guest ? t("app.guestUser", { name: session.user.name }) : session.user.name) : ""}
-          </span>
-          <Button
-            variant="icon"
-            className="app-bar-sound"
-            aria-label={sound ? t("app.soundOff") : t("app.soundOn")}
-            title={sound ? t("app.soundOff") : t("app.soundOn")}
-            onClick={toggleSound}
-          >
-            {sound ? <Volume2 size={18} aria-hidden="true" /> : <VolumeX size={18} aria-hidden="true" />}
-          </Button>
-        </span>
       </header>
       <main className="app-main">{children}</main>
-      {session.status === "ready" && !guest && <MobileNav />}
+      {ready && !guest && <MobileNav />}
     </div>
   );
 }

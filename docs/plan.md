@@ -840,8 +840,29 @@ so switching between the two apps feels like one: **Home** (back to iSputnik,
 a full navigation), **Games** (the lobby; lit on the lobby and on a game's
 page) and **Matches** (the lobby's online section, lit on a match page, with a
 badge of invitations plus your-move matches from `/games/api/summary`,
-refreshed on load, on focus and once a minute). The top bar's back link hides
-at that width. The lobby's foot names the games app's version and stage.
+refreshed on load, on focus and once a minute). The lobby's foot names the
+games app's version and stage.
+
+## The home app's top layout (2026-11-03)
+
+Above the phone width the games wear the home app's top bar (isputnik.home
+`app/OrbitTopBar.tsx`, `docs/top-layout-plan.md`), so a game reads as one more
+section of iSputnik rather than another app: the logo, **Home · Games ▾ ·
+Family**, then the control panel (admins), the sound switch and the person's
+menu (their pages in home, and signing out). The Media button reads as Games
+and opens home's list of libraries; under the bar one row of tabs — Overview
+(the lobby) │ every game in the lobby's order — the way Video has Overview ·
+Shows · Movies. A chess puzzle or review lights Chess, a match its game. The
+lobby takes home's page width (four fifths of the window, at least 1100px).
+`shared/TopBar.tsx`, `shared/SectionTabs.tsx`, `styles/topbar.css`; what the bar
+knows about home (sections switched on, video, library counts) comes from home's
+own `/api/setup/status`, `/api/video/status` and `/api/home/libraries` on the
+shared origin (`shared/homeNav.ts`), and a failure leaves every section on, no
+video and no counts. Phones keep the brand, the sound switch and the person over
+the page, with their tab bar below; a guest gets the brand, their name and the
+sound switch, no nav. The Orbit and Thanksgiving palettes are in `tokens.css`
+(no pictures); home sends them by name once it is on the version that stops
+mapping them to plain-dark, so **release games first**.
 
 ## Open points
 

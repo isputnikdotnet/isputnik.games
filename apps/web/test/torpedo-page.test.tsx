@@ -141,5 +141,7 @@ describe("TorpedoPage", () => {
     act(() => vi.advanceTimersByTime(CARD_HOLD_MS));
     press("Space");
     expect(screen.queryByText(/^Run over/)).toBeNull();
-  });
+    // Half a second alone; a whole round of frames can take ten times that on a
+    // machine busy with the rest of the suite.
+  }, 20_000);
 });

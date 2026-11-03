@@ -122,7 +122,53 @@
   --shadow: rgba(0, 0, 0, 0.22);
 }
 
-/* Derived tokens: one definition for all five themes, built from each theme's
+/* The home app's Orbit and Thanksgiving themes (isputnik.home styles/tokens.css),
+   palettes only: their pictures of Earth and the autumn lake stay in home. */
+:root[data-theme="orbit"] {
+  color-scheme: dark;
+  --ink: #e9f1f7;
+  --muted: #92a6b8;
+  --line: rgba(142, 182, 212, 0.17);
+  --canvas: #050c17;
+  --surface: #0b1725;
+  --surface-raised: #122334;
+  --field: #081321;
+  --hover: rgba(36, 209, 224, 0.1);
+  --active: rgba(36, 209, 224, 0.16);
+  --mint: #24d1e0;
+  --gold: #e3b566;
+  --amber: #d98a4b;
+  --rose: #e0766b;
+  --blue: #7fb0dd;
+  --success: #7ecf90;
+  --warning: #e3b566;
+  --danger: #e0766b;
+  --shadow: rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme="thanksgiving"] {
+  color-scheme: dark;
+  --ink: #f7ead9;
+  --muted: #c7a98e;
+  --line: rgba(232, 164, 92, 0.3);
+  --canvas: #170b06;
+  --surface: #27140b;
+  --surface-raised: #351d10;
+  --field: #1d0e07;
+  --hover: rgba(240, 162, 60, 0.12);
+  --active: rgba(240, 162, 60, 0.2);
+  --mint: #f0a23c;
+  --gold: #f0a23c;
+  --amber: #d9772f;
+  --rose: #e0766b;
+  --blue: #d9a56b;
+  --success: #a9c77a;
+  --warning: #f0a23c;
+  --danger: #e0766b;
+  --shadow: rgba(0, 0, 0, 0.55);
+}
+
+/* Derived tokens: one definition for all seven themes, built from each theme's
    palette above. A var() inside a custom property resolves on :root, so a scope
    that restates --ink (the lightbox's dialogs) must restate these too. */
 :root {

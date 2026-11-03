@@ -5,6 +5,7 @@ import { App } from "./App";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/app.css";
+import "./styles/topbar.css";
 import "./styles/dots.css";
 import "./styles/starbattle.css";
 import "./styles/chess.css";

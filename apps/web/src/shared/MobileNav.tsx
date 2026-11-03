@@ -45,7 +45,7 @@ export function MobileNav() {
 
 /** Invitations to answer plus matches where it is your move, kept fresh the
  *  way the home app keeps its Games count: on load, on focus, once a minute. */
-function useWaiting(): number {
+export function useWaiting(): number {
   const [waiting, setWaiting] = useState(0);
   const load = useCallback(async () => {
     try {

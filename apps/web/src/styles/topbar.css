@@ -1,0 +1,407 @@
+/* The home app's top layout (isputnik.home styles/orbit.css), worn by the games:
+   a bar with Home · Media · Family and the person, over a row of tabs. Colours
+   come from tokens, so it wears every theme. Phones keep the bar to the brand,
+   the sound switch and the person; their tab bar (shared/MobileNav) does the
+   rest, so the nav and the tabs stop at 740px. */
+
+.app-bar {
+  --topbar-h: 64px;
+  --topbar-gutter: clamp(16px, 3vw, 40px);
+  position: sticky;
+  top: 0;
+  z-index: calc(var(--z-sticky, 20) + 2);
+  padding-top: env(safe-area-inset-top);
+  background: var(--canvas);
+}
+
+/* Its blur makes the row a layer of its own: lifted, so the menus hanging from
+   it open over the tabs below. */
+.topbar-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 2vw, 30px);
+  min-width: 0;
+  height: var(--topbar-h);
+  padding: 0 var(--topbar-gutter);
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--canvas) 86%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.topbar-brand {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+  color: var(--ink);
+  font-size: 1.22rem;
+  text-decoration: none;
+}
+
+.topbar-brand img {
+  display: block;
+}
+
+.topbar-nav {
+  display: flex;
+  flex: 1 1 auto;
+  align-self: stretch;
+  min-width: 0;
+  gap: 2px;
+}
+
+.topbar-link {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.topbar-link:hover,
+.topbar-link:focus-visible {
+  color: var(--ink);
+  outline: 0;
+}
+
+.topbar-link.is-active {
+  color: var(--mint);
+}
+
+.topbar-link.is-active::after {
+  position: absolute;
+  right: 10px;
+  bottom: -1px;
+  left: 10px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  content: "";
+  background: var(--mint);
+}
+
+.topbar-badge {
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--mint);
+  color: var(--surface);
+  font-size: var(--text-2xs);
+  font-weight: 750;
+  line-height: 16px;
+  text-align: center;
+}
+
+.topbar-end {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.topbar-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.topbar-control:hover {
+  color: var(--ink);
+}
+
+/* The sound switch is a plain icon in the bar, as the control panel's is. */
+.topbar-end .app-bar-sound.app-bar-sound {
+  width: 36px;
+  height: 36px;
+  min-height: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.topbar-end .app-bar-sound.app-bar-sound:hover {
+  color: var(--ink);
+  background: var(--hover);
+}
+
+/* ── Media ────────────────────────────────────────────────────────────── */
+
+.topbar-media {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+.topbar-media-button.topbar-media-button {
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.topbar-media-button svg {
+  transition: transform 140ms ease;
+}
+
+.topbar-media-button.is-open svg {
+  transform: rotate(180deg);
+}
+
+.topbar-media-panel {
+  position: absolute;
+  z-index: var(--z-dropdown, 12);
+  top: calc(100% + 6px);
+  left: -12px;
+  display: grid;
+  gap: 2px;
+  min-width: 260px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  box-shadow: 0 18px 40px var(--shadow);
+}
+
+.topbar-media-link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 7px;
+  color: var(--ink);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.topbar-media-link > svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.topbar-media-label {
+  flex: 1 1 auto;
+}
+
+.topbar-media-link small {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: var(--weight-medium);
+}
+
+.topbar-media-link:hover,
+.topbar-media-link:focus-visible {
+  background: var(--hover);
+  outline: 0;
+}
+
+.topbar-media-link.is-active,
+.topbar-media-link.is-active > svg {
+  color: var(--mint);
+}
+
+/* ── The person ───────────────────────────────────────────────────────── */
+
+.topbar-user {
+  position: relative;
+}
+
+.topbar-user-button.topbar-user-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 0;
+  padding: 5px 8px 5px 5px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.topbar-user-button.topbar-user-button:hover {
+  background: var(--hover);
+}
+
+.topbar-user-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-raised);
+}
+
+.topbar-user-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar-user-menu {
+  position: absolute;
+  z-index: var(--z-dropdown, 12);
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  gap: 2px;
+  width: 230px;
+  max-height: calc(100vh - var(--topbar-h) - 16px);
+  padding: 8px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  box-shadow: 0 18px 40px var(--shadow);
+}
+
+.topbar-menu-link.topbar-menu-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  font-weight: 650;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.topbar-menu-link svg {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.topbar-menu-link.topbar-menu-link:hover,
+.topbar-menu-link.topbar-menu-link:focus-visible {
+  color: var(--mint);
+  background: var(--hover);
+  outline: 0;
+}
+
+.topbar-menu-link:hover svg,
+.topbar-menu-link:focus-visible svg {
+  color: var(--mint);
+}
+
+/* ── The games' tabs ──────────────────────────────────────────────────── */
+
+.topbar-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 0 var(--topbar-gutter);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  /* Thin but there: a row that overflows has to say that it scrolls. */
+  scrollbar-width: thin;
+}
+
+.topbar-tab {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 12px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.topbar-tab:hover,
+.topbar-tab:focus-visible {
+  color: var(--ink);
+  outline: 0;
+}
+
+.topbar-tab.is-active {
+  color: var(--ink);
+}
+
+.topbar-tab.is-active::after {
+  position: absolute;
+  right: 10px;
+  bottom: 0;
+  left: 10px;
+  height: 2px;
+  content: "";
+  background: var(--mint);
+}
+
+.topbar-tabs-divider {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 20px;
+  margin: 0 8px;
+  background: var(--line);
+}
+
+@media (max-width: 1240px) {
+  .topbar-control span {
+    display: none;
+  }
+}
+
+@media (max-width: 1040px) {
+  .topbar-link {
+    padding: 0 8px;
+    font-size: 0.92rem;
+  }
+
+  .topbar-user-name {
+    display: none;
+  }
+}
+
+@media (max-width: 880px) {
+  .topbar-brand strong {
+    display: none;
+  }
+}
+
+@media (max-width: 740px) {
+  .app-bar {
+    --topbar-h: 56px;
+  }
+
+  .topbar-nav,
+  .topbar-control,
+  .topbar-tabs {
+    display: none;
+  }
+
+  .topbar-brand strong {
+    display: inline;
+  }
+}
