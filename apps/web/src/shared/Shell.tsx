@@ -1,22 +1,18 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { useRoute } from "../router";
 import { useSession } from "../session";
 import { MobileNav } from "./MobileNav";
-import { SectionTabs } from "./SectionTabs";
 import { SoundSwitch, TopBar } from "./TopBar";
 import { play, setSoundEnabled, useSoundEnabled } from "./sound";
 
-// The one frame every page sits in: the home app's top bar over a row of the
-// games' tabs (shared/TopBar, shared/SectionTabs), so the games read as one more
-// section of iSputnik. Pages carry their own headings. A guest (docs/plan.md →
-// Guests) has no home app to go to and no tabs to switch between: the frame
+// The one frame every page sits in: the home app's top bar (shared/TopBar), so
+// the games read as one more section of iSputnik. Pages carry their own
+// headings. A guest (docs/plan.md → Guests) has no home app to go to: the frame
 // says who they are and leaves it at that. The sound switch is in the bar for
 // everyone, a guest included.
 export function Shell({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const session = useSession();
-  const route = useRoute();
   const ready = session.status === "ready";
   const guest = ready && session.user.role === "guest";
   const sound = useSoundEnabled();
@@ -30,10 +26,7 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="app-shell">
       <header className="app-bar" ref={bar}>
         {ready && !guest ? (
-          <>
-            <TopBar name={session.user.name} admin={session.user.role === "admin"} sound={sound} onToggleSound={toggleSound} />
-            <SectionTabs route={route} />
-          </>
+          <TopBar name={session.user.name} admin={session.user.role === "admin"} sound={sound} onToggleSound={toggleSound} />
         ) : (
           <div className="topbar-row">
             <span className="topbar-brand">

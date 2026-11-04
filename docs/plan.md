@@ -850,11 +850,11 @@ Above the phone width the games wear the home app's top bar (isputnik.home
 section of iSputnik rather than another app: the logo, **Home · Games ▾ ·
 Family**, then the control panel (admins), the sound switch and the person's
 menu (their pages in home, and signing out). The Media button reads as Games
-and opens home's list of libraries; under the bar one row of tabs — Overview
-(the lobby) │ every game in the lobby's order — the way Video has Overview ·
-Shows · Movies. A chess puzzle or review lights Chess, a match its game. The
-lobby takes home's page width (four fifths of the window, at least 1100px).
-`shared/TopBar.tsx`, `shared/SectionTabs.tsx`, `styles/topbar.css`; what the bar
+and opens home's list of libraries. No row of tabs under it: a tab per game
+only repeated the lobby (0.23.0 had one; the owner dropped it in 0.23.1). The
+lobby takes home's page width (four fifths of the window, at least 1100px), its
+games small tiles as many abreast as fit — picture, name, two lines, Play.
+`shared/TopBar.tsx`, `styles/topbar.css`; what the bar
 knows about home (sections switched on, video, library counts) comes from home's
 own `/api/setup/status`, `/api/video/status` and `/api/home/libraries` on the
 shared origin (`shared/homeNav.ts`), and a failure leaves every section on, no

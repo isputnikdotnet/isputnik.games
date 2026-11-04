@@ -878,9 +878,10 @@
 
 .lobby-grid {
   display: grid;
-  /* Two abreast: four games make a square, and each picture gets room. */
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-5);
+  /* Small tiles, as many abreast as fit: the games are picked at a glance,
+     the picture and the name are enough to know one. */
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-3);
 }
 
 .game-card {
@@ -888,7 +889,7 @@
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 12px;
   background: var(--surface);
   box-shadow: 0 1px 3px var(--shadow);
 }
@@ -896,9 +897,9 @@
 /* The picture sits inset in the card, its own rounded frame. */
 .game-card-art {
   position: relative;
-  margin: var(--space-3) var(--space-3) 0;
+  margin: var(--space-2) var(--space-2) 0;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 8px;
   line-height: 0;
 }
 
@@ -935,19 +936,29 @@
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-5) var(--space-5);
+  gap: 6px;
+  padding: 10px var(--space-3) var(--space-3);
 }
 
 .game-card-body h3 {
   margin: 0;
-  font-size: var(--text-xl);
+  font-size: var(--text-base);
 }
 
+/* Two lines of the summary; the rest is on the game's own page. */
 .game-card-body > p {
+  display: -webkit-box;
   margin: 0;
-  font-size: var(--text-md);
+  overflow: hidden;
+  font-size: var(--text-xs);
   line-height: var(--leading-snug);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* The ways to play are on the game's own page and in the invite dialog. */
+.game-card-modes.game-card-modes {
+  display: none;
 }
 
 .game-card-modes {
@@ -975,13 +986,16 @@
 .game-card-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  gap: var(--space-3);
+  gap: 6px;
   margin-top: auto;
-  padding-top: var(--space-2);
+  padding-top: var(--space-1);
 }
 
 .game-card-actions > * {
-  min-height: 42px;
+  min-height: 32px;
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+  font-size: var(--text-sm);
 }
 
 /* The pictures: Dots on the theme's own paper, Chess on its wooden board. */

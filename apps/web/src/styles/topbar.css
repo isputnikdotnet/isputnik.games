@@ -1,8 +1,8 @@
 /* The home app's top layout (isputnik.home styles/orbit.css), worn by the games:
-   a bar with Home · Media · Family and the person, over a row of tabs. Colours
+   a bar with Home · Media · Family and the person. Colours
    come from tokens, so it wears every theme. Phones keep the bar to the brand,
    the sound switch and the person; their tab bar (shared/MobileNav) does the
-   rest, so the nav and the tabs stop at 740px. */
+   rest, so the nav stops at 740px. */
 
 .app-bar {
   --topbar-h: 64px;
@@ -15,7 +15,7 @@
 }
 
 /* Its blur makes the row a layer of its own: lifted, so the menus hanging from
-   it open over the tabs below. */
+   it open over the page below. */
 .topbar-row {
   position: relative;
   z-index: 1;
@@ -310,63 +310,6 @@
   color: var(--mint);
 }
 
-/* ── The games' tabs ──────────────────────────────────────────────────── */
-
-.topbar-tabs {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-  padding: 0 var(--topbar-gutter);
-  overflow-x: auto;
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
-  /* Thin but there: a row that overflows has to say that it scrolls. */
-  scrollbar-width: thin;
-}
-
-.topbar-tab {
-  position: relative;
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 7px;
-  padding: 11px 12px;
-  color: var(--muted);
-  font-size: 0.92rem;
-  font-weight: var(--weight-semibold);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.topbar-tab:hover,
-.topbar-tab:focus-visible {
-  color: var(--ink);
-  outline: 0;
-}
-
-.topbar-tab.is-active {
-  color: var(--ink);
-}
-
-.topbar-tab.is-active::after {
-  position: absolute;
-  right: 10px;
-  bottom: 0;
-  left: 10px;
-  height: 2px;
-  content: "";
-  background: var(--mint);
-}
-
-.topbar-tabs-divider {
-  flex: 0 0 auto;
-  width: 1px;
-  height: 20px;
-  margin: 0 8px;
-  background: var(--line);
-}
-
 @media (max-width: 1240px) {
   .topbar-control span {
     display: none;
@@ -396,8 +339,7 @@
   }
 
   .topbar-nav,
-  .topbar-control,
-  .topbar-tabs {
+  .topbar-control {
     display: none;
   }
 

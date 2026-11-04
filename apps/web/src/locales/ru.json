@@ -779,9 +779,7 @@
     "tags": "Теги",
     "info": "Сведения",
     "help": "Справка",
-    "logout": "Выйти",
-    "gamesTabs": "Игры",
-    "overview": "Обзор"
+    "logout": "Выйти"
   },
   "copyLink": {
     "aria": "Ссылка",

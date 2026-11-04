@@ -84,7 +84,6 @@ describe("a guest's frame", () => {
   it("keeps both for a member", () => {
     withSession(asMum, <Shell><p>page</p></Shell>);
     expect(screen.getByRole("link", { name: "iSputnik home" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("navigation", { name: "Games" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Main tabs" })).toBeInTheDocument();
   });
 

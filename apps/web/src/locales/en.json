@@ -747,9 +747,7 @@
     "tags": "Tags",
     "info": "Info",
     "help": "Help",
-    "logout": "Logout",
-    "gamesTabs": "Games",
-    "overview": "Overview"
+    "logout": "Logout"
   },
   "copyLink": {
     "aria": "Link",
