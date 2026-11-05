@@ -37,6 +37,7 @@ import { nextPuzzle, recordPuzzleResult, UnknownPuzzleError } from "./puzzles.js
 import { getRecord, listReviews, saveRecord } from "./records.js";
 import { chessRatingOf } from "./chess-rating.js";
 import { familyStats, recordComputerResult } from "./stats.js";
+import { PLAY_BODY_LIMIT, PLAY_MAX_MOVES, play } from "./play.js";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -154,6 +155,18 @@ const reviewQuerySchema = z.object({ game: z.literal("chess").default("chess") }
 
 const messageSchema = z.object({
   text: z.string().min(1).max(MESSAGE_MAX)
+});
+
+// A position on a screen that holds no rules (play.ts): the game, its options,
+// the moves so far and, against the computer, its seat and level.
+const playSchema = z.object({
+  game: z.string().min(1).max(32),
+  options: z.unknown(),
+  moves: z.array(z.unknown()).max(PLAY_MAX_MOVES),
+  computer: z.object({
+    seat: z.union([z.literal(0), z.literal(1)]),
+    level: z.enum(AI_LEVELS as [AiLevel, ...AiLevel[]])
+  }).optional()
 });
 
 const moveSchema = z.object({
@@ -413,6 +426,12 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     return record ?? reply.code(404).send({ error: "No such game" });
   });
 
+  // A game against the computer or two at one screen, for the TV app (play.ts).
+  // Nothing is stored; the result is reported through /computer-results.
+  app.post(`${API}/play`, { preHandler: requireMember, bodyLimit: PLAY_BODY_LIMIT }, async (request) =>
+    play(playSchema.parse(request.body ?? {}))
+  );
+
   app.post(`${API}/matches`, { preHandler: requireMember }, async (request, reply) => {
     const input = createMatchSchema.parse(request.body ?? {});
     const match = createMatch(db, me(request), input);
@@ -420,8 +439,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     return reply.code(201).send(match);
   });
 
+  // ?legal=1 adds the legal moves when it is the asker's move (the TV app).
   app.get(`${API}/matches/:id`, { preHandler: requirePlayer }, async (request) =>
-    getMatch(db, request.identity!.id, matchId(request))
+    getMatch(db, request.identity!.id, matchId(request), (request.query as { legal?: string } | undefined)?.legal === "1")
   );
 
   app.post(`${API}/matches/:id/accept`, { preHandler: requirePlayer }, async (request) => {

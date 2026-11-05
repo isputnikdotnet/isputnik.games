@@ -71,6 +71,9 @@ export interface MatchDetail extends MatchSummary {
   /** What every move did, in order (GameDefinition.narrate). */
   feed: GameEvent[];
   messages: MatchMessage[];
+  /** The legal moves, when asked for (the TV app, which holds no rules) and it
+   *  is the asker's move; absent otherwise. */
+  legalMoves?: unknown[];
 }
 
 /** What waits on one member — shown by the home app, not by the games client. */
@@ -235,10 +238,17 @@ export function createMatch(db: Db, me: Member, input: CreateMatchInput): MatchS
   return summarize(db, rowOf(db, id));
 }
 
-export function getMatch(db: Db, userId: string, id: string): MatchDetail {
+export function getMatch(db: Db, userId: string, id: string, withLegalMoves = false): MatchDetail {
   const row = rowOf(db, id);
   const seat = seatOf(row, userId);
-  return detailFor(db, row, replay(db, row), seat);
+  const replayed = replay(db, row);
+  const detail = detailFor(db, row, replayed, seat);
+  // From the whole state: the moves of the seat to move are that seat's own to know.
+  const status = replayed.state.status;
+  if (withLegalMoves && row.status === "playing" && status.kind === "playing" && status.turn === seat) {
+    detail.legalMoves = gameOf(row).legalMoves(replayed.state);
+  }
+  return detail;
 }
 
 /** `only` narrows the list to one match: a guest's world is the match their link named. */

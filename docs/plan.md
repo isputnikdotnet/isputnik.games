@@ -864,6 +864,22 @@ sound switch, no nav. The Orbit and Thanksgiving palettes are in `tokens.css`
 (no pictures); home sends them by name once it is on the version that stops
 mapping them to plain-dark, so **release games first**.
 
+## The TV app (2026-11-04)
+
+The iSputnik TV app (isputnik.tv, `feature-games`) plays Chess, Checkers, Sputnik Catch and
+Torpedo Run with a remote. It holds no board-game rules. Home's plan for it is
+`docs/tv-games-plan.md` in isputnik.home.
+
+- `POST /games/api/play` (`apps/server/src/play.ts`) answers a position on a screen that
+  holds no rules: { game, options, moves, computer?: { seat, level } } →
+  { moves, state, legalMoves, feed, computerMove }. It is stateless, so nothing is stored.
+  It is only for games without `viewFor`, since the client holds every move. Members only.
+- `GET /games/api/matches/:id?legal=1` adds `legalMoves` when it is the asker's move.
+- The arcade rules are ported to Kotlin and must stay exact: the server replays every TV run.
+  After changing `arcade/` rules or the LCD art, run
+  `npx tsx --tsconfig apps/web/tsconfig.json scripts/export-tv.ts ../isputnik.tv`. It
+  rewrites the TV's LCD and piece assets and its golden runs. Then run the TV's tests.
+
 ## Open points
 
 - Whether local (same-device) results should be recorded at all, or only online
