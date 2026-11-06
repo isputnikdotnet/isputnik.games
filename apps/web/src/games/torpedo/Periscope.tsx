@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Torpedo, type TorpedoLane, type TorpedoState } from "@isputnik/games-engine";
 import { SHIP_HEIGHT, SHIP_PATHS } from "./ships";
 import type { TorpedoMode } from "./useTorpedoRun";
-import { FIELD_W, HORIZON, K, LENS_H, SPAN, courseX, formatScore, laneYs, screenX, shipScale, tubeOf, viewOf, wakePoint } from "./view";
+import { FIELD_W, HORIZON, K, LENS_H, courseX, formatScore, laneYs, screenX, shipScale, tubeOf, viewOf, wakePoint } from "./view";
 
 const { SHIPS, SINK_TICKS, RANGE, TORPEDOES, BONUS_AT, TICK_MS, inSights } = Torpedo;
 
@@ -37,40 +37,6 @@ const SCALE: readonly number[] = Array.from({ length: 25 }, (_, i) => -60 + i * 
 /** One lamp of the wake every this many ticks of the torpedo's run. */
 const LAMP_EVERY = 4;
 const LAMP_RUNS = Array.from({ length: RANGE.far / LAMP_EVERY + 1 }, (_, i) => i * LAMP_EVERY);
-
-const DIAL_TICKS = Array.from({ length: 13 }, (_, i) => -60 + i * 10);
-
-/** A mechanical course instrument; its single needle follows the launch path. */
-function GyroDial({ bearing, tubeY, ready, scale }: { bearing: number; tubeY: number; ready: boolean; scale: number }) {
-  const r = Math.min(38, 0.3 * (tubeY - HORIZON));
-  const cx = screenX(bearing);
-  const far = tubeY - (tubeY - HORIZON) / 2;
-  const angle = Math.atan2(courseX(bearing, far, tubeY) - cx, tubeY - far) * 180 / Math.PI;
-  const course = Math.round((bearing * (1 + Torpedo.LEAN / 100)) / 10);
-  // Lift the face clear of the lower rim, including on a deep phone lens.
-  return (
-    <g className={`torpedo-gyro${ready ? " is-ready" : ""}`} transform={`translate(${cx} ${tubeY - 18 * scale}) scale(${scale})`}>
-      <path d={`M${-r - 7} 13 V0 A${r + 7} ${r + 7} 0 0 1 ${r + 7} 0 V13 Z`} className="is-face" />
-      <path d={`M${-r - 3} 0 A${r + 3} ${r + 3} 0 0 1 ${r + 3} 0`} className="is-ring" />
-      {DIAL_TICKS.map((d) => {
-        const a = d * Math.PI / 180;
-        const inner = r - (d % 30 === 0 ? 8 : 4);
-        return <g key={d}>
-          <line x1={Math.sin(a) * inner} y1={-Math.cos(a) * inner} x2={Math.sin(a) * r} y2={-Math.cos(a) * r} />
-          {d % 30 === 0 && <text x={Math.sin(a) * (r - 16)} y={-Math.cos(a) * (r - 16) + 3} className="is-number">{Math.abs(d)}</text>}
-        </g>;
-      })}
-      <path d={`M0 ${-r + 5} L-2.4 5 L0 8 L2.4 5 Z`} transform={`rotate(${angle})`} className="is-needle" />
-      <circle r={3.5} className="is-pivot" />
-      <g transform={`translate(${r + 13} -23)`}>
-        <text x={21} y={-5} className="is-label">КУРС</text>
-        <rect width={42} height={21} className="is-box" />
-        <text x={21} y={14} className="is-readout">{compass(course)}°</text>
-      </g>
-      <circle cx={-r - 16} cy={-11} r={2.8} className="is-lamp" />
-    </g>
-  );
-}
 
 /** Where a torpedo crossed a lane without hitting anything: a splash left on
  *  the water for a moment, so a player sees how far ahead of or behind the
@@ -205,6 +171,8 @@ export function Periscope({
 
   const ships = [...state.ships].sort((a, b) => lanes[SHIPS[a.kind].lane] - lanes[SHIPS[b.kind].lane]);
   const torpedo = state.torpedo;
+  const previewX = (y: number) => courseX(bearing, y, tubeY) - bearing * K;
+  const previewPath = Torpedo.LANES.map((lane, i) => `${i ? "L" : "M"}${previewX(lanes[lane])} ${lanes[lane]}`).join(" ");
   const seconds = Math.ceil((state.clock * TICK_MS) / 1000);
   const bonusRound = state.round > 1;
   const progress = bonusRound ? 1 : Math.min(1, state.score / BONUS_AT);
@@ -242,6 +210,7 @@ export function Periscope({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerEnd}
           onPointerCancel={onPointerEnd}
+          onLostPointerCapture={onPointerEnd}
         >
           <svg viewBox={`${view.left} ${top} ${view.width} ${height}`} preserveAspectRatio="xMidYMid slice" shapeRendering="geometricPrecision" aria-hidden="true" focusable="false">
             <defs>
@@ -314,8 +283,6 @@ export function Periscope({
                 );
               })}
 
-              {/* Which way a torpedo would go: the gyro dial at the tube. */}
-              {(mode === "play" || mode === "paused") && <GyroDial bearing={bearing} tubeY={tubeY} ready={!torpedo} scale={view.width > SPAN.wide ? 2.2 : 1} />}
 
               {crossings.map((crossing) => {
                 const age = state.tick - crossing.tick;
@@ -333,9 +300,9 @@ export function Periscope({
 
               {torpedo && (
                 <g className="torpedo-wake">
-                  {LAMP_RUNS.filter((run) => run <= torpedo.run).map((run) => {
+                  {[...LAMP_RUNS.filter((run) => run < torpedo.run), torpedo.run].map((run) => {
                     const point = wakePoint(torpedo.bearing, run, tubeY);
-                    const head = torpedo.run - run < LAMP_EVERY;
+                    const head = run === torpedo.run;
                     const glow = 0.35 + 0.65 * (run / RANGE.far);
                     return (
                       <circle
@@ -350,6 +317,17 @@ export function Periscope({
                   })}
                 </g>
               )}
+            </g>
+
+            <g className="torpedo-trajectory">
+              <path d={previewPath} />
+              {(["near", "far"] as const).map((lane) => (
+                <line key={lane} x1={previewX(lanes[lane]) - 6} x2={previewX(lanes[lane]) + 6} y1={lanes[lane]} y2={lanes[lane]} />
+              ))}
+            </g>
+            <g className="torpedo-targets" transform={`translate(${previewX(lanes.mid)} ${lanes.mid})`}>
+              <circle r={7} />
+              <path d="M-16 0 H-4 M4 0 H16 M0 -22 V-12 M0 12 V22" />
             </g>
 
             {/* The reticle: two fine etched lines; the sight is the middle between them. */}
@@ -374,6 +352,16 @@ export function Periscope({
           {tools && !overlay && <div className="torpedo-tools">{tools}</div>}
         </div>
 
+        <div className="torpedo-range-board" aria-label={t("torpedo.range.title")}>
+          {Torpedo.LANES.map((lane) => {
+            const remaining = RANGE[lane] - (torpedo?.run ?? 0);
+            const passed = Boolean(torpedo && remaining <= 0);
+            return <div key={lane} className={passed ? "is-passed" : ""}>
+              <span>{t(`torpedo.range.${lane}`)}</span>
+              <strong>{passed ? t("torpedo.range.passed") : t("torpedo.range.seconds", { seconds: (remaining * TICK_MS / 1000).toFixed(1) })}</strong>
+            </div>;
+          })}
+        </div>
         {/* One row: the score, the tubes, what the bonus round needs, the clock.
             A phone hides the labels and keeps the figures. */}
         <div className="torpedo-hud">
@@ -423,7 +411,7 @@ export function Periscope({
           type="button"
           className="torpedo-fire"
           onMouseDown={keepFocus}
-          disabled={mode === "paused"}
+          disabled={mode === "paused" || (mode === "play" && (!!torpedo || state.torpedoesLeft === 0))}
           onPointerDown={(event) => {
             if (event.button === 0) onFire();
           }}
@@ -432,7 +420,7 @@ export function Periscope({
             if (event.detail === 0) onFire();
           }}
         >
-          {mode === "play" || mode === "paused" ? t("torpedo.controls.fire") : mode === "bonus" ? t("torpedo.controls.bonus") : t("torpedo.controls.start")}
+          {mode === "play" || mode === "paused" ? (torpedo ? t("torpedo.range.running") : t("torpedo.controls.fire")) : mode === "bonus" ? t("torpedo.controls.bonus") : t("torpedo.controls.start")}
         </button>
         <button
           type="button"

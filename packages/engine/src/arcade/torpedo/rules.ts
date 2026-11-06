@@ -46,10 +46,10 @@ interface ShipClass {
 }
 
 export const SHIPS: Record<ShipKind, ShipClass> = {
-  tanker: { points: 100, lane: "near", speed: 2, half: 52 },
-  cargo: { points: 200, lane: "mid", speed: 3, half: 38 },
+  tanker: { points: 100, lane: "near", speed: 1, half: 52 },
+  cargo: { points: 200, lane: "mid", speed: 2, half: 38 },
   destroyer: { points: 300, lane: "far", speed: 4, half: 26 },
-  patrol: { points: 500, lane: "mid", speed: 6, half: 19 }
+  patrol: { points: 500, lane: "mid", speed: 5, half: 19 }
 };
 
 /** One tick, in milliseconds: twenty a second. */
@@ -63,8 +63,8 @@ export const FIELD_HALF = 360;
 export const MAX_BEARING = 200;
 /** Bearing units the sight moves in a tick. */
 export const SIGHT_SPEED = 10;
-/** Ticks a torpedo runs before it reaches each lane. */
-export const RANGE: Record<Lane, number> = { near: 24, mid: 38, far: 56 };
+/** Flight times: 0.6 / 1.0 / 1.5 seconds, leaving time to lead a moving ship. */
+export const RANGE: Record<Lane, number> = { near: 12, mid: 20, far: 30 };
 /** How far out to the horizon each lane is, in percent of the way: the
  *  ships keep off under the horizon, with the lanes far enough apart to see
  *  which one a torpedo has got to. The web app draws each lane this far up
@@ -85,9 +85,9 @@ export const ROUNDS = 2;
 /** Ticks a hit ship takes to go under. */
 export const SINK_TICKS = 24;
 /** A patrol boat changes speed this often… */
-const ZIGZAG_TICKS: [from: number, span: number] = [20, 30];
+const ZIGZAG_TICKS: [from: number, span: number] = [32, 32];
 /** …to one of these, never stopping and never turning back. */
-const PATROL_SPEEDS: readonly number[] = [3, 5, 7, 9];
+const PATROL_SPEEDS: readonly number[] = [3, 4, 5, 6];
 /** Chance the mid lane sends a patrol boat rather than a cargo ship. */
 const PATROL_CHANCE = 0.25;
 /** Ticks an empty lane waits before its next ship comes in. */

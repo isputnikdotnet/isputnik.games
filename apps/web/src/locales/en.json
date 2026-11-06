@@ -852,6 +852,15 @@
     }
   },
   "torpedo": {
+    "range": {
+      "title": "Torpedo arrival by distance",
+      "near": "Near",
+      "mid": "Middle",
+      "far": "Far",
+      "passed": "Passed",
+      "seconds": "{{seconds}} s",
+      "running": "Running…"
+    },
     "lens": {
       "label": "Periscope view, sight on bearing {{bearing}}",
       "hit": "HIT · +{{points}}",
@@ -916,7 +925,7 @@
     },
     "keys": {
       "desktop": "Space fires · ← → or A D move the sight · P pauses.",
-      "touch": "Touch the view where to aim, or hold the arrows, to move the sight."
+      "touch": "Drag the sea to turn the periscope, or hold the arrows."
     },
     "card": {
       "roundOver": "Round over",

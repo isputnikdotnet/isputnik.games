@@ -206,19 +206,8 @@
 }
 
 /* Painted analog course instrument: one needle, no animated arrows. */
-.torpedo-gyro { pointer-events: none; }
-.torpedo-gyro line, .torpedo-gyro .is-ring { fill: none; stroke: #c8c4a5; stroke-width: 1; }
-.torpedo-gyro .is-face { fill: #192420; stroke: #8f927c; stroke-width: 1.5; }
-.torpedo-gyro .is-ring { stroke: #475449; }
-.torpedo-gyro .is-needle { fill: #e0d7af; }
-.torpedo-gyro .is-pivot { fill: #727c67; }
-.torpedo-gyro text { text-anchor: middle; font-family: "Courier New", monospace; fill: #d7d2b2; }
-.torpedo-gyro .is-number { font-size: 7px; }
-.torpedo-gyro .is-label { font-size: 7px; }
-.torpedo-gyro .is-box { fill: #101914; stroke: #7b836c; stroke-width: 1; }
-.torpedo-gyro .is-readout { font-size: 11px; }
-.torpedo-gyro .is-lamp { fill: #c69b53; }
-.torpedo-gyro.is-ready .is-lamp { fill: #8d9f75; }
+.torpedo-targets { pointer-events: none; fill: none; stroke: #eddfaf; stroke-width: 1.5; }
+
 
 /* The range lines along each lane's waterline: faint, so a torpedo far out
    reads against the lane it has got to. */
@@ -966,3 +955,18 @@
   .game-stage.is-torpedo.is-phone .torpedo-fire { width: 112px; font-size: 16px; background: radial-gradient(ellipse at 45% 25%, #b8523b, #873c2d); box-shadow: 0 4px 0 #5f2b20, 0 0 0 4px #263a30, 0 0 0 5px #8a9179; }
   .game-stage.is-torpedo.is-phone .torpedo-fire:active:not(:disabled) { box-shadow: 0 1px 0 #5f2b20, 0 0 0 4px #263a30, 0 0 0 5px #8a9179; }
 }
+.torpedo-range-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px 14px;
+  background: #192f2a;
+  color: #e8dab6;
+  font-size: 12px;
+}
+.torpedo-range-board > div { display: flex; justify-content: center; gap: 8px; }
+.torpedo-range-board strong { font-variant-numeric: tabular-nums; }
+.torpedo-range-board .is-passed { color: #a3b1a0; }
+
+.torpedo-trajectory { pointer-events: none; fill: none; stroke: #eddfaf; stroke-width: 1; opacity: 0.6; }
+.torpedo-trajectory path { stroke-dasharray: 3 4; }

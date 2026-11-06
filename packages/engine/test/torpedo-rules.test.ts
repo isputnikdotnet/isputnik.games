@@ -247,6 +247,17 @@ describe("Torpedo Run rules", () => {
     }
   });
 
+  it.each([-1, 1] as const)("allows a led shot to hit a full-speed patrol heading %i", (dir) => {
+    // A player spots the boat, spends a second reacting, then aims ahead.
+    let state = run({ ships: [ship("patrol", -dir * 200, { dir, speed: 6 })] });
+    for (let i = 0; i < 20; i++) state = tick(state, still).state;
+    state = { ...state, bearing: lead(state.ships[0]) };
+    expect(Math.abs(state.bearing)).toBeLessThanOrEqual(MAX_BEARING);
+    state = tick(state, fire).state;
+    for (let i = 0; i < RANGE.mid; i++) state = tick(state, still).state;
+    expect(state.rounds[0].hits.patrol).toBe(1);
+  });
+
   it("reads variants and inputs off the wire strictly", () => {
     expect(parseVariant("standard")).toBe("standard");
     expect(() => parseVariant("A")).toThrow();

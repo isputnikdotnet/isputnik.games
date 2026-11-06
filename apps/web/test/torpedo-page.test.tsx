@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { replayRun, Torpedo, torpedo, type TorpedoInput } from "@isputnik/games-engine";
 import { Periscope } from "../src/games/torpedo/Periscope";
-import { courseX, laneYs, screenX } from "../src/games/torpedo/view";
+import { courseX, HORIZON, laneYs, screenX, wakePoint } from "../src/games/torpedo/view";
 import { TorpedoPage } from "../src/games/torpedo/TorpedoPage";
 import { soundsOf } from "../src/games/torpedo/sounds";
 import { CARD_HOLD_MS, START_DELAY } from "../src/games/torpedo/useTorpedoRun";
@@ -30,15 +30,37 @@ describe("the periscope's sounds", () => {
 });
 
 describe("the periscope's lens", () => {
-  it("spreads the lanes down the sea yet draws the course through each where the engine counts the torpedo", () => {
+  it("keeps three bands near the horizon and matches engine collision positions", () => {
     const tubeY = 400;
     const lanes = laneYs(tubeY);
-    expect(lanes.near - lanes.mid).toBeGreaterThan(20);
-    expect(lanes.mid - lanes.far).toBeGreaterThan(20);
+    expect(lanes.near - lanes.mid).toBe(14);
+    expect(lanes.mid - lanes.far).toBe(12);
     for (const bearing of [-200, -73, 0, 150, 200])
       for (const lane of ["near", "mid", "far"] as const)
         // The engine rounds this to whole bearing units; the drawing does not.
         expect(courseX(bearing, lanes[lane], tubeY)).toBeCloseTo(screenX((bearing * (10_000 + Torpedo.LEAN * Torpedo.REACH[lane])) / 10_000), 6);
+  });
+
+  it("keeps the same distance bands on tall screens and reaches each on the exact collision tick", () => {
+    for (const tubeY of [350, 600, 1000]) {
+      const lanes = laneYs(tubeY);
+      expect(lanes.far).toBeGreaterThan(HORIZON);
+      expect(lanes.near - HORIZON).toBeLessThanOrEqual(32);
+      for (const lane of Torpedo.LANES) {
+        const point = wakePoint(150, Torpedo.RANGE[lane], tubeY);
+        expect(point.y).toBeCloseTo(lanes[lane]);
+        expect(point.x).toBeCloseTo(courseX(150, lanes[lane], tubeY));
+      }
+    }
+  });
+
+  it("shows arrival countdowns and disables fire while a torpedo is running", () => {
+    const state = { ...Torpedo.createRun("standard", 1), torpedo: { bearing: 0, run: Torpedo.RANGE.near } };
+    render(<Periscope mode="play" state={state} banner={null} onFire={() => {}} onHold={() => {}} onAim={() => {}} />);
+    expect(screen.getByText("Passed")).toBeInTheDocument();
+    expect(screen.getByText("0.4 s")).toBeInTheDocument();
+    expect(screen.getByText("0.9 s")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Running…" })).toBeDisabled();
   });
 
   it("ignores a hit banner from an earlier run, whose tick lies ahead of the new run's clock", () => {
@@ -80,22 +102,21 @@ describe("TorpedoPage", () => {
     expect(screen.getByRole("img", { name: "9 torpedoes left" })).toBeInTheDocument();
   });
 
-  it("turns the single course needle with the sight and keeps it while a torpedo runs", () => {
-    const { container } = render(<TorpedoPage />);
-    press("Space");
-    act(() => vi.advanceTimersByTime(START_DELAY + 100));
-    const needle = () => container.querySelector(".torpedo-gyro .is-needle")!;
-    expect(container.querySelectorAll(".torpedo-gyro .is-needle")).toHaveLength(1);
-    const straight = needle().getAttribute("transform");
-    fireEvent.keyDown(window, { code: "ArrowRight" });
-    act(() => vi.advanceTimersByTime(300));
-    fireEvent.keyUp(window, { code: "ArrowRight" });
-    expect(needle().getAttribute("transform")).not.toBe(straight);
-    press("Space");
-    act(() => vi.advanceTimersByTime(100));
-    expect(needle()).toBeInTheDocument();
-    expect(container.querySelector(".torpedo-gyro")).not.toHaveClass("is-ready");
-    expect(container.querySelector(".torpedo-gyro .is-readout")).not.toHaveTextContent("———");
+  it("previews the launch trajectory as the periscope turns", () => {
+    const state = Torpedo.createRun("standard", 1);
+    const props = { banner: null, onFire: () => {}, onHold: () => {}, onAim: () => {} };
+    const { container, rerender } = render(<Periscope mode="play" state={state} {...props} />);
+    const target = () => container.querySelector(".torpedo-targets")!;
+    expect(target().querySelectorAll("circle")).toHaveLength(1);
+    expect(target().querySelector("text")).toBeNull();
+    const position = target().getAttribute("transform");
+    rerender(<Periscope mode="play" state={{ ...state, bearing: 100 }} {...props} />);
+    expect(target().getAttribute("transform")).not.toBe(position);
+    const expectedX = courseX(100, laneYs(400).mid, 400) - (screenX(100) - screenX(0));
+    expect(target().getAttribute("transform")).toContain(`translate(${expectedX} `);
+    expect(container.querySelectorAll(".torpedo-trajectory line")).toHaveLength(2);
+    expect(target().closest(".torpedo-world")).toBeNull();
+    expect(container.querySelector(".torpedo-range-labels")).toBeNull();
   });
 
   it("pauses and carries on", () => {

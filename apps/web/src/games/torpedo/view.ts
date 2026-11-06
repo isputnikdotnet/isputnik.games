@@ -18,17 +18,24 @@ export const HORIZON = 207;
 /** Where a torpedo leaves: the foot of the lens, under the sight. */
 export const tubeOf = (bottom: number) => bottom - 12;
 
-/** The waterline of each lane: Torpedo.REACH of the way up from the foot of
- *  the lens to the horizon, spread well apart (owner, 2026-10-30: a torpedo far
- *  out was hard to read against a ship), and on the torpedo's straight course
- *  exactly where the engine counts it. */
+/** Three fixed distance bands near the horizon on every screen shape. */
 export function laneYs(tubeY: number): Record<TorpedoLane, number> {
-  const at = (lane: TorpedoLane) => tubeY - (Torpedo.REACH[lane] / 100) * (tubeY - HORIZON);
-  return { far: at("far"), mid: at("mid"), near: at("near") };
+  const scale = Math.min(1, (tubeY - HORIZON) / 100);
+  return { far: HORIZON + 6 * scale, mid: HORIZON + 18 * scale, near: HORIZON + 32 * scale };
 }
 
-/** How far out a torpedo is at height `y`: 0 at the tube, 1 on the horizon. */
-const reachAt = (y: number, tubeY: number) => (tubeY - y) / (tubeY - HORIZON);
+/** Preserve the engine's collision bearings through the visual perspective. */
+const reachAt = (y: number, tubeY: number) => {
+  const lanes = laneYs(tubeY);
+  const stops = [[tubeY, 0], [lanes.near, Torpedo.REACH.near / 100],
+    [lanes.mid, Torpedo.REACH.mid / 100], [lanes.far, Torpedo.REACH.far / 100], [HORIZON, 1]];
+  for (let i = 1; i < stops.length; i++) {
+    const [y0, r0] = stops[i - 1];
+    const [y1, r1] = stops[i];
+    if (y >= y1) return r0 + ((y0 - y) / (y0 - y1)) * (r1 - r0);
+  }
+  return 1;
+};
 
 /** The x of something at a bearing. */
 export const screenX = (bearing: number) => CENTRE + bearing * K;
