@@ -2,12 +2,15 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useSession } from "../session";
 import { MobileNav } from "./MobileNav";
-import { SoundSwitch, TopBar } from "./TopBar";
+import { SoundToggle } from "./SoundToggle";
+import { TopBar } from "./TopBar";
 import { play, setSoundEnabled, useSoundEnabled } from "./sound";
 
 // The one frame every page sits in: the home app's top bar (shared/TopBar), so
 // the games read as one more section of iSputnik. Pages carry their own
-// headings. A guest (docs/plan.md → Guests) has no home app to go to: the frame
+// headings. On a phone a member gets the home app's frame there instead: no top
+// bar, its four-tab bar (shared/MobileNav) at the foot, and the sound switch on
+// the page (shared/SoundToggle). A guest (docs/plan.md → Guests) has no home app to go to: the frame
 // says who they are and leaves it at that. The sound switch is in the bar for
 // everyone, a guest included.
 export function Shell({ children }: { children: ReactNode }) {
@@ -24,7 +27,7 @@ export function Shell({ children }: { children: ReactNode }) {
   };
   return (
     <div className="app-shell">
-      <header className="app-bar" ref={bar}>
+      <header className={`app-bar${ready && !guest ? " is-member" : ""}`} ref={bar}>
         {ready && !guest ? (
           <TopBar name={session.user.name} admin={session.user.role === "admin"} sound={sound} onToggleSound={toggleSound} />
         ) : (
@@ -35,7 +38,7 @@ export function Shell({ children }: { children: ReactNode }) {
             </span>
             <span className="topbar-end">
               <span className="app-bar-user">{guest ? t("app.guestUser", { name: session.user.name }) : ""}</span>
-              <SoundSwitch sound={sound} onToggle={toggleSound} />
+              <SoundToggle />
             </span>
           </div>
         )}

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MobileNav } from "../src/shared/MobileNav";
 import { LobbyPage } from "../src/pages/LobbyPage";
 import { SessionContext } from "../src/session";
@@ -17,25 +17,57 @@ beforeEach(() => {
 });
 
 describe("phone tab bar", () => {
-  it("offers Home, Games and Matches, lights the tab for the page, and counts what waits", async () => {
+  const admin = { ...me, role: "admin" as const };
+  const renderNav = (user = me) =>
+    render(
+      <SessionContext.Provider value={{ status: "ready", user, guests: true, version: "0.6.0", stage: null }}>
+        <MobileNav />
+      </SessionContext.Provider>
+    );
+
+  it("is the home app's four tabs, with Media lit and what waits counted on it", async () => {
     vi.mocked(api.fetchSummary).mockResolvedValue({ invitations: [], yourMove: [], counts: { invitations: 1, yourMove: 2 } });
-    render(<MobileNav />);
+    renderNav();
     const nav = screen.getByRole("navigation", { name: "Main tabs" });
-    expect(nav).toHaveTextContent("Home");
+    expect(nav.children).toHaveLength(4);
     expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "Games" })).toHaveClass("is-active");
-    expect(screen.getByRole("link", { name: /Matches/ })).toHaveAttribute("href", "/games/#online");
+    expect(screen.getByRole("button", { name: /Media/ })).toHaveClass("is-active");
+    expect(screen.getByRole("link", { name: "Offline" })).toHaveAttribute("href", "/downloads");
+    expect(screen.getByRole("button", { name: "Profile" })).not.toHaveClass("is-active");
     expect(await screen.findByLabelText("3 waiting on you")).toHaveTextContent("3");
   });
 
-  it("lights Matches on a match page and shows no badge when nothing waits", async () => {
-    window.history.replaceState(null, "", "/games/dots/m/abc");
+  it("opens Media on the household's libraries with Games as the one you are in", async () => {
     vi.mocked(api.fetchSummary).mockResolvedValue({ invitations: [], yourMove: [], counts: { invitations: 0, yourMove: 0 } });
-    render(<MobileNav />);
-    expect(screen.getByRole("link", { name: /Matches/ })).toHaveClass("is-active");
-    expect(screen.getByRole("link", { name: "Games" })).not.toHaveClass("is-active");
-    await Promise.resolve();
-    expect(screen.queryByLabelText(/waiting on you/)).not.toBeInTheDocument();
+    renderNav();
+    fireEvent.click(screen.getByRole("button", { name: "Media" }));
+    const sheet = screen.getByRole("dialog", { name: "Choose library" });
+    expect(within(sheet).getByRole("link", { name: "Audiobooks" })).toHaveAttribute("href", "/audiobooks");
+    expect(within(sheet).getByRole("link", { name: "Stories" })).toHaveAttribute("href", "/stories");
+    expect(within(sheet).getByRole("link", { name: "Tags" })).toHaveAttribute("href", "/tags");
+    expect(within(sheet).getByRole("link", { name: "Games" })).toHaveAttribute("aria-current", "page");
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opens Profile on the person's pages, the control panel for an admin, and Bugs in a new tab", async () => {
+    vi.mocked(api.fetchSummary).mockResolvedValue({ invitations: [], yourMove: [], counts: { invitations: 0, yourMove: 0 } });
+    renderNav(admin);
+    fireEvent.click(screen.getByRole("button", { name: "Profile" }));
+    const sheet = screen.getByRole("dialog", { name: "Account & library" });
+    expect(screen.getByRole("button", { name: "Profile" })).toHaveClass("is-active");
+    expect(screen.getByRole("button", { name: "Media" })).not.toHaveClass("is-active");
+    expect(within(sheet).getByRole("link", { name: "Likes" })).toHaveAttribute("href", "/likes");
+    expect(within(sheet).getByRole("link", { name: "Control panel" })).toHaveAttribute("href", "/control/overview");
+    expect(within(sheet).getByRole("link", { name: "Bugs" })).toHaveAttribute("target", "_blank");
+    expect(within(sheet).getByRole("button", { name: "Logout" })).toBeInTheDocument();
+  });
+
+  it("keeps the control panel from a member", () => {
+    vi.mocked(api.fetchSummary).mockResolvedValue({ invitations: [], yourMove: [], counts: { invitations: 0, yourMove: 0 } });
+    renderNav();
+    fireEvent.click(screen.getByRole("button", { name: "Profile" }));
+    expect(screen.queryByRole("link", { name: "Control panel" })).not.toBeInTheDocument();
   });
 });
 

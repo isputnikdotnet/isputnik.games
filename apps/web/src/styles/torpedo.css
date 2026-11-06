@@ -794,11 +794,17 @@
   }
 
   .game-stage.is-torpedo.is-phone {
-    --tr-rest: calc(var(--space-2) + 16px + 44px + 8px + 64px + 58px + env(safe-area-inset-bottom) + 20px);
+    /* + 44px and a gap: the row the sound switch keeps once the title steps
+       aside — where the top bar's height used to come off (--app-bar-h, now 0). */
+    --tr-rest: calc(var(--space-2) + 16px + 44px + 8px + 64px + 58px + env(safe-area-inset-bottom) + 20px + 44px + var(--space-3));
     gap: var(--space-3);
   }
 
-  .game-stage.is-torpedo.is-phone > .game-stage-title {
+  .game-stage.is-torpedo.is-phone > .game-stage-title-row {
+    justify-content: flex-end;
+  }
+
+  .game-stage.is-torpedo.is-phone .game-stage-title {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -874,7 +880,7 @@
 @media (orientation: landscape) and (max-height: 520px) {
   body:has(.game-stage.is-torpedo) .app-bar,
   body:has(.game-stage.is-torpedo) .mobile-nav,
-  .game-stage.is-torpedo.is-phone > .game-stage-title {
+  .game-stage.is-torpedo.is-phone > .game-stage-title-row {
     display: none;
   }
 
@@ -944,7 +950,8 @@
   .torpedo-fire { flex: none; min-width: 110px; font-size: 16px; }
 }
 @media (orientation: portrait) {
-  .game-stage.is-torpedo.is-phone { --tr-rest: calc(var(--space-2) + 16px + 44px + 8px + 64px + 58px + env(safe-area-inset-bottom) + 64px); }
+  /* + 44px and a gap for the sound switch's row, as above. */
+  .game-stage.is-torpedo.is-phone { --tr-rest: calc(var(--space-2) + 16px + 44px + 8px + 64px + 58px + env(safe-area-inset-bottom) + 64px + 44px + var(--space-3)); }
   .game-stage.is-torpedo.is-phone .torpedo-scope { gap: 0; }
   .game-stage.is-torpedo.is-phone .torpedo-cabinet { padding: 10px 10px 6px; border-radius: 3px; }
   .game-stage.is-torpedo.is-phone .torpedo-bearings { top: 47px; right: 17px; left: 17px; }

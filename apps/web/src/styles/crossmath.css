@@ -527,7 +527,12 @@
   overflow-y: auto;
 }
 
-/* No big header on a phone: the name is for screen readers, the strip says the rest. */
+/* No big header on a phone: the name is for screen readers, the strip says the
+   rest. The sound switch stays, at the row's end. */
+.game-stage.crossmath.is-phone .game-stage-title-row {
+  justify-content: flex-end;
+}
+
 .game-stage.crossmath.is-phone .game-stage-title {
   position: absolute;
   width: 1px;

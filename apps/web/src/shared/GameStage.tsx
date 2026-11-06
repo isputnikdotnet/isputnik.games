@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
 import { follow, href } from "../router";
+import { PhoneSoundToggle } from "./SoundToggle";
 import { PHONE, useMediaQuery } from "./useMediaQuery";
 
 // The one way a game in play takes the screen, after chess sites: the board
@@ -11,7 +12,8 @@ import { PHONE, useMediaQuery } from "./useMediaQuery";
 // what height is left, and the actions at its foot where the hand rests. No
 // page heading above the board: every row there was a row the board lost.
 //
-// On a phone it stacks: the title and the score above the board, the actions
+// On a phone it stacks: the title (with the sound switch, the phone having no
+// top bar) and the score above the board, the actions
 // under it within thumb's reach, the log last.
 export function GameStage({
   title,
@@ -38,7 +40,10 @@ export function GameStage({
   if (phone) {
     return (
       <section className={`game-stage is-phone ${className}`.trim()}>
-        <h1 className="game-stage-title">{title}</h1>
+        <div className="game-stage-title-row">
+          <h1 className="game-stage-title">{title}</h1>
+          <PhoneSoundToggle />
+        </div>
         {score}
         <div className="game-stage-board">{board}</div>
         {actions && <div className="game-stage-actions">{actions}</div>}

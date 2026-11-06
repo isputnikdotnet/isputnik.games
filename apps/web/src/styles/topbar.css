@@ -1,8 +1,8 @@
 /* The home app's top layout (isputnik.home styles/orbit.css), worn by the games:
-   a bar with Home · Media · Family and the person. Colours
-   come from tokens, so it wears every theme. Phones keep the bar to the brand,
-   the sound switch and the person; their tab bar (shared/MobileNav) does the
-   rest, so the nav stops at 740px. */
+   a bar with Home · Media · Family · Stories · Tags and the person. Colours
+   come from tokens, so it wears every theme. A member's phone has no bar, as in
+   the home app (app.css hides .app-bar.is-member); their tab bar
+   (shared/MobileNav) does the job. A guest keeps the bar at every width. */
 
 .app-bar {
   --topbar-h: 64px;

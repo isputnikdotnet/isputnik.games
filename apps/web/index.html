@@ -6,6 +6,15 @@
     <link rel="icon" type="image/svg+xml" href="/games/icon.svg" />
     <meta name="theme-color" content="#031116" />
     <meta name="robots" content="noindex, nofollow" />
+    <!-- The installed app is the home app's (isputnik.home, same origin): its web
+         manifest and its iOS home-screen tags, so adding the games to a home
+         screen installs iSputnik itself, and the installed app opening /games
+         looks the same as on any other page of it. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="iSputnik" />
+    <link rel="apple-touch-icon" href="/Assets/brand/apple-touch-icon.png" />
     <title>iSputnik Games</title>
   </head>
   <body>

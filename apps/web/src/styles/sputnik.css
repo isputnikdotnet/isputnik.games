@@ -41,7 +41,7 @@
 @media (orientation: landscape) and (max-height: 520px) {
   body:has(.game-stage.is-sputnik) .app-bar,
   body:has(.game-stage.is-sputnik) .mobile-nav,
-  .game-stage.is-sputnik.is-phone > .game-stage-title {
+  .game-stage.is-sputnik.is-phone > .game-stage-title-row {
     display: none;
   }
 

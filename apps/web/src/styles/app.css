@@ -246,10 +246,13 @@
 }
 
 /* ── Phone tab bar ─────────────────────────────────────────────────────── */
-/* Hidden above phone width; the top bar's links do the job there. The look
-   is the home app's four-tab bar (home.css .home-mobile-nav), so switching
-   between the two apps on a phone feels like one. */
-.mobile-nav {
+/* Hidden above phone width; the top bar's links do the job there. It is the
+   home app's four-tab bar and its two drop-up sheets (home.css .home-mobile-nav,
+   .mobile-media-menu), so switching between the two apps on a phone feels like
+   one — and, as there, a member's phone has no top bar. */
+.mobile-nav,
+.mobile-sheet,
+.mobile-sheet-backdrop {
   display: none;
 }
 
@@ -264,6 +267,10 @@
     padding-bottom: calc(var(--space-6) + 64px + env(safe-area-inset-bottom));
   }
 
+  .app-bar.is-member {
+    display: none;
+  }
+
   .mobile-nav {
     position: fixed;
     z-index: var(--z-nav, 30);
@@ -271,7 +278,7 @@
     bottom: 0;
     left: 0;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 4px;
     min-height: calc(58px + env(safe-area-inset-bottom));
     padding: 6px max(8px, env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right));
@@ -281,30 +288,35 @@
     backdrop-filter: blur(18px);
   }
 
-  .mobile-nav-item {
+  .mobile-nav-item.mobile-nav-item {
     display: grid;
     justify-items: center;
     align-content: center;
     gap: 4px;
     min-width: 0;
     min-height: 46px;
+    padding: 0;
+    border: none;
     border-radius: 8px;
+    background: transparent;
     color: var(--muted);
+    font-family: inherit;
     font-size: 0.66rem;
     font-weight: 700;
     line-height: 1;
     text-decoration: none;
+    cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
 
-  .mobile-nav-item:hover,
-  .mobile-nav-item:focus-visible {
+  .mobile-nav-item.mobile-nav-item:hover,
+  .mobile-nav-item.mobile-nav-item:focus-visible {
     color: var(--ink);
     background: var(--hover);
     outline: 0;
   }
 
-  .mobile-nav-item.is-active {
+  .mobile-nav-item.mobile-nav-item.is-active {
     color: var(--accent);
     background: var(--active);
   }
@@ -334,6 +346,178 @@
     font-size: 0.6rem;
     line-height: 16px;
     text-align: center;
+  }
+
+  /* Dims the page so a tap outside the sheet visibly means "close". */
+  .mobile-sheet-backdrop {
+    position: fixed;
+    z-index: calc(var(--z-nav, 30) - 2);
+    inset: 0;
+    display: block;
+    background: color-mix(in srgb, #000 30%, transparent);
+    animation: mobile-backdrop-in 0.2s ease;
+  }
+
+  .mobile-sheet {
+    position: fixed;
+    z-index: calc(var(--z-nav, 30) - 1);
+    right: 0;
+    bottom: calc(58px + env(safe-area-inset-bottom));
+    left: 0;
+    display: block;
+    padding: 8px max(16px, env(safe-area-inset-left)) 14px max(16px, env(safe-area-inset-right));
+    border: 1px solid var(--line);
+    border-bottom: none;
+    border-radius: 20px 20px 0 0;
+    background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+    box-shadow: 0 -12px 36px var(--shadow);
+    backdrop-filter: blur(24px);
+    animation: mobile-sheet-in 0.2s ease;
+  }
+
+  .mobile-sheet-handle {
+    display: block;
+    width: 38px;
+    height: 4px;
+    margin: 0 auto 12px;
+    border-radius: 999px;
+    background: var(--line);
+  }
+
+  .mobile-sheet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+    gap: 10px;
+  }
+
+  .mobile-sheet-tile {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 7px;
+    padding: 16px 6px 12px;
+    border-radius: 14px;
+    background: var(--field);
+    color: var(--ink);
+    font-size: 0.72rem;
+    font-weight: 760;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-sheet-tile svg {
+    color: var(--accent);
+  }
+
+  .mobile-sheet-tile:hover,
+  .mobile-sheet-tile:focus-visible {
+    background: var(--hover);
+    outline: 0;
+  }
+
+  .mobile-sheet-tile.is-active {
+    background: var(--active);
+    color: var(--accent);
+  }
+
+  /* What waits on you in the games, a pill in the Games tile's corner. */
+  .mobile-sheet-tile-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    min-width: 20px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--surface);
+    font-size: 0.72rem;
+    font-weight: 750;
+    line-height: 16px;
+    text-align: center;
+  }
+
+  /* Profile sheet, second band: rows for the account. */
+  .mobile-sheet-list {
+    display: grid;
+    margin-top: 12px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--field);
+  }
+
+  .mobile-sheet-row.mobile-sheet-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 46px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 650;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-sheet-row + .mobile-sheet-row {
+    border-top: 1px solid var(--line);
+  }
+
+  .mobile-sheet-row svg {
+    flex: 0 0 auto;
+    color: var(--accent);
+  }
+
+  .mobile-sheet-row > span:first-of-type {
+    flex: 1 1 auto;
+  }
+
+  .mobile-sheet-row.mobile-sheet-row:hover,
+  .mobile-sheet-row.mobile-sheet-row:focus-visible {
+    background: var(--hover);
+    outline: 0;
+  }
+
+  .mobile-sheet-row .mobile-sheet-chevron {
+    color: var(--muted);
+  }
+
+  /* Third band: the About links. */
+  .mobile-sheet-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 16px;
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .mobile-sheet-footer a {
+    color: var(--ink);
+    font-weight: 650;
+    text-decoration: none;
+  }
+
+  @keyframes mobile-backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes mobile-sheet-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
 
@@ -463,6 +647,15 @@
 
 .game-stage.is-phone .game-stage-title {
   font-size: var(--text-xl);
+}
+
+/* The title and, the phone having no top bar, the sound switch at its end. */
+.game-stage-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .game-stage.is-phone .comms-lines {
@@ -680,8 +873,11 @@
   margin-bottom: 0;
 }
 
-.lobby-head > .primary-button {
+.lobby-head-actions {
+  display: flex;
   flex: none;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .lobby-section-title {
@@ -1475,7 +1671,7 @@
     font-size: var(--text-2xl);
   }
 
-  .lobby-head > .primary-button {
+  .lobby-head-actions .primary-button {
     min-height: 36px;
     padding: 0 var(--space-3);
     font-size: var(--text-sm);

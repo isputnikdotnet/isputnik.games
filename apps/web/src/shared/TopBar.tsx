@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   BookOpen,
   Bookmark,
+  Bug,
   ChevronDown,
   Clapperboard,
   Gamepad2,
@@ -15,41 +16,33 @@ import {
   LogOut,
   Quote,
   Settings,
-  Tag,
   UserRound,
   UsersRound,
   Volume2,
   VolumeX,
   type LucideIcon
 } from "lucide-react";
-import { csrfToken } from "../api";
 import { follow, href } from "../router";
 import { Button } from "./Button";
+import { HOME, aboutLinks, logout, type AboutLink } from "./homeLinks";
 import { useHomeNav, type HomeNav } from "./homeNav";
 import { useWaiting } from "./MobileNav";
 
 // The home app's top bar (isputnik.home app/OrbitTopBar.tsx), worn here so that
 // going from a book to a game does not change the frame around it: the brand,
-// Home · Media · Family, then the control panel and the person. Media reads as
+// Home · Media · Family · Stories · Tags, then the control panel and the person. Media reads as
 // Games, the library you are in. Every link but Games leaves for the home app —
 // a full navigation, it is another app on the same origin. Phones keep the bar
-// to the brand, the sound switch and the person; their tab bar does the rest.
-
-/** The home app's own addresses this bar links to. */
-const HOME = {
-  home: "/",
-  family: "/family",
-  stories: "/stories",
-  control: "/control/overview",
-  login: "/login",
-  logout: "/api/auth/logout"
-} as const;
+// no bar at all, as in the home app: their tab bar (shared/MobileNav) does it.
 
 interface MenuLink {
   label: string;
   href: string;
   icon: LucideIcon;
+  external?: boolean;
 }
+
+const ABOUT_ICONS: Record<AboutLink["key"], LucideIcon> = { info: Info, help: HelpCircle, bugs: Bug };
 
 function useDismiss(open: boolean, close: () => void, wrap: RefObject<HTMLElement | null>) {
   useEffect(() => {
@@ -82,7 +75,6 @@ export function TopBar({
 }) {
   const { t } = useTranslation();
   const nav = useHomeNav();
-  const familyHref = nav.sections.familyTree ? HOME.family : nav.sections.stories ? HOME.stories : null;
 
   return (
     <div className="topbar-row">
@@ -94,7 +86,9 @@ export function TopBar({
       <nav className="topbar-nav" aria-label={t("top.primary")}>
         <a className="topbar-link" href={HOME.home}>{t("top.home")}</a>
         <MediaMenu nav={nav} />
-        {familyHref && <a className="topbar-link" href={familyHref}>{t("top.family")}</a>}
+        {nav.sections.familyTree && <a className="topbar-link" href={HOME.family}>{t("top.family")}</a>}
+        {nav.sections.stories && <a className="topbar-link" href={HOME.stories}>{t("top.stories")}</a>}
+        <a className="topbar-link" href={HOME.tags}>{t("top.tags")}</a>
       </nav>
 
       <div className="topbar-end">
@@ -183,7 +177,8 @@ function MediaMenu({ nav }: { nav: HomeNav }) {
   );
 }
 
-// The person's menu, the home app's: their own pages there, then signing out.
+// The person's menu, the home app's: their own pages there, the About links
+// (Bugs opens a new tab), then signing out.
 function UserMenu({ name }: { name: string }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -197,9 +192,7 @@ function UserMenu({ name }: { name: string }) {
     { label: t("top.bookmarks"), href: "/bookmarks", icon: Bookmark },
     { label: t("top.quotes"), href: "/quotes", icon: Quote },
     { label: t("top.collections"), href: "/collections", icon: ListMusic },
-    { label: t("top.tags"), href: "/tags", icon: Tag },
-    { label: t("top.info"), href: "/about", icon: Info },
-    { label: t("top.help"), href: "/help", icon: HelpCircle }
+    ...aboutLinks(t).map(({ label, href, external, key }) => ({ label, href, external, icon: ABOUT_ICONS[key] }))
   ];
 
   return (
@@ -216,7 +209,13 @@ function UserMenu({ name }: { name: string }) {
           {links.map((link) => {
             const Icon = link.icon;
             return (
-              <a key={link.href} className="topbar-menu-link" href={link.href} role="menuitem">
+              <a
+                key={link.href}
+                className="topbar-menu-link"
+                href={link.href}
+                role="menuitem"
+                {...(link.external ? { target: "_blank", rel: "noreferrer" } : {})}
+              >
                 <Icon size={19} aria-hidden="true" />
                 <span>{link.label}</span>
               </a>
@@ -231,14 +230,3 @@ function UserMenu({ name }: { name: string }) {
     </div>
   );
 }
-
-/** Signs out of the home app, which is where the session lives, then goes to
- *  its sign-in page. A failure still goes there: it asks again if need be. */
-async function logout(): Promise<void> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const token = csrfToken();
-  if (token) headers["X-CSRF-Token"] = token;
-  await fetch(HOME.logout, { method: "POST", headers, body: "{}", credentials: "same-origin" }).catch(() => undefined);
-  window.location.assign(HOME.login);
-}
-

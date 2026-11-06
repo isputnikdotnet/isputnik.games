@@ -741,12 +741,15 @@
   "nav": {
     "aria": "Главные вкладки",
     "home": "Домой",
-    "games": "Игры",
-    "matches": "Партии",
     "waiting_one": "{{count}} ждёт вас",
     "waiting_few": "{{count}} ждут вас",
     "waiting_many": "{{count}} ждут вас",
-    "waiting_other": "{{count}} ждут вас"
+    "waiting_other": "{{count}} ждут вас",
+    "offline": "Офлайн",
+    "gallery": "Галерея",
+    "familyTree": "Семейное древо",
+    "chooseLibrary": "Выбор библиотеки",
+    "account": "Аккаунт и библиотека"
   },
   "top": {
     "primary": "Основная навигация",
@@ -779,7 +782,9 @@
     "tags": "Теги",
     "info": "Сведения",
     "help": "Справка",
-    "logout": "Выйти"
+    "logout": "Выйти",
+    "stories": "Истории",
+    "bugs": "Ошибки"
   },
   "copyLink": {
     "aria": "Ссылка",

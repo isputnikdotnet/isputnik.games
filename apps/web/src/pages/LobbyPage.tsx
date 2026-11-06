@@ -8,6 +8,7 @@ import { ago } from "../shared/ago";
 import { Avatar } from "../shared/Avatar";
 import { Button } from "../shared/Button";
 import { MessageBox } from "../shared/MessageBox";
+import { PhoneSoundToggle } from "../shared/SoundToggle";
 import { useNewcomerCue } from "../shared/useGameSounds";
 import { CATALOG, LOBBY_GAME_IDS, isNew, type GameMode } from "../games/catalog";
 import { GamePreview } from "../games/previews";
@@ -126,9 +127,12 @@ export function LobbyPage() {
             {waiting > 0 ? t("lobby.waitingCount", { count: waiting }) : t("lobby.lead")}
           </p>
         </div>
-        <Button variant="primary" onClick={() => setInviting({})}>
-          <UserPlus size={16} aria-hidden="true" /> {t("lobby.online.invite")}
-        </Button>
+        <div className="lobby-head-actions">
+          <PhoneSoundToggle />
+          <Button variant="primary" onClick={() => setInviting({})}>
+            <UserPlus size={16} aria-hidden="true" /> {t("lobby.online.invite")}
+          </Button>
+        </div>
       </header>
 
       <div className="lobby-body">
