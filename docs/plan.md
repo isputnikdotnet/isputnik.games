@@ -962,4 +962,14 @@ bank, each tile once (two 5s are two tiles). Mock: `docs/mocks/crossmath-mock.ht
   confirmation. A clock that can be hidden; sound through the top bar's switch. The board is
   a grid of buttons with arrow-key movement, digits to lay a tile and each square
   described by its row's and column's equations.
-- Not yet: a daily puzzle picked by date, and a family leaderboard tab.
+- Not yet: a daily puzzle picked by date, and a family leaderboard tab
+  (both planned with Angle Chase, below).
+
+### Angle Chase («Найди угол») — planned 2026-11-09
+
+A geometry puzzle for one player, id `angles`: find the marked angle from a
+few given ones, then prove it by naming each step's theorem. Levels follow a
+10th-grade course (lines · triangles · polygons · circles · mixed); the same
+solo-puzzle shape as Crossmath over a new engine (figure model, theorem
+library, forward-chaining solver). Brings the daily puzzle and the family
+board for both puzzles. Plan: `docs/angle-chase-plan.md`.
