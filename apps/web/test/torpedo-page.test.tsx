@@ -82,6 +82,8 @@ describe("TorpedoPage", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
+    // Puts Math.random back after the test that pins it.
+    vi.restoreAllMocks();
   });
 
   const press = (code: string) => {
@@ -130,6 +132,11 @@ describe("TorpedoPage", () => {
   });
 
   it("plays a round to its card and sends a member's run to be replayed", async () => {
+    // The run's seed comes from Math.random. With some seeds the scripted shots
+    // earn a bonus round, and the card then waits for it to be fired in before
+    // the run is over and reported: pinned, so the run always ends here (the
+    // v0.25.2 image build failed on a seed that earned one).
+    vi.spyOn(Math, "random").mockReturnValue(0.42);
     vi.mocked(api.reportArcadeScore).mockResolvedValue({ recorded: true, score: 0, best: 2100 });
     render(<SessionContext.Provider value={member}><TorpedoPage /></SessionContext.Provider>);
     press("Space");

@@ -3,6 +3,10 @@
 Every release, newest first. Generated from `changelog.json` by `npm run changelog` —
 edit that file, not this one.
 
+## 0.25.3 — The 0.25.2 image, built this time
+
+- **The 0.25.2 image never reached the registry.** Its build failed on a test of the Torpedo Run page that played a run from a random seed; with some seeds the scripted shots earned a bonus round, and the card then waited for it to be fired in before the run was over and reported, so the test saw no report. The test now plays a fixed seed. This release carries everything 0.25.2 announced.
+
 ## 0.25.2 — Named as an add-on, with a change log for Unraid
 
 - **Every public description now says what this is: an add-on for isputnik.home.** The GitHub repository, the image on ghcr.io, the Unraid Community Applications template and its profile all say the container is installed beside the isputnik container and reached only through it, so nobody installs it expecting a game server of its own.

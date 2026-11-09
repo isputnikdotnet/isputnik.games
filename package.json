@@ -1,7 +1,7 @@
 {
   "name": "isputnik-games",
   "private": true,
-  "version": "0.25.2",
+  "version": "0.25.3",
   "stage": "alpha",
   "description": "Add-on for isputnik.home: family board and arcade games in a container of their own. Requires the isputnik.home container; installed beside it and reached through home's /games gateway.",
   "license": "AGPL-3.0-only",

@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.25.3",
+    "label": "The 0.25.2 image, built this time",
+    "changes": [
+      "**The 0.25.2 image never reached the registry.** Its build failed on a test of the Torpedo Run page that played a run from a random seed; with some seeds the scripted shots earned a bonus round, and the card then waited for it to be fired in before the run was over and reported, so the test saw no report. The test now plays a fixed seed. This release carries everything 0.25.2 announced."
+    ]
+  },
+  {
     "version": "0.25.2",
     "label": "Named as an add-on, with a change log for Unraid",
     "changes": [

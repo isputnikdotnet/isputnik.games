@@ -39,6 +39,9 @@ This is an add-on for isputnik.home and does nothing on its own: it has no sign-
 
   <Date>1794225600</Date>
   <Changes>
+### 2026.11.09 — 0.25.3 The 0.25.2 image, built this time
+- **The 0.25.2 image never reached the registry.** Its build failed on a test of the Torpedo Run page that played a run from a random seed; with some seeds the scripted shots earned a bonus round, and the card then waited for it to be fired in before the run was over and reported, so the test saw no report. The test now plays a fixed seed. This release carries everything 0.25.2 announced.
+
 ### 2026.11.09 — 0.25.2 Named as an add-on, with a change log for Unraid
 - **Every public description now says what this is: an add-on for isputnik.home.** The GitHub repository, the image on ghcr.io, the Unraid Community Applications template and its profile all say the container is installed beside the isputnik container and reached only through it, so nobody installs it expecting a game server of its own.
 - **The Unraid template carries its change log.** Community Applications shows when the container was last updated and what changed, from a `Date` and `Changes` block in `isputnik-games.xml` that `npm run changelog` regenerates from `changelog.json` on every release, as isputnik.home's does.
@@ -52,9 +55,6 @@ This is an add-on for isputnik.home and does nothing on its own: it has no sign-
 
 ### 2026.11.05 — 0.24.1 Clearer Torpedo Run aiming and balanced encounters
 - **Torpedo Run aims more clearly.** The trajectory is drawn as you aim, the horizon is split into distance bands, ships announce their arrival with a countdown, and encounters are balanced so a run is neither a walkover nor a wall.
-
-### 2026.11.04 — 0.24.0 The games on the TV
-- **Chess, Checkers, Sputnik Catch and Torpedo Run play on the TV** with a remote, in the iSputnik TV app 0.8. This server answers the TV's positions: a stateless play endpoint for a game against the computer or two on the sofa, and the legal moves of an online match. Nothing changes in the browser.
   </Changes>
 
   <Requires>Needs the isputnik (isputnik.home) container, version 4.38 or newer, installed on the same server. The games are reached only through it.</Requires>
