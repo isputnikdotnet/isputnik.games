@@ -34,6 +34,18 @@ says otherwise.
   typecheck error in a web test and `latest` stayed at 0.24.1 for three days
   without anyone noticing.
 
+## 1a. Say what it is, everywhere
+
+The owner's rule (2026-11-09): every public description of a companion says
+it is an **add-on for isputnik.home** that requires the isputnik.home container,
+is installed beside it and is reached through home's gateway. That is four
+places, and they must agree: the GitHub repository's About line
+(`gh repo edit --description`), the README's opening paragraph, the image's
+`org.opencontainers.image.description` label (a `LABEL` in the Dockerfile;
+docker/metadata-action also sets it from the About line, so change the About
+line BEFORE tagging, or ghcr.io shows the old words), and the Unraid template's
+`<Overview>` plus `ca_profile.xml`'s `<Profile>`.
+
 ## 2. The template and the profile
 
 Two XML files at the repository root, modelled on isputnik.home's
@@ -61,6 +73,12 @@ Two XML files at the repository root, modelled on isputnik.home's
 - `ca_profile.xml`: a non-empty `<Profile>` paragraph, the same `<Icon>`, and
   `<WebPage>` pointing at the repository. The submission form refuses a
   repository without it.
+- `<Date>` and `<Changes>`: CA shows "last updated" and a change log from
+  them, and they must never go stale. `changelog.json` at the root holds every
+  release (newest first; `{ version, label, changes[] }`), and `npm run
+  changelog` (`scripts/changelog-md.mjs`) writes `CHANGELOG.md` and the
+  template's block, dating each release by its tag. Add the entry, run it, and
+  commit both outputs with every release.
 - Validate before committing: well-formed XML (`npx -y xmllint` or a node
   parser), every URL in both files answers 200 (icon, template, project,
   support, registry page), the port matches the Dockerfile's `EXPOSE`.

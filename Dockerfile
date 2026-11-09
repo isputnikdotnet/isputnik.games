@@ -38,6 +38,9 @@ WORKDIR /app
 
 # Unraid draws the container's icon from this label when its saved template
 # has none, so a template edit or an update cannot leave the tile blank.
+# Shown as the package description on ghcr.io; docker/metadata-action sets the same
+# label from the GitHub repository's About line, which carries the same words.
+LABEL org.opencontainers.image.description="Add-on for isputnik.home: family board and arcade games in a container of their own. Requires the isputnik.home container; installed beside it and reached through home's /games gateway."
 LABEL net.unraid.docker.icon="https://raw.githubusercontent.com/isputnikdotnet/isputnik.games/main/Assets/brand/isputnik-games-icon.png"
 
 # gosu drops the entrypoint from root to the runtime user (scripts/docker-entrypoint.sh).

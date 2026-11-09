@@ -37,6 +37,26 @@ Family games for isputnik.home, in a container of their own. Board games: Dots, 
 This is an add-on for isputnik.home and does nothing on its own: it has no sign-in and no pages of its own. Install it beside the isputnik container; the family signs in once, in isputnik.home, and finds Games in its menu, at /games on the same address. Set it up from isputnik.home, on Control panel, Settings, Apps, Games. Before installing, press Generate secret there and copy it (it is shown once); paste it into the Gateway Secret field below, which is required. Once the container runs, enter its address on the same page (http://[your Unraid IP]:4200 as installed here) and press Test connection, which then says Paired. Who may play, and from where (home network only, or anywhere), is chosen on Security, App access. Needs isputnik.home 4.38 or newer.
   </Overview>
 
+  <Date>1794225600</Date>
+  <Changes>
+### 2026.11.09 — 0.25.2 Named as an add-on, with a change log for Unraid
+- **Every public description now says what this is: an add-on for isputnik.home.** The GitHub repository, the image on ghcr.io, the Unraid Community Applications template and its profile all say the container is installed beside the isputnik container and reached only through it, so nobody installs it expecting a game server of its own.
+- **The Unraid template carries its change log.** Community Applications shows when the container was last updated and what changed, from a `Date` and `Changes` block in `isputnik-games.xml` that `npm run changelog` regenerates from `changelog.json` on every release, as isputnik.home's does.
+
+### 2026.11.09 — 0.25.1 Unraid Community Applications listing
+- **Ready for Unraid Community Applications as isputnik-games.** The template now publishes port 4200 on the ordinary bridge network, so isputnik.home reaches the games at the server's own address with nothing to create first; a shared Docker network or br0 with a fixed IP work as before. It names the games as they stand and sends the administrator to isputnik.home's Control panel → Settings → Apps for the pairing, where the secret is generated first and pasted into the one setting this container has, Gateway Secret.
+- **The 0.25.0 image was never published.** Its build failed on a type error in a web test, and the image registry kept 0.24.1 as the latest for three days. This release carries everything 0.25.0 announced.
+
+### 2026.11.05 — 0.25.0 The home app's frame on phones
+- **The games wear the home app's frame.** Stories and Tags join the top bar, phones get home's four tabs and sheets with no top bar, and installing the games page as an app installs iSputnik itself.
+
+### 2026.11.05 — 0.24.1 Clearer Torpedo Run aiming and balanced encounters
+- **Torpedo Run aims more clearly.** The trajectory is drawn as you aim, the horizon is split into distance bands, ships announce their arrival with a countdown, and encounters are balanced so a run is neither a walkover nor a wall.
+
+### 2026.11.04 — 0.24.0 The games on the TV
+- **Chess, Checkers, Sputnik Catch and Torpedo Run play on the TV** with a remote, in the iSputnik TV app 0.8. This server answers the TV's positions: a stateless play endpoint for a game against the computer or two on the sofa, and the legal moves of an online match. Nothing changes in the browser.
+  </Changes>
+
   <Requires>Needs the isputnik (isputnik.home) container, version 4.38 or newer, installed on the same server. The games are reached only through it.</Requires>
 
   <Category>Other:</Category>

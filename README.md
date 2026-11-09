@@ -1,9 +1,11 @@
 # isputnik.games
 
-Family games for [isputnik.home](https://github.com/isputnikdotnet/isputnik.home),
-in a project and container of their own. Board games: **Dots**, **Star Battle**,
-**Chess**, **Dominoes**, and **Checkers** (Russian draughts). Arcade games:
-**Sputnik Catch** and **Torpedo Run**.
+**An add-on for [isputnik.home](https://github.com/isputnikdotnet/isputnik.home):**
+family games in a project and container of their own. It requires the
+isputnik.home container, is installed beside it and is reached only through
+home's `/games` gateway; on its own it does nothing. Board games: **Dots**,
+**Star Battle**, **Chess**, **Dominoes**, and **Checkers** (Russian draughts).
+Arcade games: **Sputnik Catch** and **Torpedo Run**.
 
 > **Alpha.** Two on one screen, against the computer, and online between family
 > members (invite, accept, play from any device; the page polls for the other
