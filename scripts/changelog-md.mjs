@@ -112,7 +112,8 @@ function updateUnraidTemplate() {
   const block = [`  <Date>${stamp}</Date>`, `  <Changes>`, xml(changes), `  </Changes>`].join(eol);
 
   let next = original.replace(/[ \t]*<Date>[^<]*<\/Date>\r?\n[ \t]*<Changes>[\s\S]*?<\/Changes>/, block);
-  if (next === original && !original.includes("<Changes>")) {
+  // An element on a line of its own, so a mention of <Changes> in a comment does not count.
+  if (next === original && !/^[ \t]*<Changes>/m.test(original)) {
     next = original.replace(/(<\/Overview>)/, `$1${eol}${eol}${block}`);
   }
   if (next !== original) fs.writeFileSync(file, next);
