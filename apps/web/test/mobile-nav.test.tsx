@@ -3,6 +3,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MobileNav } from "../src/shared/MobileNav";
 import { LobbyPage } from "../src/pages/LobbyPage";
 import { SessionContext } from "../src/session";
+import type { Me } from "../src/api";
 
 vi.mock("../src/api", async () => {
   const actual = await vi.importActual<typeof import("../src/api")>("../src/api");
@@ -18,7 +19,7 @@ beforeEach(() => {
 
 describe("phone tab bar", () => {
   const admin = { ...me, role: "admin" as const };
-  const renderNav = (user = me) =>
+  const renderNav = (user: Me = me) =>
     render(
       <SessionContext.Provider value={{ status: "ready", user, guests: true, version: "0.6.0", stage: null }}>
         <MobileNav />

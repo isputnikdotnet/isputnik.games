@@ -40,13 +40,17 @@ docker network create isputnik
 ```
 
 **Unraid** — the repository carries a Community Applications template,
-[`isputnik-games.xml`](isputnik-games.xml). It publishes no port, maps `/config`
-to `/mnt/user/appdata/isputnik-games`, runs as `99:100` to match a default
-appdata share, and asks for the gateway secret. Set its Network Type to the
-network above, and the same on the isputnik container (edit it, change Network
-Type, apply); then fill the isputnik container's `Games URL` and `Games Gateway
-Secret` fields. Containers on a user-defined network are still published to the
-LAN on whatever ports they map, so the home app's port works as before.
+[`isputnik-games.xml`](isputnik-games.xml), listed in CA as **isputnik-games**.
+It publishes port 4200 on `bridge`, maps `/config` to
+`/mnt/user/appdata/isputnik-games`, runs as `99:100` to match a default appdata
+share, and asks for one thing: the gateway secret. Pair it from the home app
+(Control panel → Settings → Apps → Games): the address is
+`http://<unraid IP>:4200`, **Generate secret** makes the secret to paste into
+this container's **Gateway Secret** field, and **Test connection** says *Paired*.
+A shared user-defined network (address `http://isputnik-games:4200`) or br0 with
+a fixed IP work too; the port mapping is then simply unused. Publishing the port
+gives nothing away: without the secret every request is answered 401. How the
+listing was made, for the next companion container: [docs/publishing-checklist.md](docs/publishing-checklist.md).
 
 | Variable | Default | What it does |
 |---|---|---|
