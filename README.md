@@ -41,6 +41,11 @@ create it once and start both containers on it:
 docker network create isputnik
 ```
 
+**The image** is `ghcr.io/isputnikdotnet/isputnik.games` (what the compose file
+and the Unraid template pull) and, the same bytes, `isputnikdotnet/isputnik.games`
+on Docker Hub. Both are published by every release tag; `latest` is the newest
+release.
+
 **Unraid** — the repository carries a Community Applications template,
 [`isputnik-games.xml`](isputnik-games.xml), listed in CA as **isputnik-games**.
 It publishes port 4200 on `bridge`, maps `/config` to

@@ -39,6 +39,9 @@ This is an add-on for isputnik.home and does nothing on its own: it has no sign-
 
   <Date>1794225600</Date>
   <Changes>
+### 2026.11.09 — 0.25.4 Also on Docker Hub
+- **The image is on Docker Hub too, as isputnikdotnet/isputnik.games.** Every release tag publishes the same image to ghcr.io and to Docker Hub, as isputnik.home's does, and the Docker Hub page shows this README under a description that says what the container is: an add-on for isputnik.home. The Unraid template and the compose file keep pulling from ghcr.io.
+
 ### 2026.11.09 — 0.25.3 The 0.25.2 image, built this time
 - **The 0.25.2 image never reached the registry.** Its build failed on a test of the Torpedo Run page that played a run from a random seed; with some seeds the scripted shots earned a bonus round, and the card then waited for it to be fired in before the run was over and reported, so the test saw no report. The test now plays a fixed seed. This release carries everything 0.25.2 announced.
 
@@ -52,9 +55,6 @@ This is an add-on for isputnik.home and does nothing on its own: it has no sign-
 
 ### 2026.11.05 — 0.25.0 The home app's frame on phones
 - **The games wear the home app's frame.** Stories and Tags join the top bar, phones get home's four tabs and sheets with no top bar, and installing the games page as an app installs iSputnik itself.
-
-### 2026.11.05 — 0.24.1 Clearer Torpedo Run aiming and balanced encounters
-- **Torpedo Run aims more clearly.** The trajectory is drawn as you aim, the horizon is split into distance bands, ships announce their arrival with a countdown, and encounters are balanced so a run is neither a walkover nor a wall.
   </Changes>
 
   <Requires>Needs the isputnik (isputnik.home) container, version 4.38 or newer, installed on the same server. The games are reached only through it.</Requires>

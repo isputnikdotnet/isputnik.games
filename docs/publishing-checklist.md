@@ -18,6 +18,17 @@ says otherwise.
   be **public** on GitHub (Packages, package settings, Change visibility); the
   first publish of a new package is private, and a private image fails every
   install.
+- The same image also goes to **Docker Hub** as `isputnikdotnet/<repo>`, as
+  home's does: a second entry under `images:` in docker/metadata-action, a
+  `docker/login-action` step for Docker Hub, and `peter-evans/dockerhub-description`
+  after the push with a `short-description` that carries the add-on wording
+  (100 characters at most) and the README as the page. The two repository
+  secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` (an access token with
+  Read, Write, Delete scope) are added by the owner in the repository's
+  Settings, Secrets and variables, Actions, BEFORE the first tag after the
+  change: without them the login step fails the whole tag build and nothing is
+  published anywhere. `gh secret list --repo isputnikdotnet/<repo>` shows
+  whether they are there. Docker Hub creates the repository on the first push.
 - Check it from outside before listing it: an anonymous token from
   `https://ghcr.io/token?scope=repository:isputnikdotnet/<repo>:pull` must get
   `200` for `GET /v2/isputnikdotnet/<repo>/manifests/latest`, and
