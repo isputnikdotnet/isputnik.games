@@ -3,6 +3,13 @@
 Every release, newest first. Generated from `changelog.json` by `npm run changelog` —
 edit that file, not this one.
 
+## 0.26.0 — Play with no connection, and step back through a chess game
+
+- **The games play with no connection.** The first visit after this update stores the whole games app on the device, so the installed iSputnik app opens Games on a plane, or away from the house where the server cannot be reached. It opens as the member who last signed in there, says it is offline, and everything that needs nobody else works: games against the computer, two at one screen, Sputnik Catch, Torpedo Run and Crossmath. Before, the page needed the server just to start and showed "The games are not available".
+- **Results made offline are not lost.** A finished game against the computer, a chess game kept for review and an arcade score wait on the device and are sent when the server is next reached — tried every half minute and whenever the app comes back into view. An arcade run that could not be sent used to count on that device only. Results stay with the member who made them, even if someone else signs in on the same device first.
+- **What needs the server says so.** Online matches, chess puzzles, My games and game review show "This needs a connection" instead of an error, and inviting is switched off until the connection is back. A device nobody has signed in on, and a guest, still need the server.
+- **Chess: step back through the game.** A row under the move list — Start, Back, Play, Forward, End — shows any earlier position of the game being played, all the way to the first move, against the computer, at one screen and online. It only looks: the game stays where it is, pieces move again once you are back at the last move, and Undo is still what takes a move back. Play runs the moves one after another and becomes Stop while it does. Game review has the same row; its Next button is now Forward.
+
 ## 0.25.4 — Also on Docker Hub
 
 - **The image is on Docker Hub too, as isputnikdotnet/isputnik.games.** Every release tag publishes the same image to ghcr.io and to Docker Hub, as isputnik.home's does, and the Docker Hub page shows this README under a description that says what the container is: an add-on for isputnik.home. The Unraid template and the compose file keep pulling from ghcr.io.

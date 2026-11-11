@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Flag, History, Repeat2, Settings2 } from "lucide-react";
-import type { ChessMove, ChessState, PlayerIndex } from "@isputnik/games-engine";
+import { Chess, type ChessMove, type ChessState, type PlayerIndex } from "@isputnik/games-engine";
 import { ApiError, answerMatch, postMessage, postMove, resignMatch } from "../../api";
 import { Comms } from "../../shared/Comms";
 import { withTalk, type CommsLine } from "../../shared/commsLines";
@@ -20,6 +20,9 @@ import { chessReason } from "./ending";
 import { ChessTable } from "./ChessTable";
 import { ChessRatingLine, useChessRatingAfter } from "./RatingLine";
 import { ChessSettingsDialog } from "./SettingsDialog";
+import { ReplayControls, ReplayNote, useReplay } from "./replay";
+
+const NO_MOVES: ChessMove[] = [];
 
 // An online game of chess: the same table, the server's position, and the
 // other player somewhere else. The board faces your colour; moves go to the
@@ -43,6 +46,10 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
   const rated = match?.status === "finished" && session.status === "ready" && session.user.role !== "guest"
     && !match.players.some((player) => player.guest);
   const chessRating = useChessRatingAfter(rated ? match.id : null);
+  // Looking back over the moves so far; the game stays at its last move.
+  const moves = (match?.state as ChessState | undefined)?.moves ?? NO_MOVES;
+  const replay = useReplay(moves.length);
+  const earlier = useMemo(() => (replay.atEnd ? null : Chess.replay(moves.slice(0, replay.ply))), [moves, replay.atEnd, replay.ply]);
 
   if (!match) {
     return (
@@ -140,9 +147,9 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
         title={t("games.chess.name")}
         board={
           <ChessTable
-            state={state}
+            state={earlier ?? state}
             orientation={orientation}
-            movable={myMove && !sending ? mySeat : null}
+            movable={myMove && !sending && !earlier ? mySeat : null}
             onMove={(played) => void move(played)}
             names={names}
           />
@@ -151,6 +158,7 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
           <div className="chess-status">
             <p className={`chess-status-line${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
             {reason && <p className="muted chess-reason">{reason}</p>}
+            <ReplayNote replay={replay} />
             {chessRating && <ChessRatingLine rating={chessRating} />}
           </div>
         }
@@ -163,6 +171,7 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
         log={talkable && <Comms lines={lines} onSend={(text) => void say(text)} phrases={phrases} sendTo={them.name} busy={saying} error={sayError} />}
         actions={
           <>
+            {(match.status === "playing" || finished) && <ReplayControls replay={replay} />}
             {match.status === "playing" && (
               <>
                 <Button variant="secondary" onClick={() => setFlipped((f) => !f)}>

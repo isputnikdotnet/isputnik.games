@@ -564,7 +564,12 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       prefix: `${BASE_PATH}/`,
       wildcard: false,
       // Built files are content-hashed; index.html is not.
-      cacheControl: false
+      cacheControl: false,
+      // The offline worker names the build it stores: an old copy of it would
+      // keep a device on an old release.
+      setHeaders: (res, file) => {
+        if (file.endsWith("sw.js")) res.header("Cache-Control", "no-cache");
+      }
     });
     // The bare prefix and every page under it is the app shell; the API answers
     // its own 404s so a stale client never gets HTML where it expected JSON.

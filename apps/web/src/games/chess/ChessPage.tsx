@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Flag, Handshake, History, List, LogOut, Repeat2, RotateCcw, Settings2, Undo2 } from "lucide-react";
-import { chess, type AiLevel, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
+import { Chess, chess, type AiLevel, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
 import { Comms } from "../../shared/Comms";
 import { useFeed } from "../../shared/useFeed";
 import { localSound, useGameSounds } from "../../shared/useGameSounds";
@@ -20,6 +20,7 @@ import { ChessSettingsDialog } from "./SettingsDialog";
 import { humanSeat, isComputerSeat, useChessGame } from "./useChessGame";
 import { useChessRecord } from "./useChessRecord";
 import { ChessRatingLine } from "./RatingLine";
+import { ReplayControls, ReplayNote, useReplay } from "./replay";
 import type { ChessSetup } from "./storage";
 
 const LEVEL_LABEL = { easy: "chess.setup.levelEasy", normal: "chess.setup.levelNormal", hard: "chess.setup.levelHard" } as const;
@@ -44,6 +45,10 @@ export function ChessPage() {
   const me = game ? humanSeat(game.setup) : null;
   useGameSounds(game && localSound("chess", feed, me, game.state.status));
   const recordId = useChessRecord(game);
+  // Looking back over the moves so far; the game stays at its last move.
+  const moves = game?.state.moves ?? NO_MOVES;
+  const replay = useReplay(moves.length);
+  const earlier = useMemo(() => (replay.atEnd ? null : Chess.replay(moves.slice(0, replay.ply))), [moves, replay.atEnd, replay.ply]);
   const chessRating = useComputerResult(game && me !== null && game.state.status.kind === "finished"
     ? { game: "chess", key: game.key, level: game.setup.level, human: me, winner: game.state.status.winner }
     : null);
@@ -110,11 +115,12 @@ export function ChessPage() {
       <GameStage
         className="chess-stage"
         title={t("games.chess.name")}
-        board={<ChessTable state={state} orientation={orientation} movable={controller.humanToMove} onMove={controller.move} names={names} />}
+        board={<ChessTable state={earlier ?? state} orientation={orientation} movable={earlier ? null : controller.humanToMove} onMove={controller.move} names={names} />}
         score={
           <div className="chess-status">
             <p className={`chess-status-line${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
             {reason && <p className="muted chess-reason">{reason}</p>}
+            <ReplayNote replay={replay} />
             {finished && chessRating && <ChessRatingLine rating={chessRating} />}
             {setup.mode === "computer" && !finished && (
               <p className="muted chess-reason">{t("chess.levelLine", { level: t(LEVEL_LABEL[setup.level]) })}</p>
@@ -124,6 +130,7 @@ export function ChessPage() {
         log={<Comms lines={lines} />}
         actions={
           <>
+            <ReplayControls replay={replay} />
             {!finished && (
               <>
                 <Button variant="secondary" onClick={controller.undo} disabled={state.moves.length === 0 || controller.thinking}>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, List, Repeat2, Settings2 } from "lucide-react";
+import { List, Repeat2, Settings2 } from "lucide-react";
 import { Chess, type AiLevel, type ChessMove, type ChessState, type PlayerIndex } from "@isputnik/games-engine";
 import { fetchGameRecord, fetchMatch, type ReviewMode } from "../../api";
 import { Button } from "../../shared/Button";
@@ -11,10 +11,11 @@ import { chessReason } from "./ending";
 import { localSan } from "./comms";
 import { ChessSettingsDialog } from "./SettingsDialog";
 import { ChessTable } from "./ChessTable";
+import { ReplayControls, useReplay } from "./replay";
 
 // A finished game, to step through: the board at any move, the move list
-// beside it (tap a move to go there), and Start / Back / Next / End — the
-// arrow keys and Home / End too. It opens at the final position. A game kept
+// beside it (tap a move to go there), and Start / Back / Play / Forward / End —
+// the arrow keys and Home / End too. It opens at the final position. A game kept
 // from one device comes from /records, an online one from its match.
 
 interface ReviewGame {
@@ -35,7 +36,6 @@ export function ChessReviewPage({ source, id }: { source: "record" | "match"; id
   const { t, i18n } = useTranslation();
   const [game, setGame] = useState<ReviewGame | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [ply, setPly] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -69,7 +69,6 @@ export function ChessReviewPage({ source, id }: { source: "record" | "match"; id
     load.then((loaded) => {
       if (!live) return;
       setGame(loaded);
-      setPly(loaded.moves.length);
     }, (failure: unknown) => live && setError(failure instanceof Error ? failure.message : String(failure)));
     return () => {
       live = false;
@@ -85,7 +84,8 @@ export function ChessReviewPage({ source, id }: { source: "record" | "match"; id
   }, [game]);
 
   const last = game ? game.moves.length : 0;
-  const go = (to: number) => setPly(Math.max(0, Math.min(last, to)));
+  const replay = useReplay(last);
+  const { ply, go } = replay;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -99,11 +99,11 @@ export function ChessReviewPage({ source, id }: { source: "record" | "match"; id
       const step = moves[event.key];
       if (!step) return;
       event.preventDefault();
-      setPly((current) => Math.max(0, Math.min(last, step(current))));
+      go(step(ply));
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [last, settingsOpen]);
+  }, [last, ply, go, settingsOpen]);
 
   if (error) {
     return (
@@ -143,20 +143,7 @@ export function ChessReviewPage({ source, id }: { source: "record" | "match"; id
         log={<MoveList game={game} positions={positions} ply={ply} onGo={go} />}
         actions={
           <>
-            <div className="review-steps" role="group" aria-label={t("chess.review.steps")}>
-              <Button variant="secondary" onClick={() => go(0)} disabled={ply === 0} aria-label={t("chess.review.start")} title={t("chess.review.start")}>
-                <ChevronsLeft size={18} aria-hidden="true" />
-              </Button>
-              <Button variant="secondary" onClick={() => go(ply - 1)} disabled={ply === 0} aria-label={t("chess.review.back")} title={t("chess.review.back")}>
-                <ChevronLeft size={18} aria-hidden="true" />
-              </Button>
-              <Button variant="secondary" onClick={() => go(ply + 1)} disabled={ply === last} aria-label={t("chess.review.next")} title={t("chess.review.next")}>
-                <ChevronRight size={18} aria-hidden="true" />
-              </Button>
-              <Button variant="secondary" onClick={() => go(last)} disabled={ply === last} aria-label={t("chess.review.end")} title={t("chess.review.end")}>
-                <ChevronsRight size={18} aria-hidden="true" />
-              </Button>
-            </div>
+            <ReplayControls replay={replay} />
             <Button variant="secondary" onClick={() => setFlipped((f) => !f)}>
               <Repeat2 size={16} aria-hidden="true" /> {t("chess.flip")}
             </Button>

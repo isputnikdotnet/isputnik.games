@@ -105,6 +105,7 @@ export function SputnikPage() {
     saved = t("sputnik.saved.saved", { best: report.answer.best, game: run.finished.variant === "A" ? t("sputnik.gameA") : t("sputnik.gameB") });
   }
   if (run.mode === "over" && run.finished && report?.status === "failed") saved = t("sputnik.saved.failed");
+  if (run.mode === "over" && run.finished && report?.status === "waiting") saved = t("sputnik.saved.waiting");
 
   // The keys, always in view: on a phone the screen's own buttons are the
   // controls, and held upright it says the wide screen is a turn away.

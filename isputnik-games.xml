@@ -37,8 +37,14 @@ Family games for isputnik.home, in a container of their own. Board games: Dots, 
 This is an add-on for isputnik.home and does nothing on its own: it has no sign-in and no pages of its own. Install it beside the isputnik container; the family signs in once, in isputnik.home, and finds Games in its menu, at /games on the same address. Set it up from isputnik.home, on Control panel, Settings, Apps, Games. Before installing, press Generate secret there and copy it (it is shown once); paste it into the Gateway Secret field below, which is required. Once the container runs, enter its address on the same page (http://[your Unraid IP]:4200 as installed here) and press Test connection, which then says Paired. Who may play, and from where (home network only, or anywhere), is chosen on Security, App access. Needs isputnik.home 4.38 or newer.
   </Overview>
 
-  <Date>1794225600</Date>
+  <Date>1794398400</Date>
   <Changes>
+### 2026.11.11 — 0.26.0 Play with no connection, and step back through a chess game
+- **The games play with no connection.** The first visit after this update stores the whole games app on the device, so the installed iSputnik app opens Games on a plane, or away from the house where the server cannot be reached. It opens as the member who last signed in there, says it is offline, and everything that needs nobody else works: games against the computer, two at one screen, Sputnik Catch, Torpedo Run and Crossmath. Before, the page needed the server just to start and showed "The games are not available".
+- **Results made offline are not lost.** A finished game against the computer, a chess game kept for review and an arcade score wait on the device and are sent when the server is next reached — tried every half minute and whenever the app comes back into view. An arcade run that could not be sent used to count on that device only. Results stay with the member who made them, even if someone else signs in on the same device first.
+- **What needs the server says so.** Online matches, chess puzzles, My games and game review show "This needs a connection" instead of an error, and inviting is switched off until the connection is back. A device nobody has signed in on, and a guest, still need the server.
+- **Chess: step back through the game.** A row under the move list — Start, Back, Play, Forward, End — shows any earlier position of the game being played, all the way to the first move, against the computer, at one screen and online. It only looks: the game stays where it is, pieces move again once you are back at the last move, and Undo is still what takes a move back. Play runs the moves one after another and becomes Stop while it does. Game review has the same row; its Next button is now Forward.
+
 ### 2026.11.09 — 0.25.4 Also on Docker Hub
 - **The image is on Docker Hub too, as isputnikdotnet/isputnik.games.** Every release tag publishes the same image to ghcr.io and to Docker Hub, as isputnik.home's does, and the Docker Hub page shows this README under a description that says what the container is: an add-on for isputnik.home. The Unraid template and the compose file keep pulling from ghcr.io.
 
@@ -52,9 +58,6 @@ This is an add-on for isputnik.home and does nothing on its own: it has no sign-
 ### 2026.11.09 — 0.25.1 Unraid Community Applications listing
 - **Ready for Unraid Community Applications as isputnik-games.** The template now publishes port 4200 on the ordinary bridge network, so isputnik.home reaches the games at the server's own address with nothing to create first; a shared Docker network or br0 with a fixed IP work as before. It names the games as they stand and sends the administrator to isputnik.home's Control panel → Settings → Apps for the pairing, where the secret is generated first and pasted into the one setting this container has, Gateway Secret.
 - **The 0.25.0 image was never published.** Its build failed on a type error in a web test, and the image registry kept 0.24.1 as the latest for three days. This release carries everything 0.25.0 announced.
-
-### 2026.11.05 — 0.25.0 The home app's frame on phones
-- **The games wear the home app's frame.** Stories and Tags join the top bar, phones get home's four tabs and sheets with no top bar, and installing the games page as an app installs iSputnik itself.
   </Changes>
 
   <Requires>Needs the isputnik (isputnik.home) container, version 4.38 or newer, installed on the same server. The games are reached only through it.</Requires>

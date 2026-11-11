@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { getArcadeGame, getGame, getSoloGame } from "@isputnik/games-engine";
 import { SessionProvider, useSession } from "./session";
-import { useRoute } from "./router";
+import { follow, href, useRoute } from "./router";
 import { Shell } from "./shared/Shell";
 import { MessageBox } from "./shared/MessageBox";
 import { LobbyPage } from "./pages/LobbyPage";
@@ -37,6 +37,19 @@ function Routes() {
   }
   if (session.status === "unavailable") {
     return <MessageBox tone="error" title={t("app.unavailableTitle")}>{t("app.unavailableBody")}</MessageBox>;
+  }
+
+  // With no server, what lives on it says so instead of failing: an online
+  // match, the puzzles it deals, the games it keeps for review.
+  if (session.offline && (route.name === "match" || route.name === "puzzles" || route.name === "myGames" || route.name === "review")) {
+    return (
+      <section className="offline-page">
+        <MessageBox tone="info" title={t("app.offlineNeedsTitle")}>{t("app.offlineNeedsBody")}</MessageBox>
+        <p>
+          <a className="text-link" href={href()} onClick={(event) => follow(event, href())}>{t("app.allGames")}</a>
+        </p>
+      </section>
+    );
   }
 
   // A guest's lobby is the one match their link is for; there is nothing else to pick.

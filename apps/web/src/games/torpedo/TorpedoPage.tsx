@@ -230,6 +230,7 @@ function RoundCard({ mode, state, report, best, onFire }: { mode: "bonus" | "ove
   if (mode === "over" && report?.status === "saving") saved = t("torpedo.saved.saving");
   if (mode === "over" && report?.status === "saved") saved = t("torpedo.saved.saved", { best: formatScore(report.answer.best) });
   if (mode === "over" && report?.status === "failed") saved = t("torpedo.saved.failed");
+  if (mode === "over" && report?.status === "waiting") saved = t("torpedo.saved.waiting");
 
   return (
     <section className="torpedo-card" aria-labelledby="torpedo-card-title" aria-live="polite">

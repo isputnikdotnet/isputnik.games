@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { BellRing, Cpu, Globe, Hourglass, Joystick, Puzzle, UserPlus, Users, type LucideIcon } from "lucide-react";
 import { answerMatch, fetchMatches, fetchStats, type FamilyStats, type MatchSummary } from "../api";
 import { follow, href, matchHref, navigate } from "../router";
-import { useSession } from "../session";
+import { useOffline, useSession } from "../session";
 import { ago } from "../shared/ago";
 import { Avatar } from "../shared/Avatar";
 import { Button } from "../shared/Button";
@@ -41,6 +41,7 @@ function localMonthStart(now = new Date()): string {
 export function LobbyPage() {
   const { t, i18n } = useTranslation();
   const session = useSession();
+  const offline = useOffline();
   const myId = session.status === "ready" ? session.user.id : "";
   const myName = session.status === "ready" ? session.user.name : "";
   const [matches, setMatches] = useState<MatchSummary[] | null>(null);
@@ -58,11 +59,13 @@ export function LobbyPage() {
   }, []);
 
   useEffect(() => {
+    // Offline there is nobody to ask; the list comes back with the connection.
+    if (offline) return;
     void load();
     // A member who left the tab open sees a new invitation without a reload.
     const timer = window.setInterval(() => void load(), 15000);
     return () => window.clearInterval(timer);
-  }, [load]);
+  }, [load, offline]);
 
   // The results change only when a match ends: they are fetched once the list
   // is in, and again when a match in it has finished since — not with every poll.
@@ -129,11 +132,13 @@ export function LobbyPage() {
         </div>
         <div className="lobby-head-actions">
           <PhoneSoundToggle />
-          <Button variant="primary" onClick={() => setInviting({})}>
+          <Button variant="primary" onClick={() => setInviting({})} disabled={offline}>
             <UserPlus size={16} aria-hidden="true" /> {t("lobby.online.invite")}
           </Button>
         </div>
       </header>
+
+      {offline && <MessageBox tone="info" title={t("app.offlineTitle")}>{t("app.offlineBody")}</MessageBox>}
 
       <div className="lobby-body">
         <div className="lobby-main">
@@ -148,8 +153,9 @@ export function LobbyPage() {
                 {t("lobby.waiting.title")}
                 {waiting > 0 && <span className="lobby-count">{waiting}</span>}
               </h2>
-              {failed && <MessageBox tone="error" title={t("lobby.online.loadFailed")} />}
-              {matches && waiting === 0 && !failed && (
+              {failed && !offline && <MessageBox tone="error" title={t("lobby.online.loadFailed")} />}
+              {offline && !matches && <p className="muted">{t("lobby.online.offline")}</p>}
+              {matches && waiting === 0 && (!failed || offline) && (
                 <p className="muted">{list.length === 0 ? t("lobby.online.empty") : t("lobby.waiting.none")}</p>
               )}
               {waiting > 0 && (
@@ -251,7 +257,7 @@ export function LobbyPage() {
                       </ul>
                       <div className="game-card-actions">
                         {link(to, "primary-button game-card-play", resuming ? t("lobby.continue") : t("lobby.play"))}
-                        {entry.modes.includes("online") && <Button variant="secondary" onClick={() => setInviting({ game: gameId })}>{t("lobby.games.invite")}</Button>}
+                        {entry.modes.includes("online") && <Button variant="secondary" onClick={() => setInviting({ game: gameId })} disabled={offline}>{t("lobby.games.invite")}</Button>}
                       </div>
                     </div>
                   </article>

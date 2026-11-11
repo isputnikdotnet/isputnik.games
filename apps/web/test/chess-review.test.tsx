@@ -5,6 +5,7 @@ import type { ReviewItem, ReviewRecord } from "../src/api";
 import { ChessReviewPage } from "../src/games/chess/ReviewPage";
 import { MyChessGamesPage } from "../src/games/chess/MyGamesPage";
 import { ChessPage } from "../src/games/chess/ChessPage";
+import { REPLAY_STEP } from "../src/games/chess/replay";
 import { parseRoute } from "../src/router";
 
 vi.mock("../src/api", async () => {
@@ -67,6 +68,57 @@ describe("game review", () => {
     expect(screen.getByText("0 of 4")).toBeInTheDocument();
     await user.keyboard("{End}");
     expect(screen.getByText("4 of 4")).toBeInTheDocument();
+  });
+});
+
+describe("playing a game back", () => {
+  it("Play runs a review from the start to the end, and Stop holds it where it is", async () => {
+    const user = userEvent.setup();
+    REPLAY_STEP.ms = 20;
+    render(<ChessReviewPage source="record" id="rec1" />);
+    await screen.findByText("4 of 4");
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    expect(screen.getByText("0 of 4")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stop" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("4 of 4")).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+
+    REPLAY_STEP.ms = 60_000;
+    await user.click(screen.getByRole("button", { name: "Start" }));
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    await user.click(screen.getByRole("button", { name: "Stop" }));
+    expect(screen.getByText("0 of 4")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+  });
+
+  it("a game in play steps back to its first position and forward again, without losing a move", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("isputnik-games.chess.local", JSON.stringify({
+      setup: { mode: "local", computerPlays: 1, level: "easy" }, key: "local-key-03",
+      moves: ["e2e4", "e7e5", "g1f3"].map(mv), finished: null
+    }));
+    window.history.replaceState(null, "", "/games/chess");
+    render(<ChessPage />);
+    expect(square("f3")).toHaveAccessibleName(/knight/i);
+    expect(screen.getByRole("button", { name: "Forward" })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByText("Looking back: 2 of 3")).toBeInTheDocument();
+    expect(square("g1")).toHaveAccessibleName(/knight/i);
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByText("Looking back: 0 of 3")).toBeInTheDocument();
+    expect(square("e2")).toHaveAccessibleName(/pawn/i);
+    expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
+
+    // An earlier position is only looked at: tapping a piece picks nothing up.
+    await user.click(square("e2"));
+    expect(square("e2")).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(screen.getByRole("button", { name: "End" }));
+    expect(screen.queryByText(/Looking back/)).not.toBeInTheDocument();
+    expect(square("f3")).toHaveAccessibleName(/knight/i);
+    expect(JSON.parse(localStorage.getItem("isputnik-games.chess.local")!).moves).toHaveLength(3);
   });
 });
 

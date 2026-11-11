@@ -8,6 +8,10 @@
     "unavailableTitle": "The games are not available",
     "unavailableBody": "The games server did not answer. Try again in a moment.",
     "notFound": "There is no such page.",
+    "offlineTitle": "Playing offline",
+    "offlineBody": "The games server can't be reached. Games against the computer, on one screen and for one player still work, and your results are sent when you're back.",
+    "offlineNeedsTitle": "This needs a connection",
+    "offlineNeedsBody": "Online matches, chess puzzles and your saved games are on the games server, which can't be reached right now.",
     "allGames": "All games",
     "guestUser": "{{name}} · guest",
     "soundOn": "Turn sounds on",
@@ -125,7 +129,8 @@
       "decline": "Decline",
       "withdraw": "Withdraw",
       "vs": "vs {{name}}",
-      "loadFailed": "Unable to load your matches"
+      "loadFailed": "Unable to load your matches",
+      "offline": "Online matches come back with the connection."
     },
     "version": "iSputnik Games {{version}}",
     "stageAlpha": "alpha",
@@ -578,8 +583,11 @@
       "steps": "Step through the game",
       "start": "Start",
       "back": "Back",
-      "next": "Next",
+      "next": "Forward",
       "end": "End",
+      "play": "Play",
+      "stop": "Stop",
+      "viewing": "Looking back: {{ply}} of {{count}}",
       "moves": "Moves",
       "at": "{{ply}} of {{count}}",
       "noMoves": "No moves were played."
@@ -837,6 +845,7 @@
     "saved": {
       "saving": "Saving to the family board…",
       "saved": "On the family board. Your best at {{game}}: {{best}}.",
+      "waiting": "No connection: this score goes to the family board when you're back.",
       "failed": "This score could not be saved to the family board."
     },
     "keys": {
@@ -949,6 +958,7 @@
     "saved": {
       "saving": "Saving to the family board…",
       "saved": "On the family board. Your best: {{best}}.",
+      "waiting": "No connection: this score goes to the family board when you're back.",
       "failed": "This score could not be saved to the family board."
     },
     "fullscreen": {

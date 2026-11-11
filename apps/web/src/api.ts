@@ -1,6 +1,7 @@
 // The games API, under the same /games prefix the pages live at. The home gateway
 // authenticates every call; this module only needs to echo its CSRF token on
 // state-changing requests, the way the home SPA does.
+import { flushOutbox, sendOrQueue } from "./outbox";
 import type { AiLevel, ChessMove, ChessPuzzle, CrossmathLevel, CrossmathPlay, GameEvent, GameStatus, PlayerIndex, PuzzleLevel, PuzzleType } from "@isputnik/games-engine";
 
 export const API_BASE = "/games/api";
@@ -110,6 +111,15 @@ export function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
 const post = <T>(path: string, body?: unknown) =>
   apiFetch<T>(path, { method: "POST", ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
 
+/** A result that must not be lost: sent now, or kept on the device and sent
+ *  when the server can next be reached (outbox.ts). */
+const postOrKeep = <T>(path: string, body: unknown) => sendOrQueue<T>(() => post<T>(path, body), { path, body });
+
+/** Sends the results that waited for a connection. Answers how many went. */
+export function flushQueued(): Promise<number> {
+  return flushOutbox((entry) => post(entry.path, entry.body));
+}
+
 export function fetchMe(): Promise<MeResponse> {
   return apiFetch<MeResponse>("/me");
 }
@@ -204,7 +214,7 @@ export interface ComputerResult {
 
 /** A game against the computer has ended on this device. */
 export function reportComputerResult(result: ComputerResult): Promise<{ recorded: boolean; chessRating?: ChessRating }> {
-  return post<{ recorded: boolean; chessRating?: ChessRating }>("/computer-results", result);
+  return postOrKeep<{ recorded: boolean; chessRating?: ChessRating }>("/computer-results", result);
 }
 
 /** A finished run of a game for one player: the server replays it and keeps the score it comes to. */
@@ -226,7 +236,7 @@ export interface ArcadeScoreAnswer {
 }
 
 export function reportArcadeScore(run: ArcadeRun): Promise<ArcadeScoreAnswer> {
-  return post<ArcadeScoreAnswer>("/arcade/scores", run);
+  return postOrKeep<ArcadeScoreAnswer>("/arcade/scores", run);
 }
 
 // ── Game review ─────────────────────────────────────────────────────────────
@@ -266,7 +276,7 @@ export interface RecordInput {
 
 /** A finished game on this device, kept for review; resending it changes nothing. */
 export function saveGameRecord(input: RecordInput): Promise<{ recorded: boolean; id: string }> {
-  return post<{ recorded: boolean; id: string }>("/records", input);
+  return postOrKeep<{ recorded: boolean; id: string }>("/records", input);
 }
 
 export async function fetchMyGames(): Promise<ReviewItem[]> {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { reportArcadeScore, type ArcadeScoreAnswer } from "../../api";
+import { ApiError, reportArcadeScore, type ArcadeScoreAnswer } from "../../api";
 import { useSession } from "../../session";
 
 /** What a finished run of any arcade game hands over to be reported. */
@@ -13,12 +13,14 @@ export interface ReportableRun {
 export type ReportState =
   | { status: "saving" }
   | { status: "saved"; answer: ArcadeScoreAnswer }
+  /** The server could not be reached: the run is kept and goes later. */
+  | { status: "waiting" }
   | { status: "failed" };
 
 // A finished run goes to the server for the family's board as its seed and
 // input log; the server replays it and answers with the score it came to and
-// the member's best across devices. One try: a run is not kept on the device,
-// so one that fails to send (offline) is the device's best only. A guest's
+// the member's best across devices. A run that cannot be sent (offline) waits
+// on the device and goes when the server is next reached (outbox.ts). A guest's
 // runs are not the family's.
 export function useArcadeReport(game: string, run: ReportableRun | null): ReportState | null {
   const session = useSession();
@@ -32,7 +34,7 @@ export function useArcadeReport(game: string, run: ReportableRun | null): Report
     setReport({ key, state: { status: "saving" } });
     reportArcadeScore({ game, variant: run.variant, seed: run.seed, key, log: run.log }).then(
       (answer) => live && setReport({ key, state: { status: "saved", answer } }),
-      () => live && setReport({ key, state: { status: "failed" } })
+      (error: unknown) => live && setReport({ key, state: { status: error instanceof ApiError && error.status !== 401 && error.status < 500 ? "failed" : "waiting" } })
     );
     return () => {
       live = false;

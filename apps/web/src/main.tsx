@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { i18nReady } from "./i18n";
 import { App } from "./App";
+import { registerOfflineWorker } from "./offline";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/app.css";
@@ -23,6 +24,8 @@ try {
 } catch {
   /* private mode */
 }
+
+registerOfflineWorker();
 
 void i18nReady.then(() => {
   createRoot(document.getElementById("root")!).render(
