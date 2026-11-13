@@ -1,16 +1,8 @@
+import type { TFunction } from "i18next";
 import type { GameEvent, PlayerIndex } from "@isputnik/games-engine";
 import type { CommsLine } from "../../shared/commsLines";
 
-type Key =
-  | "dominoes.comms.lead"
-  | "dominoes.comms.left"
-  | "dominoes.comms.right"
-  | "dominoes.comms.drew"
-  | "dominoes.comms.pass"
-  | "dominoes.comms.handOut"
-  | "dominoes.comms.handFish"
-  | "dominoes.comms.handTie";
-type T = (key: Key, options?: Record<string, unknown>) => string;
+type T = TFunction;
 
 interface HandEvent {
   hand: number;

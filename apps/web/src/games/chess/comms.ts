@@ -1,7 +1,8 @@
+import type { TFunction } from "i18next";
 import type { GameEvent, PlayerIndex } from "@isputnik/games-engine";
 import type { CommsLine } from "../../shared/commsLines";
 
-type T = (key: "chess.sanLetters" | "chess.comms.check" | "chess.comms.mate") => string;
+type T = TFunction;
 
 /**
  * A move in standard notation with the reader's piece letters: the engine

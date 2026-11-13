@@ -1,6 +1,7 @@
+import type { TFunction } from "i18next";
 import type { TimeControl } from "@isputnik/games-engine";
 
-type T = (key: "chess.clock.minutes", options: { count: number }) => string;
+type T = TFunction;
 
 /** A time control as the setup offers it: "5 min", or "3 | 2" with an increment. */
 export function clockLabel(control: TimeControl, t: T): string {

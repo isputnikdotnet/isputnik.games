@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StarBattle, otherPlayer, type PlayerIndex, type StarBattleState, type ShotResult } from "@isputnik/games-engine";
@@ -180,7 +181,7 @@ function Pips({ lit, total }: { lit: number; total: number }) {
 
 /** "Dad: B4 — hit", the line under the status. */
 export function lastShotLine(
-  t: (key: "starbattle.status.last" | "starbattle.result.miss" | "starbattle.result.hit" | "starbattle.result.destroyed", options?: Record<string, unknown>) => string,
+  t: TFunction,
   columns: string,
   shot: { by: PlayerIndex; x: number; y: number; result: ShotResult },
   name: string

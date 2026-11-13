@@ -1,7 +1,8 @@
+import type { TFunction } from "i18next";
 import type { GameEvent, PlayerIndex } from "@isputnik/games-engine";
 import type { CommsLine } from "../../shared/commsLines";
 
-type T = (key: "dots.comms.dot" | "dots.comms.lost", options?: Record<string, unknown>) => string;
+type T = TFunction;
 
 /** The events of a game of Dots as Comms lines, seen from seat `me`: a dot,
  *  and what it captured or that it was lost at once. */

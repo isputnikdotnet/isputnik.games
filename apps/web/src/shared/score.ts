@@ -1,7 +1,8 @@
+import type { TFunction } from "i18next";
 import { getGame } from "@isputnik/games-engine";
 import type { MatchSummary } from "../api";
 
-type T = (key: "lobby.penaltyScore", options: Record<string, unknown>) => string;
+type T = TFunction;
 
 /** A match's score for a list, seat 0 first: "3 : 1". A game that collects
  *  points towards losing (Dominoes) says so, or "12 : 54" would read as the

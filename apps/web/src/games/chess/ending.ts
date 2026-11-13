@@ -1,8 +1,5 @@
-type T = (key:
-  | "chess.end.reasonCheckmate" | "chess.end.reasonStalemate" | "chess.end.reasonRepetition"
-  | "chess.end.reasonFiftyMoves" | "chess.end.reasonMaterial" | "chess.end.reasonAgreed" | "chess.end.reasonResigned"
-  | "chess.end.reasonTimeout" | "chess.end.reasonTimeoutDraw",
-  options?: Record<string, unknown>) => string;
+import type { TFunction } from "i18next";
+type T = TFunction;
 
 /** Why a game of chess ended, in a sentence. `resigned` names the side that
  *  lost it — who gave up, or whose clock ran out; `draw` says nobody won. */
