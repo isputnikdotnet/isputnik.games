@@ -2,7 +2,7 @@
 // authenticates every call; this module only needs to echo its CSRF token on
 // state-changing requests, the way the home SPA does.
 import { flushOutbox, sendOrQueue } from "./outbox";
-import type { AiLevel, ChessMove, ChessPuzzle, CrossmathLevel, CrossmathPlay, GameEvent, GameStatus, PlayerIndex, PuzzleLevel, PuzzleType } from "@isputnik/games-engine";
+import type { AiLevel, ChessMove, ChessPuzzle, CrossmathLevel, CrossmathPlay, GameEvent, GameStatus, PlayerIndex, PuzzleLevel, PuzzleType, TimeControl } from "@isputnik/games-engine";
 
 export const API_BASE = "/games/api";
 
@@ -64,6 +64,9 @@ export interface MatchDetail<S extends { status: GameStatus } = { status: GameSt
   /** What every move did, in order, for the Comms panel. */
   feed: GameEvent[];
   messages: MatchMessage[];
+  /** A game on the clock: each side's time left when the server answered, in
+   *  ms, and whose is running. */
+  clock?: { control: TimeControl; left: [number, number]; running: PlayerIndex | null };
 }
 
 export class ApiError extends Error {
@@ -271,7 +274,7 @@ export interface RecordInput {
   level?: AiLevel;
   seat?: PlayerIndex;
   moves: ChessMove[];
-  finish?: { reason: "agreed" | "resigned"; resigning?: PlayerIndex };
+  finish?: { reason: "agreed" | "resigned" | "timeout"; resigning?: PlayerIndex };
 }
 
 /** A finished game on this device, kept for review; resending it changes nothing. */
@@ -426,11 +429,15 @@ export interface GuestInvite {
   state: "live" | "expired" | "revoked" | "pending";
 }
 
+/** How long a new guest link works, in days. */
+export type GuestLinkDays = 1 | 7 | 14;
+
 export interface CreateGuestInviteInput {
   game: string;
   options: unknown;
   seat: PlayerIndex;
   guestName: string;
+  days?: GuestLinkDays;
 }
 
 export interface GuestInviteCreated {

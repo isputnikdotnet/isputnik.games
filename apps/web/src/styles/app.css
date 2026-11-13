@@ -941,6 +941,35 @@
   color: #1d2a2b;
 }
 
+/* ── The tip ───────────────────────────────────────────────────────────── */
+
+.lobby-tip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: var(--text-md);
+}
+
+.lobby-tip > svg:first-child {
+  flex: none;
+  color: var(--accent);
+}
+
+.lobby-tip > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.lobby-tip-info {
+  flex: none;
+  color: var(--muted);
+}
+
 /* ── Waiting for you ─────────────────────────────────────────────────── */
 
 /* Your turn: a card of its own, tinted with the accent, an icon beside it. */
@@ -952,6 +981,37 @@
   border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
   border-radius: 16px;
   background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+
+/* The backdrop: mountains and a planet on the right, fading out leftwards
+   so the text and the waiting cards stay on a calm ground. */
+.lobby-waiting {
+  position: relative;
+  overflow: hidden;
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+}
+
+.lobby-waiting-nudge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: var(--space-3);
+}
+
+.lobby-waiting > :not(.skyline) {
+  position: relative;
+}
+
+.skyline {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(70%, 720px);
+  height: 100%;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to left, #000 55%, transparent);
+  mask-image: linear-gradient(to left, #000 55%, transparent);
 }
 
 .lobby-waiting.is-due {
@@ -1076,7 +1136,7 @@
   display: grid;
   /* Small tiles, as many abreast as fit: the games are picked at a glance,
      the picture and the name are enough to know one. */
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: var(--space-3);
 }
 
@@ -1088,12 +1148,50 @@
   border-radius: 12px;
   background: var(--surface);
   box-shadow: 0 1px 3px var(--shadow);
+  transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+}
+
+@media (hover: hover) {
+  .game-card:hover {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+    box-shadow: 0 6px 18px var(--shadow);
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-card:hover {
+    transform: none;
+  }
+}
+
+/* The picture and, in the corner, Invite for a game that is played online. */
+.game-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-3) var(--space-3) 0;
+}
+
+.game-card-invite.icon-button {
+  flex: none;
+  width: 32px;
+  min-height: 32px;
+  margin-left: auto;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.game-card-invite.icon-button:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--accent);
 }
 
 /* The picture sits inset in the card, its own rounded frame. */
 .game-card-art {
   position: relative;
-  margin: var(--space-2) var(--space-2) 0;
+  flex: 0 1 72%;
   overflow: hidden;
   border-radius: 8px;
   line-height: 0;
@@ -1178,17 +1276,17 @@
   font-weight: var(--weight-medium);
 }
 
-/* Play and Invite share the row half and half. */
+/* Play (or Continue) across the card. */
 .game-card-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   margin-top: auto;
   padding-top: var(--space-1);
 }
 
 .game-card-actions > * {
-  min-height: 32px;
+  min-height: 36px;
   padding-left: var(--space-2);
   padding-right: var(--space-2);
   font-size: var(--text-sm);
@@ -1284,6 +1382,17 @@
   color: var(--success);
 }
 
+.recent-result.is-lost {
+  color: var(--muted);
+  font-weight: var(--weight-medium);
+}
+
+.recent-chevron {
+  flex: none;
+  color: var(--muted);
+}
+
+
 /* ── Two columns: the lobby itself, and the family's results beside it ── */
 
 .lobby-body {
@@ -1323,6 +1432,9 @@
 
   .lobby-side > .lobby-panel {
     flex: 1 1 300px;
+    /* Never wider than the screen: the board's filter rows scroll sideways
+       inside it (phone CSS) rather than widening the page. */
+    min-width: 0;
   }
 }
 
@@ -1655,6 +1767,8 @@
      go; the names, numbers and buttons stay. */
   .lobby-lead,
   .lobby-games-head p,
+  .lobby-tip,
+  .game-card-invite,
   .lobby-panel-note,
   .game-card-modes,
   .month-me,
@@ -1824,6 +1938,11 @@
     border-top: 1px solid var(--line);
   }
 
+  .game-card-top {
+    flex: none;
+    margin: 0;
+  }
+
   .game-card-art {
     flex: none;
     width: 72px;
@@ -1945,6 +2064,613 @@
 .invite-hint {
   margin: 0;
   font-size: var(--text-sm);
+}
+
+/* What stops the confirm button, said once it is pressed. */
+.invite-missing {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.text-input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+/* ── The wide dialog (the invite) ──────────────────────────────────────── */
+
+.dialog-card.is-wide {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 620px);
+  max-height: calc(100dvh - 2 * var(--space-4));
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border-radius: 18px;
+}
+
+.dialog-card.is-wide .dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin: var(--space-4) calc(-1 * var(--space-2)) 0;
+  padding: 0 var(--space-2);
+}
+
+.dialog-card.is-wide .dialog-actions {
+  padding-top: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.dialog-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.dialog-head-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-raised);
+  color: var(--accent);
+}
+
+.dialog-head-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dialog-head-text h2 {
+  margin: 2px 0 0;
+  font-size: var(--text-xl);
+}
+
+.dialog-head-text p {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+}
+
+.dialog-close.icon-button {
+  flex: none;
+  width: 36px;
+  min-height: 36px;
+  margin: -4px -6px 0 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.dialog-close.icon-button:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+/* Member or link: two big tabs across the top. */
+.invite-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.invite-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  text-align: center;
+}
+
+.invite-mode:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.invite-mode[aria-selected="true"] {
+  border: 2px solid var(--accent);
+  padding: calc(var(--space-3) - 1px);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised));
+}
+
+.invite-mode-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--weight-semibold);
+}
+
+.invite-mode-title svg {
+  color: var(--accent);
+}
+
+.invite-mode-hint {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+/* Each part of the form in a panel of its own. */
+.invite-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-raised) 55%, var(--surface));
+}
+
+.invite-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-base);
+}
+
+.invite-section-title svg {
+  color: var(--accent);
+}
+
+.invite-games {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: var(--space-2);
+}
+
+.invite-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 84px;
+  padding: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.invite-tile:hover,
+.invite-side:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.invite-tile[aria-pressed="true"],
+.invite-side[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised));
+}
+
+.invite-tile-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--canvas);
+}
+
+.invite-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 42px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.invite-search:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.invite-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+.invite-people {
+  display: flex;
+  flex-direction: column;
+  max-height: 248px;
+  overflow-y: auto;
+}
+
+.invite-person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 52px;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-bottom-color: var(--line);
+  border-radius: 0;
+  text-align: left;
+}
+
+.invite-person:hover {
+  background: var(--hover);
+}
+
+.invite-person[aria-checked="true"] {
+  border-color: var(--accent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.invite-check {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--line);
+  border-radius: 6px;
+}
+
+.invite-person[aria-checked="true"] .invite-check {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--canvas);
+}
+
+.invite-person-name {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: var(--weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── The external invite: the form on the left, the link on the right ── */
+
+.dialog-card.is-wide.is-guest {
+  width: min(100%, 1000px);
+}
+
+.invite-guest {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.invite-guest-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.invite-link-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+}
+
+.invite-select {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.invite-select:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.invite-select select {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 38px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+}
+
+.invite-select option {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* The share panel: the QR code on white (a camera needs the contrast), then
+   the address, then what to do with it. */
+.invite-share {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-raised) 55%, var(--surface));
+  text-align: center;
+}
+
+.invite-qr {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 232px;
+  height: 232px;
+  max-width: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 24px var(--shadow);
+}
+
+.invite-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.invite-qr.is-empty {
+  border: 2px dashed var(--line);
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+}
+
+.invite-qr.is-empty svg {
+  width: 72px;
+}
+
+.invite-scan {
+  margin: 0;
+  font-weight: var(--weight-medium);
+}
+
+.invite-share-lead {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.invite-create {
+  align-self: center;
+}
+
+.invite-or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.invite-or::before,
+.invite-or::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--line);
+}
+
+.invite-url {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 4px 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.invite-url input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+}
+
+.invite-url-copy.icon-button {
+  flex: none;
+  width: 36px;
+  min-height: 36px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.invite-url-copy.icon-button:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.invite-share-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.invite-share-actions > * {
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* The footer of the external invite: what the link gives, and Close. */
+.dialog-card.is-guest .dialog-actions {
+  align-items: center;
+}
+
+.invite-note {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 var(--space-2) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  color: var(--ink);
+  font-size: var(--text-sm);
+  text-align: left;
+}
+
+.invite-note svg {
+  flex: none;
+  color: var(--accent);
+}
+
+.invite-note.is-body {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .invite-guest {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .invite-share {
+    position: static;
+  }
+
+  .dialog-card.is-guest .dialog-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .invite-note {
+    margin: 0;
+  }
+
+  .invite-note.is-footer {
+    display: none;
+  }
+
+  .invite-note.is-body {
+    display: flex;
+  }
+}
+
+/* Which side the inviter takes: a swatch of each colour. */
+.invite-sides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.invite-side {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 150px;
+  min-height: 48px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  font-weight: var(--weight-medium);
+}
+
+.invite-swatch {
+  width: 22px;
+  height: 22px;
+  border: 1px solid color-mix(in srgb, var(--ink) 35%, transparent);
+  border-radius: 50%;
+}
+
+.invite-swatch.is-white { background: #f7f5ef; }
+.invite-swatch.is-black { background: #15181b; }
+.invite-swatch.is-blue { background: var(--dots-blue); }
+.invite-swatch.is-red { background: var(--dots-red); }
+
+@media (max-width: 600px) {
+  .dialog-card.is-wide {
+    padding: var(--space-4) var(--space-4) var(--space-3);
+  }
+
+  .dialog-head-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .invite-section {
+    padding: var(--space-3);
+  }
+
+  /* Three games abreast, shorter; the tabs keep their names, not their hints. */
+  .invite-games {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .invite-tile {
+    min-height: 68px;
+    font-size: var(--text-xs);
+  }
+
+  .invite-tile svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .invite-mode-hint {
+    display: none;
+  }
+
+  .invite-qr {
+    width: 200px;
+    height: 200px;
+  }
+
+  .invite-side {
+    flex: 1 1 0;
+    min-width: 0;
+  }
 }
 
 /* ── Setup form ────────────────────────────────────────────────────────── */

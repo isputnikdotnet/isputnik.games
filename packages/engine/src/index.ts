@@ -1,4 +1,5 @@
 export * from "./game.js";
+export * from "./clock.js";
 export * from "./random.js";
 export * from "./registry.js";
 export * as Dots from "./dots/index.js";

@@ -19,8 +19,9 @@ export interface RecordInput {
   level?: AiLevel;
   seat?: PlayerIndex;
   moves: unknown[];
-  /** How a game the rules did not end was ended: a draw agreed, or a resignation. */
-  finish?: { reason: "agreed" | "resigned"; resigning?: PlayerIndex };
+  /** How a game the rules did not end was ended: a draw agreed, a resignation,
+   *  or a clock run out (`resigning` is then the side whose clock it was). */
+  finish?: { reason: "agreed" | "resigned" | "timeout"; resigning?: PlayerIndex };
 }
 
 /** One line of "My games". */
@@ -57,7 +58,12 @@ export function saveRecord(db: Db, memberId: string, input: RecordInput): { reco
   try {
     moves = input.moves.map((move) => chess.parseMove(move));
     state = Chess.replay(moves);
-    if (state.status.kind === "playing" && input.finish) state = Chess.finish(state, input.finish.reason, input.finish.resigning);
+    const finish = input.finish;
+    if (state.status.kind === "playing" && finish) {
+      state = finish.reason === "timeout"
+        ? Chess.timeout(state, finish.resigning ?? state.toMove)
+        : Chess.finish(state, finish.reason, finish.resigning);
+    }
   } catch (error) {
     throw new MatchError(400, `Not a legal game: ${(error as Error).message}`);
   }

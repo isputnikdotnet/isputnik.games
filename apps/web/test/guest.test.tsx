@@ -107,18 +107,26 @@ describe("inviting someone outside the family", () => {
 
     await user.click(await screen.findByRole("button", { name: "Invite a member" }));
     const dialog = screen.getByRole("dialog", { name: "Invite to play" });
-    await user.click(await within(dialog).findByRole("button", { name: "Someone outside the family" }));
-    // Nothing is sent without a name.
-    await user.click(within(dialog).getByRole("button", { name: "Make the link" }));
+    await user.click(await within(dialog).findByRole("tab", { name: /External invite/ }));
+    // Nothing is sent without a name, and the dialog says so.
+    await user.click(within(dialog).getByRole("button", { name: "Create link" }));
     expect(api.createGuestInvite).not.toHaveBeenCalled();
+    expect(within(dialog).getByRole("alert")).toHaveTextContent("Type their name first");
+    expect(within(dialog).getByLabelText("Their name")).toHaveAttribute("aria-invalid", "true");
     await user.type(within(dialog).getByLabelText("Their name"), "  Alex ");
-    await user.click(within(dialog).getByRole("button", { name: "Make the link" }));
+    await user.selectOptions(within(dialog).getByLabelText("Expires in"), "1");
+    await user.click(within(dialog).getByRole("button", { name: "Create link" }));
 
-    expect(api.createGuestInvite).toHaveBeenCalledWith({ game: "dots", options: { size: 15, targetCaptures: null }, seat: 0, guestName: "Alex" });
-    const shown = await screen.findByRole("dialog", { name: "Link for Alex" });
-    expect(within(shown).getByLabelText("Link")).toHaveValue("https://home.example/games/guest/TOKEN");
-    expect(shown).toHaveTextContent("Works until");
-    await user.click(within(shown).getByRole("button", { name: "Go to the match" }));
+    expect(api.createGuestInvite).toHaveBeenCalledWith({ game: "dots", options: { size: 15, targetCaptures: null }, seat: 0, guestName: "Alex", days: 1 });
+    // The link, beside the form: a QR code, the address to copy, and how long it works.
+    const share = await within(dialog).findByRole("complementary", { name: "The link to share" });
+    expect(within(share).getByRole("img", { name: "QR code of the link" })).toBeInTheDocument();
+    expect(within(share).getByLabelText("Link")).toHaveValue("https://home.example/games/guest/TOKEN");
+    expect(within(share).getByRole("link", { name: "Email invite" }).getAttribute("href")).toContain(encodeURIComponent("https://home.example/games/guest/TOKEN"));
+    expect(share).toHaveTextContent("Works until");
+    // The match exists now: its settings no longer change.
+    expect(within(dialog).getByLabelText("Their name")).toBeDisabled();
+    await user.click(within(share).getByRole("link", { name: "Go to the match" }));
     await waitFor(() => expect(window.location.pathname).toBe("/games/dots/m/m1"));
   });
 
@@ -129,8 +137,8 @@ describe("inviting someone outside the family", () => {
     withSession({ ...asMum, guests: false }, <LobbyPage />);
     await user.click(await screen.findByRole("button", { name: "Invite a member" }));
     const dialog = screen.getByRole("dialog", { name: "Invite to play" });
-    expect(await within(dialog).findByRole("button", { name: "Dad" })).toBeInTheDocument();
-    expect(within(dialog).queryByRole("button", { name: "Someone outside the family" })).not.toBeInTheDocument();
+    expect(await within(dialog).findByRole("radio", { name: "Dad" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("tab", { name: /External invite/ })).not.toBeInTheDocument();
   });
 });
 

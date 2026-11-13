@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { Chess, type AiLevel, type PlayerIndex } from "@isputnik/games-engine";
+import { Chess, TIME_CONTROLS, timeControlKey, type AiLevel, type PlayerIndex } from "@isputnik/games-engine";
+import { clockLabel } from "./clockText";
 import { Button } from "../../shared/Button";
 import { Choice } from "../../shared/Choice";
 import { href, navigate } from "../../router";
@@ -73,6 +74,7 @@ export function ChessNewGameForm({ onStart }: { onStart: (setup: ChessSetup) => 
           />
         </>
       )}
+      {what !== "puzzles" && <ClockChoice setup={setup} onChange={(clock) => patch({ clock })} />}
       {what === "puzzles" && (
         <>
           <Choice<PuzzleChoice["type"]>
@@ -99,6 +101,22 @@ export function ChessNewGameForm({ onStart }: { onStart: (setup: ChessSetup) => 
 }
 
 type Translate = TFunction;
+
+/** The clock: none, or one of the engine's time controls (blitz). */
+export function ClockChoice({ setup, onChange }: { setup: Pick<ChessSetup, "clock">; onChange: (clock: ChessSetup["clock"]) => void }) {
+  const { t } = useTranslation();
+  return (
+    <Choice<string>
+      label={t("chess.clock.label")}
+      value={setup.clock ? timeControlKey(setup.clock) : "off"}
+      options={[
+        { value: "off", label: t("chess.clock.off") },
+        ...TIME_CONTROLS.map((control) => ({ value: timeControlKey(control), label: clockLabel(control, t) }))
+      ]}
+      onChange={(key) => onChange(TIME_CONTROLS.find((control) => timeControlKey(control) === key) ?? null)}
+    />
+  );
+}
 
 export function puzzleTypeOptions(t: Translate): { value: PuzzleChoice["type"]; label: string }[] {
   return (["any", ...Chess.PUZZLE_TYPES] as PuzzleChoice["type"][]).map((value) => ({ value, label: t(`chess.puzzle.types.${value}`) }));

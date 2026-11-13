@@ -123,7 +123,7 @@ export function ChessReviewPage({ source, id }: { source: "record" | "match"; id
   const shown = positions[ply];
   const orientation: PlayerIndex = flipped ? (game.facing === 0 ? 1 : 0) : game.facing;
   const result = game.winner === null ? t("chess.end.draw") : t("chess.end.winner", { player: game.names[game.winner] });
-  const reason = chessReason(game.reason, game.names[game.winner === 0 ? 1 : 0], t);
+  const reason = chessReason(game.reason, game.names[game.winner === null ? ((positions.length - 1) % 2) as PlayerIndex : game.winner === 0 ? 1 : 0], t, game.winner === null);
   const when = game.finishedAt ? new Date(game.finishedAt).toLocaleDateString(i18n.language, { day: "numeric", month: "long", year: "numeric" }) : null;
   const kind = game.mode === "online" ? t("chess.review.online") : game.mode === "local" ? t("chess.review.local") : t("chess.review.computer");
 

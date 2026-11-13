@@ -146,7 +146,7 @@ const recordSchema = z.object({
   seat: z.union([z.literal(0), z.literal(1)]).optional(),
   moves: z.array(z.unknown()).max(1000),
   finish: z.object({
-    reason: z.enum(["agreed", "resigned"]),
+    reason: z.enum(["agreed", "resigned", "timeout"]),
     resigning: z.union([z.literal(0), z.literal(1)]).optional()
   }).optional()
 });

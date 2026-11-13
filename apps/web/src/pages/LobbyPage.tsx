@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BellRing, Cpu, Globe, Hourglass, Joystick, Puzzle, UserPlus, Users, type LucideIcon } from "lucide-react";
+import { BellRing, ChevronRight, Cpu, Gamepad2, Globe, Hourglass, Info, Joystick, Puzzle, UserPlus, Users, type LucideIcon } from "lucide-react";
 import { answerMatch, fetchMatches, fetchStats, type FamilyStats, type MatchSummary } from "../api";
 import { follow, href, matchHref, navigate } from "../router";
 import { useOffline, useSession } from "../session";
@@ -16,6 +16,7 @@ import { InviteDialog } from "./InviteDialog";
 import { Leaderboard, YourMonth } from "./LobbyStats";
 import { MATCHES_ANCHOR } from "../shared/MobileNav";
 import { scoreText } from "../shared/score";
+import { Skyline } from "../shared/Skyline";
 
 /** "alpha" / "beta" in the interface language; anything else as the server says it. */
 function stageLabel(stage: string, t: (key: "lobby.stageAlpha" | "lobby.stageBeta") => string): string {
@@ -142,9 +143,15 @@ export function LobbyPage() {
 
       <div className="lobby-body">
         <div className="lobby-main">
+          <p className="lobby-tip">
+            <Users size={20} aria-hidden="true" />
+            <span>{t("lobby.tip")}</span>
+            <Info className="lobby-tip-info" size={18} aria-hidden="true" />
+          </p>
           {/* One card, lit while something waits: the hourglass when nothing
               does, the bell when an invitation or a move is the member's. */}
           <section className={`lobby-waiting${waiting > 0 ? " is-due" : ""}`} id={MATCHES_ANCHOR} aria-labelledby="lobby-waiting-title">
+            <Skyline />
             <span className="lobby-waiting-icon" aria-hidden="true">
               {waiting > 0 ? <BellRing size={22} /> : <Hourglass size={22} />}
             </span>
@@ -156,7 +163,10 @@ export function LobbyPage() {
               {failed && !offline && <MessageBox tone="error" title={t("lobby.online.loadFailed")} />}
               {offline && !matches && <p className="muted">{t("lobby.online.offline")}</p>}
               {matches && waiting === 0 && (!failed || offline) && (
-                <p className="muted">{list.length === 0 ? t("lobby.online.empty") : t("lobby.waiting.none")}</p>
+                <p className="muted">
+                  {list.length === 0 ? t("lobby.online.empty") : t("lobby.waiting.none")}
+                  <span className="lobby-waiting-nudge"><Gamepad2 size={16} aria-hidden="true" /> {t("lobby.waiting.pickBelow")}</span>
+                </p>
               )}
               {waiting > 0 && (
                 <ul className="waiting-list">
@@ -235,10 +245,24 @@ export function LobbyPage() {
                   <article key={gameId} className="game-card">
                     {/* The states sit on the picture; on a phone, where the picture
                         is a thumbnail, beside the name instead (the CSS picks one). */}
-                    <div className="game-card-art">
-                      <GamePreview game={gameId} />
-                      <span className="game-card-pills">{pills}</span>
-                      {isNew(entry) && <span className="lobby-pill is-new game-card-new">{t("lobby.pill.new")}</span>}
+                    <div className="game-card-top">
+                      <div className="game-card-art">
+                        <GamePreview game={gameId} />
+                        <span className="game-card-pills">{pills}</span>
+                        {isNew(entry) && <span className="lobby-pill is-new game-card-new">{t("lobby.pill.new")}</span>}
+                      </div>
+                      {entry.modes.includes("online") && (
+                        <Button
+                          variant="icon"
+                          className="game-card-invite"
+                          aria-label={t("lobby.games.invite")}
+                          title={t("lobby.games.inviteHere")}
+                          onClick={() => setInviting({ game: gameId })}
+                          disabled={offline}
+                        >
+                          <Users size={16} aria-hidden="true" />
+                        </Button>
+                      )}
                     </div>
                     <div className="game-card-body">
                       <div className="game-card-title">
@@ -257,7 +281,6 @@ export function LobbyPage() {
                       </ul>
                       <div className="game-card-actions">
                         {link(to, "primary-button game-card-play", resuming ? t("lobby.continue") : t("lobby.play"))}
-                        {entry.modes.includes("online") && <Button variant="secondary" onClick={() => setInviting({ game: gameId })} disabled={offline}>{t("lobby.games.invite")}</Button>}
                       </div>
                     </div>
                   </article>
@@ -276,12 +299,13 @@ export function LobbyPage() {
                     <li key={match.id}>
                       {link(matchHref(match.game, match.id), "recent-row", (
                         <>
-                          <Avatar id={opponentOf(match).id} name={opponentOf(match).name} size={32} />
+                          <Avatar id={opponentOf(match).id} name={opponentOf(match).name} size={34} />
                           <span className="recent-row-main">
                             <span>{t("lobby.waiting.vs", { game: gameName(match.game), name: opponentOf(match).name })}</span>
                             <span className="muted">{[when(match.finishedAt ?? match.updatedAt), scoreOf(match)].filter(Boolean).join(" · ")}</span>
                           </span>
                           <strong className={`recent-result is-${result.tone}`}>{result.text}</strong>
+                          <ChevronRight className="recent-chevron" size={18} aria-hidden="true" />
                         </>
                       ))}
                     </li>

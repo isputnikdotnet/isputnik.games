@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { newGameKey } from "../../shared/gameKey";
-import { Chess, type AiLevel, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
+import { Chess, clockRunning, flagged, timeLeft, type AiLevel, type ChessMove, type PlayerIndex, type TimeControl } from "@isputnik/games-engine";
 import { clearChessGame, loadChessGame, loadChessSetup, saveChessGame, saveChessSetup, type ChessSetup, type LoadedChessGame } from "./storage";
 
 // One local game of chess: the position, the setup it was started with, and
@@ -8,6 +8,16 @@ import { clearChessGame, loadChessGame, loadChessSetup, saveChessGame, saveChess
 // the computer takes its turn from an effect, after a pause, so the board
 // paints the human's move before the search holds the page for its answer.
 export const COMPUTER_DELAY = { ms: 350 };
+
+/** How often a running clock is redrawn and checked for a fallen flag. */
+const TICK_MS = 200;
+
+/** The clock as the table shows it: each side's time left, and whose is running. */
+export interface ChessClock {
+  control: TimeControl;
+  left: [number, number];
+  running: PlayerIndex | null;
+}
 
 export interface ChessGameController {
   game: LoadedChessGame | null;
@@ -25,6 +35,8 @@ export interface ChessGameController {
   abandon(): void;
   /** The seat a person at this screen may move now, or null. */
   humanToMove: PlayerIndex | null;
+  /** The clock, in a game that has one. */
+  clock: ChessClock | null;
 }
 
 export function isComputerSeat(setup: ChessSetup, player: PlayerIndex): boolean {
@@ -39,6 +51,8 @@ export function humanSeat(setup: ChessSetup): PlayerIndex | null {
 export function useChessGame(): ChessGameController {
   const [game, setGame] = useState<LoadedChessGame | null>(() => loadChessGame());
   const [thinking, setThinking] = useState(false);
+  // The time as of the clock's last tick, for drawing it.
+  const [now, setNow] = useState(() => Date.now());
 
   const change = useCallback((next: (current: LoadedChessGame) => LoadedChessGame | null) => {
     setGame((current) => {
@@ -51,16 +65,24 @@ export function useChessGame(): ChessGameController {
 
   const start = useCallback((setup: ChessSetup) => {
     saveChessSetup(setup);
-    const next = { setup, key: newGameKey(), state: Chess.createGame() };
+    const next = { setup, key: newGameKey(), state: Chess.createGame(), spent: [], turnStartedAt: Date.now() };
     saveChessGame(next);
     setGame(next);
   }, []);
 
   const move = useCallback((played: ChessMove) => {
+    // Read the clock before the update: React may run an updater twice.
+    const at = Date.now();
     change((current) => {
       if (current.state.status.kind !== "playing") return null;
+      const think = Math.max(0, at - current.turnStartedAt);
+      const clock = current.setup.clock;
+      // A move made after the flag fell does not count: the game is lost on time.
+      const out = clock ? flagged(clock, current.spent, think) : null;
+      if (out !== null) return { ...current, state: Chess.timeout(current.state, out) };
       try {
-        return { ...current, state: Chess.applyMove(current.state, played) };
+        const state = Chess.applyMove(current.state, played);
+        return { ...current, state, spent: [...current.spent, think], turnStartedAt: at };
       } catch {
         return null;
       }
@@ -68,6 +90,7 @@ export function useChessGame(): ChessGameController {
   }, [change]);
 
   const undo = useCallback(() => {
+    const at = Date.now();
     change((current) => {
       if (current.state.moves.length === 0) return null;
       let state = Chess.undoMove(current.state);
@@ -77,7 +100,7 @@ export function useChessGame(): ChessGameController {
         && isComputerSeat(current.setup, state.status.turn) && state.moves.length > 0) {
         state = Chess.undoMove(state);
       }
-      return { ...current, state };
+      return { ...current, state, spent: current.spent.slice(0, state.moves.length), turnStartedAt: at };
     });
   }, [change]);
 
@@ -108,6 +131,24 @@ export function useChessGame(): ChessGameController {
 
   const status = game?.state.status;
   const computerTurn = Boolean(game && status?.kind === "playing" && isComputerSeat(game.setup, status.turn));
+  const control = game?.setup.clock ?? null;
+  const ticking = Boolean(control && status?.kind === "playing" && clockRunning(game!.spent.length));
+
+  // While a clock runs: redraw it, and end the game the moment a flag falls.
+  useEffect(() => {
+    if (!ticking) return;
+    const timer = window.setInterval(() => {
+      const at = Date.now();
+      setNow(at);
+      change((current) => {
+        const clock = current.setup.clock;
+        if (!clock || current.state.status.kind !== "playing") return null;
+        const out = flagged(clock, current.spent, at - current.turnStartedAt);
+        return out === null ? null : { ...current, state: Chess.timeout(current.state, out) };
+      });
+    }, TICK_MS);
+    return () => window.clearInterval(timer);
+  }, [ticking, change]);
 
   useEffect(() => {
     if (!computerTurn || !game) {
@@ -135,6 +176,11 @@ export function useChessGame(): ChessGameController {
     resign,
     setLevel,
     abandon,
-    humanToMove: game && status?.kind === "playing" && !computerTurn ? status.turn : null
+    humanToMove: game && status?.kind === "playing" && !computerTurn ? status.turn : null,
+    clock: game && control ? {
+      control,
+      left: timeLeft(control, game.spent, ticking ? Math.max(0, now - game.turnStartedAt) : 0),
+      running: ticking && status?.kind === "playing" ? status.turn : null
+    } : null
   };
 }

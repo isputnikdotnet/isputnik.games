@@ -29,7 +29,9 @@ CREATE TABLE IF NOT EXISTS matches (
   winner        INTEGER,                       -- 0, 1, or NULL for a draw
   created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   updated_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-  finished_at   TEXT
+  finished_at   TEXT,
+  move_times    TEXT NOT NULL DEFAULT '[]',    -- JSON array: ms each move took (a game on the clock)
+  turn_started_at TEXT                         -- when the move now awaited began
 );
 
 CREATE INDEX IF NOT EXISTS matches_blue ON matches (blue_id, updated_at DESC);

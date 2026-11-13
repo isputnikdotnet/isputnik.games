@@ -19,7 +19,7 @@
   },
   "lobby": {
     "title": "Games",
-    "lead": "Pick a game. Two on one screen, against the computer, or online with someone in the family.",
+    "lead": "Pick a game to play — against the computer, alongside a family member, or online.",
     "play": "Play",
     "continue": "Continue",
     "greeting": {
@@ -34,7 +34,8 @@
       "none": "Nothing is waiting on you right now.",
       "theirs": "Their move:",
       "vs": "{{game}} vs {{name}}",
-      "sent": "{{game}}, waiting for {{name}} to accept"
+      "sent": "{{game}}, waiting for {{name}} to accept",
+      "pickBelow": "Pick a game below and play!"
     },
     "pill": {
       "invitation": "Invitation",
@@ -47,7 +48,8 @@
       "title": "Choose a game",
       "lead": "Against the computer, two at one screen, or online — and puzzles.",
       "modes": "Ways to play",
-      "invite": "Invite"
+      "invite": "Invite",
+      "inviteHere": "Invite from here"
     },
     "modes": {
       "computer": "Computer",
@@ -135,11 +137,12 @@
     "version": "iSputnik Games {{version}}",
     "stageAlpha": "alpha",
     "stageBeta": "beta",
-    "penaltyScore": "{{a}} : {{b}} towards {{target}}, fewer leads"
+    "penaltyScore": "{{a}} : {{b}} towards {{target}}, fewer leads",
+    "tip": "Choose a game, then invite a family member from the top-right button."
   },
   "invite": {
     "title": "Invite to play",
-    "member": "Who",
+    "member": "Invite",
     "noMembers": "Nobody else to invite yet.",
     "pickSomeone": "Pick someone to invite.",
     "yourColour": "You play",
@@ -148,16 +151,39 @@
     "failed": "Unable to send the invitation",
     "game": "Game",
     "them": "The other player",
-    "guestChip": "Someone outside the family",
     "guestName": "Their name",
     "guestNamePlaceholder": "e.g. Alex",
-    "guestHint": "They get a link that opens this match only — no account needed. It works for 14 days; you can make a new link or revoke it from the match page.",
-    "makeLink": "Make the link",
-    "linkTitle": "Link for {{name}}",
-    "linkLead": "Send {{name}} this link. It opens this match only; it is shown here once.",
+    "guestHint": "They get a link that opens this match only — no account needed. You can make a new link or revoke it from the match page.",
     "linkExpires": "Works until {{date}}.",
     "openMatch": "Go to the match",
-    "linkFailed": "Unable to make the link"
+    "linkFailed": "Unable to make the link",
+    "lead": "Start a game with someone in the family, or send a link to someone outside it.",
+    "tabMember": "iSputnik member",
+    "tabMemberHint": "Someone with an account here",
+    "tabGuest": "External invite",
+    "tabGuestHint": "Share a private link",
+    "search": "Search members…",
+    "noMatch": "Nobody by that name.",
+    "settings": "Settings",
+    "close": "Close",
+    "nameMissing": "Type their name first — the link is made for them.",
+    "guestTitle": "External invite link",
+    "guestLead": "Create a shareable link (and QR code) so someone outside the family can join a game.",
+    "linkOptions": "Link options",
+    "expiresIn": "Expires in",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "createLink": "Create link",
+    "creating": "Creating…",
+    "qrPlaceholder": "The QR code and the link appear here once you create the link.",
+    "scan": "Scan to join",
+    "or": "or",
+    "email": "Email invite",
+    "emailSubject": "A game of {{game}} with {{name}}",
+    "emailBody": "Hi {{guest}},\n\n{{name}} invites you to a game of {{game}}. Open this link to play — no account needed:\n\n{{url}}\n\nThe link works until {{date}}.",
+    "guestNote": "The link lets a guest join only this game. They get no access to your iSputnik account or anything else.",
+    "qrAria": "QR code of the link",
+    "shareAria": "The link to share"
   },
   "match": {
     "you": "You",
@@ -454,7 +480,9 @@
       "reasonResigned": "{{player}} resigned.",
       "again": "Play again",
       "change": "Change settings",
-      "toLobby": "Back to games"
+      "toLobby": "Back to games",
+      "reasonTimeout": "{{player}} ran out of time.",
+      "reasonTimeoutDraw": "{{player}} ran out of time, but the other side has nothing left to checkmate with."
     },
     "confirmDraw": {
       "title": "Call it a draw?",
@@ -595,6 +623,14 @@
     "rating": {
       "label": "Chess rating",
       "provisional": "provisional"
+    },
+    "clock": {
+      "label": "Clock",
+      "off": "No clock",
+      "minutes_one": "{{count}} min",
+      "minutes_other": "{{count}} min",
+      "line": "Clock: {{clock}}",
+      "aria": "Clock of {{player}}: {{time}}"
     }
   },
   "dominoes": {

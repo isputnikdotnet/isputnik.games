@@ -2,6 +2,8 @@ import { useTranslation } from "react-i18next";
 import { Chess, type ChessMove, type ChessState, type PlayerIndex } from "@isputnik/games-engine";
 import { ChessBoard } from "./ChessBoard";
 import { ChessPiece } from "./pieces";
+import { formatClock, LOW_MS } from "./clockText";
+import type { ChessClock } from "./useChessGame";
 
 // The table both chess pages put on the game stage: the board between the
 // two players — the one at the bottom is the side the board faces. Each
@@ -14,7 +16,8 @@ export function ChessTable({
   onMove,
   names,
   hint,
-  unmarked
+  unmarked,
+  clock
 }: {
   state: ChessState;
   orientation: PlayerIndex;
@@ -23,6 +26,8 @@ export function ChessTable({
   names: [string, string];
   hint?: { from: string; to?: string } | null;
   unmarked?: number;
+  /** Each side's time, in a game played on the clock. */
+  clock?: ChessClock | null;
 }) {
   const { taken, points } = Chess.material(state);
   const turn = state.status.kind === "playing" ? state.status.turn : null;
@@ -33,6 +38,8 @@ export function ChessTable({
       taken={taken[seat]}
       lead={points[seat] - points[seat === 0 ? 1 : 0]}
       active={turn === seat}
+      time={clock ? clock.left[seat] : null}
+      running={clock?.running === seat}
     />
   );
   return (
@@ -48,7 +55,9 @@ export function ChessTable({
 
 const ORDER = "qrbnp";
 
-function PlayerStrip({ seat, name, taken, lead, active }: { seat: PlayerIndex; name: string; taken: string; lead: number; active: boolean }) {
+function PlayerStrip({ seat, name, taken, lead, active, time, running }: {
+  seat: PlayerIndex; name: string; taken: string; lead: number; active: boolean; time: number | null; running: boolean;
+}) {
   const { t } = useTranslation();
   // What White took are Black's pieces, drawn black; and the other way round.
   const pieces = taken.split("").sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
@@ -60,6 +69,15 @@ function PlayerStrip({ seat, name, taken, lead, active }: { seat: PlayerIndex; n
         {pieces.map((kind, i) => <ChessPiece key={i} letter={seat === 0 ? kind : kind.toUpperCase()} />)}
       </span>
       {lead > 0 && <span className="chess-lead">+{lead}</span>}
+      {time !== null && (
+        <span
+          className={`chess-clock${running ? " is-running" : ""}${time < LOW_MS ? " is-low" : ""}${time <= 0 ? " is-out" : ""}`}
+          role="timer"
+          aria-label={t("chess.clock.aria", { player: name, time: formatClock(time) })}
+        >
+          {formatClock(time)}
+        </span>
+      )}
     </div>
   );
 }

@@ -21,6 +21,8 @@ import { ChessTable } from "./ChessTable";
 import { ChessRatingLine, useChessRatingAfter } from "./RatingLine";
 import { ChessSettingsDialog } from "./SettingsDialog";
 import { ReplayControls, ReplayNote, useReplay } from "./replay";
+import { useMatchClock } from "./useMatchClock";
+import { clockLabel } from "./clockText";
 
 const NO_MOVES: ChessMove[] = [];
 
@@ -32,6 +34,7 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
   const session = useSession();
   const myId = session.status === "ready" ? session.user.id : "";
   const { match, error, refresh, adopt } = useMatch(matchId, myId);
+  const clock = useMatchClock(match, refresh);
   useGameSounds(matchSound("chess", match, myId));
   const [sending, setSending] = useState(false);
   const [saying, setSaying] = useState(false);
@@ -129,7 +132,7 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
       statusLine = match.winner === null ? t("chess.end.draw") : match.winner === mySeat ? t("match.won") : t("match.lost", { name: them.name });
       break;
   }
-  const reason = finished ? chessReason(match.finishReason, names[match.winner === 0 ? 1 : 0], t) : null;
+  const reason = finished ? chessReason(match.finishReason, names[match.winner === null ? state.toMove : match.winner === 0 ? 1 : 0], t, match.winner === null) : null;
 
   const lines: CommsLine[] = withTalk(chessLines(match.feed, mySeat, names, t), match.messages, (seat) => ({ who: seat === mySeat ? "you" : "them", name: names[seat] }));
   if (finished) {
@@ -152,6 +155,7 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
             movable={myMove && !sending && !earlier ? mySeat : null}
             onMove={(played) => void move(played)}
             names={names}
+            clock={clock}
           />
         }
         score={
@@ -160,6 +164,7 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
             {reason && <p className="muted chess-reason">{reason}</p>}
             <ReplayNote replay={replay} />
             {chessRating && <ChessRatingLine rating={chessRating} />}
+            {clock && !finished && <p className="muted chess-reason">{t("chess.clock.line", { clock: clockLabel(clock.control, t) })}</p>}
           </div>
         }
         notices={

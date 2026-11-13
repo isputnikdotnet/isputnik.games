@@ -14,6 +14,7 @@ import { GameStage } from "../../shared/GameStage";
 import { follow, href, navigate } from "../../router";
 import { chessLines } from "./comms";
 import { chessReason } from "./ending";
+import { clockLabel } from "./clockText";
 import { ChessNewGameForm } from "./NewGameForm";
 import { ChessTable } from "./ChessTable";
 import { ChessSettingsDialog } from "./SettingsDialog";
@@ -89,7 +90,9 @@ export function ChessPage() {
   } else {
     statusLine = status.winner === null ? t("chess.end.draw") : t("chess.end.winner", { player: names[status.winner] });
   }
-  const reason = finished ? chessReason(status.reason, names[status.winner === 0 ? 1 : 0], t) : null;
+  // The side that lost it: who resigned or ran out — on time with no winner, the side to move.
+  const loser: PlayerIndex = status.kind === "finished" && status.winner !== null ? (status.winner === 0 ? 1 : 0) : state.toMove;
+  const reason = finished ? chessReason(status.reason, names[loser], t, status.winner === null) : null;
 
   // "You" in the log is the person against the computer, or White when two share the screen.
   const lines: CommsLine[] = chessLines(feed, me ?? 0, names, t);
@@ -115,7 +118,7 @@ export function ChessPage() {
       <GameStage
         className="chess-stage"
         title={t("games.chess.name")}
-        board={<ChessTable state={earlier ?? state} orientation={orientation} movable={earlier ? null : controller.humanToMove} onMove={controller.move} names={names} />}
+        board={<ChessTable state={earlier ?? state} orientation={orientation} movable={earlier ? null : controller.humanToMove} onMove={controller.move} names={names} clock={controller.clock} />}
         score={
           <div className="chess-status">
             <p className={`chess-status-line${finished ? " is-finished" : ""}`} role="status">{statusLine}</p>
@@ -125,6 +128,7 @@ export function ChessPage() {
             {setup.mode === "computer" && !finished && (
               <p className="muted chess-reason">{t("chess.levelLine", { level: t(LEVEL_LABEL[setup.level]) })}</p>
             )}
+            {setup.clock && !finished && <p className="muted chess-reason">{t("chess.clock.line", { clock: clockLabel(setup.clock, t) })}</p>}
           </div>
         }
         log={<Comms lines={lines} />}
@@ -133,9 +137,12 @@ export function ChessPage() {
             <ReplayControls replay={replay} />
             {!finished && (
               <>
-                <Button variant="secondary" onClick={controller.undo} disabled={state.moves.length === 0 || controller.thinking}>
-                  <Undo2 size={16} aria-hidden="true" /> {t("chess.undo")}
-                </Button>
+                {/* No takebacks on the clock. */}
+                {!setup.clock && (
+                  <Button variant="secondary" onClick={controller.undo} disabled={state.moves.length === 0 || controller.thinking}>
+                    <Undo2 size={16} aria-hidden="true" /> {t("chess.undo")}
+                  </Button>
+                )}
                 <Button variant="secondary" onClick={() => setFlipped((f) => !f)}>
                   <Repeat2 size={16} aria-hidden="true" /> {t("chess.flip")}
                 </Button>

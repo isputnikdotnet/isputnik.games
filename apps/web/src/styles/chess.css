@@ -206,6 +206,43 @@
   cursor: pointer;
 }
 
+/* Drag and drop: a piece of the side to move can be picked up; while one is
+   carried, its square keeps a faint copy, the square under it is outlined,
+   and the page does not scroll under the finger. */
+.chess-board:not(.is-idle) .chess-square.is-own {
+  cursor: grab;
+  touch-action: none;
+}
+
+.chess-board.is-dragging,
+.chess-board.is-dragging .chess-square {
+  cursor: grabbing;
+}
+
+.chess-square.is-lifted .chess-piece {
+  opacity: 0.3;
+}
+
+.chess-square.is-over {
+  box-shadow: inset 0 0 0 4px var(--chess-mark);
+}
+
+.chess-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-modal);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.chess-ghost .chess-piece {
+  width: 100%;
+  height: 100%;
+  transform: scale(1.12);
+  filter: var(--chess-piece-shadow) drop-shadow(0 8px 10px rgba(0, 0, 0, 0.35));
+}
+
 .chess-square:focus-visible {
   outline: 3px solid var(--mint);
   outline-offset: -3px;
@@ -424,6 +461,37 @@
   opacity: 0.75;
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
+}
+
+/* The clock at the strip's end: a dark face while it runs, red in the last
+   seconds; the waiting side's is dimmed. */
+.chess-clock {
+  flex: none;
+  margin-left: auto;
+  min-width: 4.6ch;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  font-size: 1.15rem;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.chess-clock.is-running {
+  background: var(--ink);
+  color: var(--canvas);
+  opacity: 1;
+}
+
+.chess-clock.is-low {
+  color: #d6261c;
+}
+
+.chess-clock.is-running.is-low {
+  background: #d6261c;
+  color: #fff;
 }
 
 /* ── Status ────────────────────────────────────────────────────────── */

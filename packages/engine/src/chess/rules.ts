@@ -7,6 +7,7 @@
 // The state is plain JSON — the board as 64 letters, the rights, the move
 // list — and every move goes through board.ts, which does the real work.
 import { IllegalMoveError, otherPlayer, type GameStatus, type PlayerIndex } from "../game.js";
+import { parseTimeControl, type TimeControl } from "../clock.js";
 import {
   FLAG_CASTLE,
   FLAG_EN_PASSANT,
@@ -22,8 +23,10 @@ import {
   type Move
 } from "./board.js";
 
-/** Chess has no settings; the object is there for the platform's shape. */
-export type ChessOptions = Record<string, never>;
+/** Chess's one setting: a clock (blitz), or none for a game at leisure. */
+export interface ChessOptions {
+  clock?: TimeControl;
+}
 
 export type Promotion = "q" | "r" | "b" | "n";
 export const PROMOTIONS: readonly Promotion[] = ["q", "r", "b", "n"];
@@ -62,7 +65,39 @@ export const DEFAULT_OPTIONS: ChessOptions = {};
 
 export function parseOptions(input: unknown): ChessOptions {
   if (input !== undefined && input !== null && typeof input !== "object") throw new Error("Options must be an object");
-  return {};
+  const clock = parseTimeControl((input as { clock?: unknown } | null | undefined)?.clock);
+  return clock ? { clock } : {};
+}
+
+export function clockOf(options: ChessOptions): TimeControl | null {
+  return options.clock ?? null;
+}
+
+/**
+ * `flagged` ran out of time. The other side wins — unless it has nothing that
+ * could ever give mate (a bare king, or one knight or bishop against a bare
+ * king), and then it is a draw, as over the board.
+ */
+export function timeout(state: ChessState, flagged: PlayerIndex): ChessState {
+  if (state.status.kind !== "playing") return state;
+  const winner = otherPlayer(flagged);
+  return { ...state, status: { kind: "finished", winner: canMate(state.board, winner, flagged) ? winner : null, reason: "timeout" } };
+}
+
+/** Whether `side` has the material to mate, ever, against what `other` has. */
+function canMate(board: string, side: PlayerIndex, other: PlayerIndex): boolean {
+  const mine = (letter: string, seat: PlayerIndex) => seat === 0 ? letter >= "A" && letter <= "Z" : letter >= "a" && letter <= "z";
+  let minors = 0;
+  for (const letter of board) {
+    if (letter === "." || !mine(letter, side)) continue;
+    const kind = letter.toLowerCase();
+    if (kind === "p" || kind === "r" || kind === "q") return true;
+    if (kind === "n" || kind === "b") minors++;
+  }
+  if (minors >= 2) return true;
+  // One minor piece mates only with the other side's own pieces in the way.
+  if (minors === 1) return [...board].some((letter) => letter !== "." && mine(letter, other) && letter.toLowerCase() !== "k");
+  return false;
 }
 
 const PROMOTION_PIECE: Record<Promotion, number> = { n: 2, b: 3, r: 4, q: 5 };

@@ -23,6 +23,11 @@ export function upgradeDatabase(db: Database.Database): void {
   // 0.5.0: Sea Battle became Star Battle; matches recorded under the old game
   // id replay through the same rules under the new one. Idempotent.
   db.prepare("UPDATE matches SET game = 'starbattle' WHERE game = 'seabattle'").run();
+  // 0.27.0: chess on the clock. A table made before has neither column; the
+  // CREATE above leaves an existing table as it was.
+  const columns = new Set((db.prepare("PRAGMA table_info(matches)").all() as { name: string }[]).map((c) => c.name));
+  if (!columns.has("move_times")) db.exec("ALTER TABLE matches ADD COLUMN move_times TEXT NOT NULL DEFAULT '[]'");
+  if (!columns.has("turn_started_at")) db.exec("ALTER TABLE matches ADD COLUMN turn_started_at TEXT");
 }
 
 export type Db = Database.Database;

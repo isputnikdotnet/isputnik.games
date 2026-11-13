@@ -4,7 +4,7 @@
 // the database so the routes stay thin and the tests need no HTTP.
 import { randomInt } from "node:crypto";
 import { nanoid } from "nanoid";
-import { getGame, otherPlayer, type AnyGame, type GameEvent, type GameStatus, type PlayerIndex } from "@isputnik/games-engine";
+import { flagged, getGame, otherPlayer, timeLeft, type AnyGame, type GameEvent, type GameStatus, type PlayerIndex, type TimeControl } from "@isputnik/games-engine";
 import type { Db } from "./db.js";
 import { isGuestId } from "./identity.js";
 
@@ -26,6 +26,8 @@ export interface MatchRow {
   created_at: string;
   updated_at: string;
   finished_at: string | null;
+  move_times: string;
+  turn_started_at: string | null;
 }
 
 export interface Member {
@@ -74,6 +76,15 @@ export interface MatchDetail extends MatchSummary {
   /** The legal moves, when asked for (the TV app, which holds no rules) and it
    *  is the asker's move; absent otherwise. */
   legalMoves?: unknown[];
+  /** A game on the clock: each side's time left as of this answer, in ms, and
+   *  whose is running. The client counts down from when it received it. */
+  clock?: MatchClock;
+}
+
+export interface MatchClock {
+  control: TimeControl;
+  left: [number, number];
+  running: PlayerIndex | null;
 }
 
 /** What waits on one member — shown by the home app, not by the games client. */
@@ -148,7 +159,54 @@ function replay(db: Db, row: MatchRow): Replay {
   if (row.status === "finished" && state.status.kind === "playing" && (row.finish_reason === "agreed" || row.finish_reason === "resigned")) {
     state = game.finish(state, row.finish_reason, row.winner === null ? undefined : otherPlayer(row.winner as PlayerIndex));
   }
+  // On time no move was made: the side that ran out is the side to move.
+  if (row.status === "finished" && state.status.kind === "playing" && row.finish_reason === "timeout" && game.timeout) {
+    state = game.timeout(state, state.status.turn);
+  }
   return { state, feed };
+}
+
+// ── The clock (chess on the clock; engine clock.ts) ────────────────────────
+// The server's own timestamps are the only ones believed: each move's time is
+// measured here, from when its turn began to when the move arrived.
+
+function controlOf(row: MatchRow): TimeControl | null {
+  return gameOf(row).clockOf?.(JSON.parse(row.options)) ?? null;
+}
+
+function turnStartOf(row: MatchRow): number {
+  return Date.parse(row.turn_started_at ?? row.updated_at);
+}
+
+function clockOf(row: MatchRow, now: number): MatchClock | undefined {
+  const control = controlOf(row);
+  if (!control) return undefined;
+  const spent = JSON.parse(row.move_times) as number[];
+  const playing = row.status === "playing" && row.turn !== null;
+  const thinking = playing ? Math.max(0, now - turnStartOf(row)) : 0;
+  const left = timeLeft(control, spent, thinking);
+  const running = playing && spent.length >= 2 ? (row.turn as PlayerIndex) : null;
+  return { control, left: [Math.max(0, left[0]), Math.max(0, left[1])], running };
+}
+
+/** Ends the match on time when the side to move has run out — whoever asks
+ *  first, either player or a list, sees it over. Answers the row as it is now. */
+function settle(db: Db, row: MatchRow, now = Date.now()): MatchRow {
+  if (row.status !== "playing") return row;
+  const control = controlOf(row);
+  if (!control) return row;
+  const out = flagged(control, JSON.parse(row.move_times) as number[], now - turnStartOf(row));
+  if (out === null) return row;
+  const game = gameOf(row);
+  const state = replay(db, row).state;
+  const ended = game.timeout ? game.timeout(state, out) : state;
+  if (ended.status.kind !== "finished") return row;
+  db.prepare(`
+    UPDATE matches SET turn = NULL, status = 'finished', finish_reason = 'timeout', winner = ?,
+      updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), finished_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+    WHERE id = ? AND status = 'playing'
+  `).run(ended.status.winner, row.id);
+  return rowOf(db, row.id);
 }
 
 function messagesOf(db: Db, row: MatchRow): MatchMessage[] {
@@ -159,7 +217,14 @@ function messagesOf(db: Db, row: MatchRow): MatchMessage[] {
 
 /** The whole answer for one seat: the summary, their view, the feed, the talk. */
 function detailFor(db: Db, row: MatchRow, replayed: Replay, seat: PlayerIndex): MatchDetail {
-  return { ...summarize(db, row, replayed.state), state: viewOf(row, replayed.state, seat), feed: replayed.feed, messages: messagesOf(db, row) };
+  const clock = clockOf(row, Date.now());
+  return {
+    ...summarize(db, row, replayed.state),
+    state: viewOf(row, replayed.state, seat),
+    feed: replayed.feed,
+    messages: messagesOf(db, row),
+    ...(clock ? { clock } : {})
+  };
 }
 
 function summarize(db: Db, row: MatchRow, state?: { status: GameStatus }): MatchSummary {
@@ -239,8 +304,8 @@ export function createMatch(db: Db, me: Member, input: CreateMatchInput): MatchS
 }
 
 export function getMatch(db: Db, userId: string, id: string, withLegalMoves = false): MatchDetail {
-  const row = rowOf(db, id);
-  const seat = seatOf(row, userId);
+  const seat = seatOf(rowOf(db, id), userId);
+  const row = settle(db, rowOf(db, id));
   const replayed = replay(db, row);
   const detail = detailFor(db, row, replayed, seat);
   // From the whole state: the moves of the seat to move are that seat's own to know.
@@ -261,7 +326,7 @@ export function listMatches(db: Db, userId: string, only?: string): MatchSummary
     ORDER BY updated_at DESC, rowid DESC
     LIMIT 100
   `).all(userId, userId, only ?? null, only ?? null) as MatchRow[];
-  return rows.map((row) => summarize(db, row));
+  return rows.map((row) => summarize(db, settle(db, row)));
 }
 
 /** Invitations sent to the member and matches waiting on their move. */
@@ -274,12 +339,12 @@ export function summaryFor(db: Db, userId: string, only?: string): MatchActivity
       AND (? IS NULL OR id = ?)
     ORDER BY created_at DESC, rowid DESC
   `).all(userId, userId, userId, only ?? null, only ?? null) as MatchRow[];
-  const playing = db.prepare(`
+  const playing = (db.prepare(`
     SELECT * FROM matches
     WHERE status = 'playing' AND ((blue_id = ? AND turn = 0) OR (red_id = ? AND turn = 1))
       AND (? IS NULL OR id = ?)
     ORDER BY updated_at DESC, rowid DESC
-  `).all(userId, userId, only ?? null, only ?? null) as MatchRow[];
+  `).all(userId, userId, only ?? null, only ?? null) as MatchRow[]).map((row) => settle(db, row)).filter((row) => row.status === "playing");
   const invitations = invited.map((row) => ({ id: row.id, game: row.game, from: other(row), createdAt: row.created_at }));
   const yourMove = playing.map((row) => ({ id: row.id, game: row.game, opponent: other(row), updatedAt: row.updated_at }));
   return { invitations, yourMove, counts: { invitations: invitations.length, yourMove: yourMove.length } };
@@ -303,7 +368,11 @@ export function answerInvitation(db: Db, userId: string, id: string, answer: "ac
     // Seat 0 moves first in most games; in Dominoes the deal decides (the lowest double leads).
     const start = replay(db, row).state.status;
     const turn = start.kind === "playing" ? start.turn : 0;
-    db.prepare("UPDATE matches SET status = 'playing', turn = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?").run(turn, id);
+    db.prepare(`
+      UPDATE matches SET status = 'playing', turn = ?, turn_started_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
+        updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+      WHERE id = ?
+    `).run(turn, id);
   } else {
     db.prepare("UPDATE matches SET status = 'declined', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?").run(id);
   }
@@ -326,8 +395,13 @@ export function cancelInvitation(db: Db, userId: string, id: string): MatchSumma
  */
 export function playMove(db: Db, userId: string, id: string, move: unknown, expectedCount: number): MatchDetail {
   return db.transaction(() => {
-    const row = rowOf(db, id);
-    const seat = seatOf(row, userId);
+    const now = Date.now();
+    const seat = seatOf(rowOf(db, id), userId);
+    // A move that arrives after the flag fell is not played: the match is over on time.
+    const row = settle(db, rowOf(db, id), now);
+    if (row.status === "finished" && row.finish_reason === "timeout" && row.move_count === expectedCount) {
+      return detailFor(db, row, replay(db, row), seat);
+    }
     if (row.status !== "playing") throw new MatchError(409, "This match is not being played", "move.refused");
     if (row.turn !== seat) throw new MatchError(409, "It is not your turn", "move.refused");
     if (row.move_count !== expectedCount) throw new MatchError(409, "The match has moved on; reload it", "move.refused");
@@ -345,6 +419,8 @@ export function playMove(db: Db, userId: string, id: string, move: unknown, expe
       throw new MatchError(400, err instanceof Error ? err.message : "Illegal move", "move.illegal");
     }
     const moves = [...(JSON.parse(row.moves) as unknown[]), move];
+    const times = [...(JSON.parse(row.move_times) as number[]), Math.max(0, now - turnStartOf(row))];
+    db.prepare("UPDATE matches SET move_times = ?, turn_started_at = ? WHERE id = ?").run(JSON.stringify(times), new Date(now).toISOString(), id);
     if (state.status.kind === "finished") {
       db.prepare(`
         UPDATE matches SET moves = ?, move_count = ?, turn = NULL, status = 'finished', finish_reason = ?, winner = ?,
@@ -365,8 +441,8 @@ export function playMove(db: Db, userId: string, id: string, move: unknown, expe
 /** A line in the match's Comms panel, from either player, while it is being
  *  played or once it is over — not before the other side has even accepted. */
 export function postMessage(db: Db, userId: string, id: string, text: string): MatchDetail {
-  const row = rowOf(db, id);
-  const seat = seatOf(row, userId);
+  const seat = seatOf(rowOf(db, id), userId);
+  const row = settle(db, rowOf(db, id));
   if (row.status !== "playing" && row.status !== "finished") throw new MatchError(409, "This match is not being played");
   const line = text.replace(/\s+/g, " ").trim();
   if (!line) throw new MatchError(400, "Say something");
@@ -377,8 +453,8 @@ export function postMessage(db: Db, userId: string, id: string, text: string): M
 
 export function resign(db: Db, userId: string, id: string): MatchDetail {
   return db.transaction(() => {
-    const row = rowOf(db, id);
-    const seat = seatOf(row, userId);
+    const seat = seatOf(rowOf(db, id), userId);
+    const row = settle(db, rowOf(db, id));
     if (row.status !== "playing") throw new MatchError(409, "This match is not being played");
     db.prepare(`
       UPDATE matches SET turn = NULL, status = 'finished', finish_reason = 'resigned', winner = ?,

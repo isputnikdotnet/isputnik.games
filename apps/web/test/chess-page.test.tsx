@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Chess, type ChessMove } from "@isputnik/games-engine";
 import type { MatchDetail, MatchSummary } from "../src/api";
@@ -67,6 +67,72 @@ describe("ChessPage", () => {
     expect(square("e4")).toHaveAccessibleName("e4, White pawn");
     expect(loadChessGame()?.state.moves).toEqual([{ from: "e2", to: "e4" }]);
     expect(screen.getByRole("log")).toHaveTextContent("1. e4");
+  });
+
+  it("moves a piece by dragging it, and puts it back when dropped off a target", async () => {
+    const user = userEvent.setup();
+    render(<ChessPage />);
+    await user.click(screen.getByRole("button", { name: "Two players, one screen" }));
+    await user.click(screen.getByRole("button", { name: "Start game" }));
+    // jsdom lays nothing out: a 400px board at the corner, 50px squares, White below.
+    const board = screen.getByRole("group", { name: "Chessboard" });
+    vi.spyOn(board, "getBoundingClientRect").mockReturnValue({ left: 0, top: 0, right: 400, bottom: 400, width: 400, height: 400, x: 0, y: 0, toJSON: () => ({}) });
+    const at = (file: number, rank: number) => ({ clientX: file * 50 + 25, clientY: (8 - rank) * 50 + 25, pointerId: 1, button: 0, pointerType: "mouse" });
+
+    // Dropped on a square it cannot reach: nothing is played, the pawn goes home.
+    fireEvent.pointerDown(square("e2"), at(4, 2));
+    fireEvent.pointerMove(board, at(4, 3));
+    expect(square("e2")).toHaveClass("is-lifted");
+    expect(square("e4")).toHaveClass("is-target");
+    fireEvent.pointerMove(board, at(4, 5));
+    expect(square("e5")).toHaveClass("is-over");
+    fireEvent.pointerUp(board, at(4, 5));
+    expect(loadChessGame()?.state.moves ?? []).toEqual([]);
+    expect(square("e2")).not.toHaveClass("is-lifted");
+
+    fireEvent.pointerDown(square("e2"), at(4, 2));
+    fireEvent.pointerMove(board, at(4, 3));
+    fireEvent.pointerMove(board, at(4, 4));
+    fireEvent.pointerUp(board, at(4, 4));
+    expect(screen.getByRole("status")).toHaveTextContent("Black to move");
+    expect(square("e4")).toHaveAccessibleName("e4, White pawn");
+    expect(loadChessGame()?.state.moves).toEqual([{ from: "e2", to: "e4" }]);
+
+    // The side not to move cannot pick a piece up.
+    fireEvent.pointerDown(square("d2"), at(3, 2));
+    fireEvent.pointerMove(board, at(3, 4));
+    expect(square("d2")).not.toHaveClass("is-lifted");
+    fireEvent.pointerUp(board, at(3, 4));
+    expect(loadChessGame()?.state.moves).toHaveLength(1);
+  });
+
+  it("plays on the clock: one free move each, then White's time runs out", () => {
+    vi.useFakeTimers();
+    try {
+      render(<ChessPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Two players, one screen" }));
+      fireEvent.click(screen.getByRole("button", { name: "1 min" }));
+      fireEvent.click(screen.getByRole("button", { name: "Start game" }));
+      const clocks = () => screen.getAllByRole("timer").map((timer) => timer.textContent);
+      expect(clocks()).toEqual(["1:00", "1:00"]);
+      // No takebacks on the clock.
+      expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+
+      fireEvent.click(square("e2"));
+      fireEvent.click(square("e4"));
+      fireEvent.click(square("e7"));
+      fireEvent.click(square("e5"));
+      // Both first moves were free: White's clock starts now.
+      act(() => vi.advanceTimersByTime(30_000));
+      expect(screen.getByRole("timer", { name: /White: 0:30/ })).toHaveClass("is-running");
+      act(() => vi.advanceTimersByTime(31_000));
+
+      expect(screen.getByRole("status")).toHaveTextContent("Black wins");
+      expect(screen.getAllByText("White ran out of time.").length).toBeGreaterThan(0);
+      expect(loadChessGame()?.state.status).toEqual({ kind: "finished", winner: 1, reason: "timeout" });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("lets the computer answer", async () => {
@@ -226,7 +292,7 @@ describe("online chess", () => {
     await user.click(await screen.findByRole("button", { name: "Invite a member" }));
     const dialog = screen.getByRole("dialog", { name: "Invite to play" });
     await user.click(within(dialog).getByRole("button", { name: "Chess" }));
-    await user.click(await within(dialog).findByRole("button", { name: "Dad" }));
+    await user.click(await within(dialog).findByRole("radio", { name: "Dad" }));
     await user.click(within(dialog).getByRole("button", { name: "Black" }));
     await user.click(within(dialog).getByRole("button", { name: "Send invitation" }));
     expect(api.createMatch).toHaveBeenCalledWith({ game: "chess", options: {}, opponent: { id: "dad", name: "Dad" }, seat: 1 });

@@ -127,8 +127,8 @@ describe("lobby, online section", () => {
     await user.click(screen.getByRole("button", { name: "Invite a member" }));
     const dialog = screen.getByRole("dialog", { name: "Invite to play" });
     // Only the others are offered.
-    expect(within(dialog).queryByRole("button", { name: "Мама" })).not.toBeInTheDocument();
-    await user.click(await within(dialog).findByRole("button", { name: "Dad" }));
+    expect(within(dialog).queryByRole("radio", { name: "Мама" })).not.toBeInTheDocument();
+    await user.click(await within(dialog).findByRole("radio", { name: "Dad" }));
     await user.click(within(dialog).getByRole("button", { name: "Red" }));
     await user.click(within(dialog).getByRole("button", { name: "Send invitation" }));
 

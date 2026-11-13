@@ -3,6 +3,8 @@
 // games) and on the server (the authority for online matches, phase 2). Nothing
 // in here, or in any game, may touch the DOM or Node APIs.
 
+import type { TimeControl } from "./clock.js";
+
 /** Seat at the table: 0 moves first. Every game here is for two. */
 export type PlayerIndex = 0 | 1;
 
@@ -28,7 +30,9 @@ export type FinishReason =
   /** Chess: fifty moves each without a capture or a pawn move — a draw. */
   | "fifty-moves"
   /** Chess: neither side has enough left to mate — a draw. */
-  | "material";
+  | "material"
+  /** A clock ran out: the other side wins, or draws if it could never mate. */
+  | "timeout";
 
 export type GameStatus =
   | { kind: "playing"; turn: PlayerIndex }
@@ -90,6 +94,11 @@ export interface GameDefinition<O, S extends { status: GameStatus }, M> {
    *  null for a move not worth a line. */
   narrate?(before: S, move: M, after: S): GameEvent | null;
   ai?: GameAi<S, M>;
+  /** The game's clock, when its options set one (clock.ts); omitted by games
+   *  that are never timed. */
+  clockOf?(options: O): TimeControl | null;
+  /** Ends the game because `flagged` ran out of time. */
+  timeout?(state: S, flagged: PlayerIndex): S;
 }
 
 /** Replays a move list and collects the events along the way. */

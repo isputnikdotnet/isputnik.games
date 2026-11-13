@@ -3,12 +3,14 @@ import { chessAi } from "./ai.js";
 import {
   DEFAULT_OPTIONS,
   applyMove,
+  clockOf,
   createGame,
   describeMove,
   finish,
   legalMoves,
   parseMove,
   parseOptions,
+  timeout,
   type ChessMove,
   type ChessOptions,
   type ChessState
@@ -31,7 +33,9 @@ export const chess: GameDefinition<ChessOptions, ChessState, ChessMove> = {
     if (!note) return null;
     return { by: before.status.turn, kind: "move", number: before.fullmove, ...note };
   },
-  ai: chessAi
+  ai: chessAi,
+  clockOf,
+  timeout
 };
 
 export * from "./rules.js";

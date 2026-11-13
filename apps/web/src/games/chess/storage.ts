@@ -1,4 +1,4 @@
-import { Chess, type AiLevel, type ChessMove, type ChessState, type PlayerIndex, type PuzzleLevel, type PuzzleType } from "@isputnik/games-engine";
+import { Chess, parseTimeControl, type AiLevel, type ChessMove, type ChessState, type PlayerIndex, type PuzzleLevel, type PuzzleType, type TimeControl } from "@isputnik/games-engine";
 import { newGameKey } from "../../shared/gameKey";
 
 // The game in progress on this device, so a refresh or a locked phone does not
@@ -17,6 +17,15 @@ export interface ChessSetup {
   /** Which seat the computer takes in computer mode: 1 when you play White. */
   computerPlays: PlayerIndex;
   level: AiLevel;
+  /** A clock (blitz), or null for a game at leisure. */
+  clock: TimeControl | null;
+}
+
+/** How a game the rules did not end was ended: a draw agreed, a resignation,
+ *  or a clock run out — `resigning` is then the side that lost it. */
+export interface ChessFinish {
+  reason: "agreed" | "resigned" | "timeout";
+  resigning?: PlayerIndex;
 }
 
 export interface SavedChessGame {
@@ -24,23 +33,40 @@ export interface SavedChessGame {
   /** The game's own id (shared/gameKey); a save from before 0.12.0 has none. */
   key?: string;
   moves: ChessMove[];
-  finished: null | { reason: "agreed" | "resigned"; resigning?: PlayerIndex };
+  /** How long each move took, in ms, for the clock; absent in a game without one. */
+  spent?: number[];
+  finished: null | ChessFinish;
 }
 
 export interface LoadedChessGame {
   setup: ChessSetup;
   key: string;
   state: ChessState;
+  /** How long each move took, in ms (one per move). */
+  spent: number[];
+  /** When the move now awaited began (Date.now()); never stored — a reload
+   *  starts it afresh, so the clock of a game on this device stops while the
+   *  page is gone. */
+  turnStartedAt: number;
 }
 
-export const DEFAULT_SETUP: ChessSetup = { mode: "computer", computerPlays: 1, level: "normal" };
+export const DEFAULT_SETUP: ChessSetup = { mode: "computer", computerPlays: 1, level: "normal", clock: null };
 
-function isSetup(value: unknown): value is ChessSetup {
-  if (!value || typeof value !== "object") return false;
+/** A stored setup, checked; one from before the clock gets none. */
+function setupOf(value: unknown): ChessSetup | null {
+  if (!value || typeof value !== "object") return null;
   const s = value as Record<string, unknown>;
-  return (s.mode === "computer" || s.mode === "local")
+  const valid = (s.mode === "computer" || s.mode === "local")
     && (s.computerPlays === 0 || s.computerPlays === 1)
     && (s.level === "easy" || s.level === "normal" || s.level === "hard");
+  if (!valid) return null;
+  let clock: TimeControl | null = null;
+  try {
+    clock = parseTimeControl(s.clock);
+  } catch {
+    clock = null;
+  }
+  return { mode: s.mode as ChessSetup["mode"], computerPlays: s.computerPlays as PlayerIndex, level: s.level as AiLevel, clock };
 }
 
 /** A save's key, or a new one for a save from before games had keys. */
@@ -53,26 +79,35 @@ export function loadChessGame(): LoadedChessGame | null {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const saved = JSON.parse(raw) as Partial<SavedChessGame>;
-    if (!isSetup(saved.setup) || !Array.isArray(saved.moves)) return null;
+    const setup = setupOf(saved.setup);
+    if (!setup || !Array.isArray(saved.moves)) return null;
     let state = Chess.replay(saved.moves.map((move) => Chess.parseMove(move)));
-    if (saved.finished) state = Chess.finish(state, saved.finished.reason, saved.finished.resigning);
-    return { setup: saved.setup, key: savedKey(saved.key), state };
+    if (saved.finished?.reason === "timeout") state = Chess.timeout(state, saved.finished.resigning ?? state.toMove);
+    else if (saved.finished) state = Chess.finish(state, saved.finished.reason, saved.finished.resigning);
+    const spent = Array.isArray(saved.spent) && saved.spent.length === state.moves.length && saved.spent.every((ms) => typeof ms === "number" && ms >= 0)
+      ? saved.spent
+      : state.moves.map(() => 0);
+    return { setup, key: savedKey(saved.key), state, spent, turnStartedAt: Date.now() };
   } catch {
     return null;
   }
 }
 
-/** How a game the rules did not end was ended (a draw agreed, a resignation), to replay it later. */
+/** How a game the rules did not end was ended (a draw agreed, a resignation,
+ *  a clock run out), to replay it later. */
 export function finishOf(state: ChessState): SavedChessGame["finished"] {
   const status = state.status;
-  return status.kind === "finished" && (status.reason === "agreed" || status.reason === "resigned")
+  if (status.kind !== "finished") return null;
+  // On time, the side that ran out is the side to move: no move was made.
+  if (status.reason === "timeout") return { reason: "timeout", resigning: state.toMove };
+  return status.reason === "agreed" || status.reason === "resigned"
     ? { reason: status.reason, resigning: status.winner === null ? undefined : (status.winner === 0 ? 1 : 0) as PlayerIndex }
     : null;
 }
 
 export function saveChessGame(game: LoadedChessGame): void {
   const finished = finishOf(game.state);
-  const saved: SavedChessGame = { setup: game.setup, key: game.key, moves: game.state.moves, finished };
+  const saved: SavedChessGame = { setup: game.setup, key: game.key, moves: game.state.moves, finished, ...(game.setup.clock ? { spent: game.spent } : {}) };
   try {
     localStorage.setItem(KEY, JSON.stringify(saved));
   } catch {
@@ -93,8 +128,8 @@ export function loadChessSetup(): ChessSetup {
   try {
     const raw = localStorage.getItem(SETUP_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as unknown;
-      if (isSetup(parsed)) return parsed;
+      const parsed = setupOf(JSON.parse(raw) as unknown);
+      if (parsed) return parsed;
     }
   } catch {
     /* private mode */
