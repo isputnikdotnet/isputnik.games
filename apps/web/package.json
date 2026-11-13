@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@isputnik/games-engine": "0.28.0",
-    "i18next": "^26.7.1",
+    "i18next": "^27.1.0",
     "lucide-react": "^1.66.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.3.1",
