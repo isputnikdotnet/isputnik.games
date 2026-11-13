@@ -39,7 +39,15 @@ This is an add-on for isputnik.home and does nothing on its own: it has no sign-
 
   <Date>1794571200</Date>
   <Changes>
-### 2026.11.13 — 0.27.0 Blitz chess, pieces you can drag, and invitations with a QR code
+### 2026.11.13 — 0.28.0 A chess computer that learns your level, a coach, draw offers and saved games
+- **A computer that plays at your level.** Besides Easy, Normal and Hard, the chess computer can be set anywhere from 0 to 100 (Custom, with the rating it plays like), or left to adapt: Adaptive plays at your own chess rating, so each game is about even. It starts from your puzzle rating until you have a few rated games, follows you as you play — win and the next game is harder, lose and it eases off — and "Play again" checks where you stand. A game at a strength counts for your rating against that strength.
+- **A coach on game review.** When you look back over a finished game, the computer weighs every move against the best one it can find and marks the slips: ?! an inaccuracy, ? a mistake, ?? a blunder. Each side gets a count, the move on screen gets a word ("You played Be2; b5 was a little stronger"), and "Show the better move" puts the board back a move with that move marked.
+- **Offer a draw online.** In an online chess game either player can offer a draw; the other accepts, declines, or plays on, which declines it. An offer stands until it is answered or taken back, and the same player can offer again after a couple of moves.
+- **Save a game and come back to it.** "Save and leave" puts a game against the computer or at one screen aside, and the chess page lists the saved ones to continue or delete — several at once, kept on the device. A game on the clock does not lose time while it is saved.
+- **Your games are easier to find.** "My chess games" is on the games page, and the window at the end of a game has a Review button.
+- **Fix:** hovering the chosen option in a row of choices made its label disappear in the light themes.
+
+### 2026.11.12 — 0.27.0 Blitz chess, pieces you can drag, and invitations with a QR code
 - **Chess on the clock.** A new game against the computer, at one screen or online can be played with a clock: 1 minute, 3 minutes with 2 seconds added after each move, 5 or 10 minutes. Each side's first move is free, then the clock runs; whoever runs out loses — or it is a draw, if the other side has nothing left to checkmate with. Online, the server keeps the time, so it is the same on both screens, and a game whose time ran out ends the moment either player looks at it. Undo is off on the clock. Before, chess had no clock at all.
 - **Drag the pieces.** A piece can now be carried to its square with the mouse or a finger, as well as tapped and then tapped where it goes. The squares it may reach are marked while it is carried; let go anywhere else and it goes back.
 - **A new games lobby.** Bigger game cards with a Play button across each and an invite button in the corner, a short tip on how to invite, a calmer "Your turn" strip with a mountain-and-planet picture, and arrows on the recent games. On a phone the lobby no longer spills past the edge of the screen — the leaderboard's filters pushed it wider.
@@ -58,10 +66,6 @@ This is an add-on for isputnik.home and does nothing on its own: it has no sign-
 
 ### 2026.11.09 — 0.25.3 The 0.25.2 image, built this time
 - **The 0.25.2 image never reached the registry.** Its build failed on a test of the Torpedo Run page that played a run from a random seed; with some seeds the scripted shots earned a bonus round, and the card then waited for it to be fired in before the run was over and reported, so the test saw no report. The test now plays a fixed seed. This release carries everything 0.25.2 announced.
-
-### 2026.11.09 — 0.25.2 Named as an add-on, with a change log for Unraid
-- **Every public description now says what this is: an add-on for isputnik.home.** The GitHub repository, the image on ghcr.io, the Unraid Community Applications template and its profile all say the container is installed beside the isputnik container and reached only through it, so nobody installs it expecting a game server of its own.
-- **The Unraid template carries its change log.** Community Applications shows when the container was last updated and what changed, from a `Date` and `Changes` block in `isputnik-games.xml` that `npm run changelog` regenerates from `changelog.json` on every release, as isputnik.home's does.
   </Changes>
 
   <Requires>Needs the isputnik (isputnik.home) container, version 4.38 or newer, installed on the same server. The games are reached only through it.</Requires>

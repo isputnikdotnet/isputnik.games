@@ -3,6 +3,15 @@
 Every release, newest first. Generated from `changelog.json` by `npm run changelog` —
 edit that file, not this one.
 
+## 0.28.0 — A chess computer that learns your level, a coach, draw offers and saved games
+
+- **A computer that plays at your level.** Besides Easy, Normal and Hard, the chess computer can be set anywhere from 0 to 100 (Custom, with the rating it plays like), or left to adapt: Adaptive plays at your own chess rating, so each game is about even. It starts from your puzzle rating until you have a few rated games, follows you as you play — win and the next game is harder, lose and it eases off — and "Play again" checks where you stand. A game at a strength counts for your rating against that strength.
+- **A coach on game review.** When you look back over a finished game, the computer weighs every move against the best one it can find and marks the slips: ?! an inaccuracy, ? a mistake, ?? a blunder. Each side gets a count, the move on screen gets a word ("You played Be2; b5 was a little stronger"), and "Show the better move" puts the board back a move with that move marked.
+- **Offer a draw online.** In an online chess game either player can offer a draw; the other accepts, declines, or plays on, which declines it. An offer stands until it is answered or taken back, and the same player can offer again after a couple of moves.
+- **Save a game and come back to it.** "Save and leave" puts a game against the computer or at one screen aside, and the chess page lists the saved ones to continue or delete — several at once, kept on the device. A game on the clock does not lose time while it is saved.
+- **Your games are easier to find.** "My chess games" is on the games page, and the window at the end of a game has a Review button.
+- **Fix:** hovering the chosen option in a row of choices made its label disappear in the light themes.
+
 ## 0.27.0 — Blitz chess, pieces you can drag, and invitations with a QR code
 
 - **Chess on the clock.** A new game against the computer, at one screen or online can be played with a clock: 1 minute, 3 minutes with 2 seconds added after each move, 5 or 10 minutes. Each side's first move is free, then the clock runs; whoever runs out loses — or it is a draw, if the other side has nothing left to checkmate with. Online, the server keeps the time, so it is the same on both screens, and a game whose time ran out ends the moment either player looks at it. Undo is off on the clock. Before, chess had no clock at all.
