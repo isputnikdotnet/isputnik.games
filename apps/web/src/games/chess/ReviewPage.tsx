@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { List, Repeat2, Settings2 } from "lucide-react";
+import { GraduationCap, Lightbulb, List, Repeat2, Settings2 } from "lucide-react";
 import { Chess, type AiLevel, type ChessMove, type ChessState, type PlayerIndex } from "@isputnik/games-engine";
 import { fetchGameRecord, fetchMatch, type ReviewMode } from "../../api";
 import { Button } from "../../shared/Button";
@@ -12,6 +12,10 @@ import { localSan } from "./comms";
 import { ChessSettingsDialog } from "./SettingsDialog";
 import { ChessTable } from "./ChessTable";
 import { ReplayControls, useReplay } from "./replay";
+import { MARK_SIGN, markOf, useCoach, type Coaching, type Mark } from "./coach";
+
+const NO_MOVES: ChessMove[] = [];
+const MARKS: Mark[] = ["blunder", "mistake", "inaccuracy"];
 
 // A finished game, to step through: the board at any move, the move list
 // beside it (tap a move to go there), and Start / Back / Play / Forward / End —
@@ -38,6 +42,8 @@ export function ChessReviewPage({ source, id }: { source: "record" | "match"; id
   const [error, setError] = useState<string | null>(null);
   const [flipped, setFlipped] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // "Show the better move": one position back, its best move marked on the board.
+  const [better, setBetter] = useState<{ ply: number; from: string; to: string } | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -83,6 +89,7 @@ export function ChessReviewPage({ source, id }: { source: "record" | "match"; id
     return out;
   }, [game]);
 
+  const coach = useCoach(positions, game?.moves ?? NO_MOVES);
   const last = game ? game.moves.length : 0;
   const replay = useReplay(last);
   const { ply, go } = replay;
@@ -132,15 +139,25 @@ export function ChessReviewPage({ source, id }: { source: "record" | "match"; id
       <GameStage
         className="chess-stage review-stage"
         title={t("chess.review.title")}
-        board={<ChessTable state={shown} orientation={orientation} movable={null} onMove={() => undefined} names={game.names} />}
+        board={<ChessTable state={shown} orientation={orientation} movable={null} onMove={() => undefined} names={game.names} hint={better && better.ply === ply ? better : null} />}
         score={
           <div className="chess-status">
             <p className="chess-status-line is-finished">{result}</p>
             {reason && <p className="muted chess-reason">{reason}</p>}
             <p className="muted chess-reason">{[t("chess.review.players", { white: game.names[0], black: game.names[1] }), kind, when].filter(Boolean).join(" · ")}</p>
+            <CoachNote
+              coach={coach}
+              game={game}
+              positions={positions}
+              ply={ply}
+              onShowBetter={(from, to) => {
+                setBetter({ ply: ply - 1, from, to });
+                go(ply - 1);
+              }}
+            />
           </div>
         }
-        log={<MoveList game={game} positions={positions} ply={ply} onGo={go} />}
+        log={<MoveList game={game} positions={positions} ply={ply} onGo={go} coach={coach} />}
         actions={
           <>
             <ReplayControls replay={replay} />
@@ -162,7 +179,7 @@ export function ChessReviewPage({ source, id }: { source: "record" | "match"; id
 }
 
 /** The moves in pairs, "12. Nf3 Nc6", each one a button to that position. */
-function MoveList({ game, positions, ply, onGo }: { game: ReviewGame; positions: ChessState[]; ply: number; onGo: (ply: number) => void }) {
+function MoveList({ game, positions, ply, onGo, coach }: { game: ReviewGame; positions: ChessState[]; ply: number; onGo: (ply: number) => void; coach: Coaching }) {
   const { t } = useTranslation();
   const letters = t("chess.sanLetters");
   const current = useRef<HTMLButtonElement | null>(null);
@@ -176,17 +193,23 @@ function MoveList({ game, positions, ply, onGo }: { game: ReviewGame; positions:
     if (index % 2 === 0) rows.push({ number: index / 2 + 1, white: index, black: null });
     else rows[rows.length - 1].black = index;
   });
-  const cell = (index: number | null) => index === null ? <span /> : (
-    <Button
-      variant="bare"
-      ref={index + 1 === ply ? current : undefined}
-      className={`review-move${index + 1 === ply ? " is-current" : ""}`}
-      aria-current={index + 1 === ply ? "step" : undefined}
-      onClick={() => onGo(index + 1)}
-    >
-      {sans[index]}
-    </Button>
-  );
+  const cell = (index: number | null) => {
+    if (index === null) return <span />;
+    const mark = markOf(coach.verdicts[index]);
+    return (
+      <Button
+        variant="bare"
+        ref={index + 1 === ply ? current : undefined}
+        className={`review-move${index + 1 === ply ? " is-current" : ""}${mark ? ` is-${mark}` : ""}`}
+        aria-current={index + 1 === ply ? "step" : undefined}
+        aria-label={mark ? `${sans[index]}, ${t(`chess.coach.marks.${mark}`)}` : undefined}
+        onClick={() => onGo(index + 1)}
+      >
+        {sans[index]}
+        {mark && <span className="review-mark" aria-hidden="true">{MARK_SIGN[mark]}</span>}
+      </Button>
+    );
+  };
 
   return (
     <div className="review-moves" aria-label={t("chess.review.moves")}>
@@ -204,6 +227,64 @@ function MoveList({ game, positions, ply, onGo }: { game: ReviewGame; positions:
           </li>
         ))}
       </ol>
+    </div>
+  );
+}
+
+/** The coach's word on the move just played, and on each side's game. */
+function CoachNote({ coach, game, positions, ply, onShowBetter }: {
+  coach: Coaching;
+  game: ReviewGame;
+  positions: ChessState[];
+  ply: number;
+  onShowBetter: (from: string, to: string) => void;
+}) {
+  const { t } = useTranslation();
+  const letters = t("chess.sanLetters");
+  if (coach.total === 0) return null;
+  if (coach.done < coach.total) {
+    return <p className="muted coach-line"><GraduationCap size={16} aria-hidden="true" /> {t("chess.coach.working", { done: coach.done, total: coach.total })}</p>;
+  }
+
+  const counts = (seat: 0 | 1) => {
+    const tally: Record<Mark, number> = { blunder: 0, mistake: 0, inaccuracy: 0 };
+    coach.verdicts.forEach((verdict, index) => {
+      const mark = markOf(verdict);
+      if (mark && index % 2 === seat) tally[mark]++;
+    });
+    return tally;
+  };
+  const side = (seat: 0 | 1) => {
+    const tally = counts(seat);
+    const parts = MARKS.filter((mark) => tally[mark] > 0).map((mark) => t(`chess.coach.count.${mark}`, { count: tally[mark] }));
+    return `${game.names[seat]}: ${parts.length ? parts.join(", ") : t("chess.coach.clean")}`;
+  };
+
+  const verdict = ply > 0 ? coach.verdicts[ply - 1] : null;
+  const mark = markOf(verdict);
+  const san = (state: ChessState, move: ChessMove) => localSan(Chess.describeMove(state, move)?.san ?? "?", letters);
+  return (
+    <div className="coach-note">
+      <p className="muted coach-line"><GraduationCap size={16} aria-hidden="true" /> {side(0)} · {side(1)}</p>
+      {verdict && ply > 0 && (
+        mark ? (
+          <div className={`coach-verdict is-${mark}`}>
+            <p>
+              {t(`chess.coach.say.${mark}`, {
+                name: game.names[(ply - 1) % 2],
+                move: san(positions[ply - 1], game.moves[ply - 1]),
+                pawns: (verdict.loss / 100).toFixed(1),
+                better: san(positions[ply - 1], verdict.best)
+              })}
+            </p>
+            <Button variant="text" onClick={() => onShowBetter(verdict.best.from, verdict.best.to)}>
+              <Lightbulb size={16} aria-hidden="true" /> {t("chess.coach.showBetter")}
+            </Button>
+          </div>
+        ) : (
+          <p className="muted coach-line">{verdict.loss === 0 ? t("chess.coach.best", { move: san(positions[ply - 1], game.moves[ply - 1]) }) : t("chess.coach.fine", { move: san(positions[ply - 1], game.moves[ply - 1]) })}</p>
+        )
+      )}
     </div>
   );
 }

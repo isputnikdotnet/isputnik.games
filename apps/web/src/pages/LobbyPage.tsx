@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BellRing, ChevronRight, Cpu, Gamepad2, Globe, Hourglass, Info, Joystick, Puzzle, UserPlus, Users, type LucideIcon } from "lucide-react";
+import { BellRing, ChevronRight, Cpu, Gamepad2, Globe, History, Hourglass, Info, Joystick, Puzzle, UserPlus, Users, type LucideIcon } from "lucide-react";
 import { answerMatch, fetchMatches, fetchStats, type FamilyStats, type MatchSummary } from "../api";
 import { follow, href, matchHref, navigate } from "../router";
 import { useOffline, useSession } from "../session";
@@ -225,8 +225,14 @@ export function LobbyPage() {
 
           <section className="lobby-games" aria-labelledby="lobby-games-title">
             <div className="lobby-games-head">
-              <h2 id="lobby-games-title" className="lobby-section-title">{t("lobby.games.title")}</h2>
-              <p className="muted">{t("lobby.games.lead")}</p>
+              <div>
+                <h2 id="lobby-games-title" className="lobby-section-title">{t("lobby.games.title")}</h2>
+                <p className="muted">{t("lobby.games.lead")}</p>
+              </div>
+              {/* Every finished chess game is kept: the way back to them, from the front page. */}
+              {link(href("chess/games"), "text-link lobby-my-games", (
+                <><History size={16} aria-hidden="true" /> {t("lobby.games.myGames")}</>
+              ))}
             </div>
             <div className="lobby-grid">
               {LOBBY_GAME_IDS.map((gameId) => {

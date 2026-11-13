@@ -28,6 +28,8 @@ export interface MatchRow {
   finished_at: string | null;
   move_times: string;
   turn_started_at: string | null;
+  draw_offer: number | null;
+  draw_offers: string;
 }
 
 export interface Member {
@@ -79,6 +81,21 @@ export interface MatchDetail extends MatchSummary {
   /** A game on the clock: each side's time left as of this answer, in ms, and
    *  whose is running. The client counts down from when it received it. */
   clock?: MatchClock;
+  /** Draw offers, in a game that has them (chess) while it is played: who has
+   *  offered one that stands, and whether the asker may offer one now. */
+  draw?: { offeredBy: PlayerIndex | null; canOffer: boolean };
+}
+
+/** Moves that must be played after a seat's offer before it may offer again. */
+export const DRAW_OFFER_GAP = 2;
+
+/** The games whose online matches take draw offers. */
+const DRAWABLE = new Set(["chess"]);
+
+function canOfferDraw(row: MatchRow, seat: PlayerIndex): boolean {
+  if (row.status !== "playing" || !DRAWABLE.has(row.game) || row.draw_offer !== null) return false;
+  const last = (JSON.parse(row.draw_offers) as (number | null)[])[seat];
+  return last === null || last === undefined || row.move_count - last >= DRAW_OFFER_GAP;
 }
 
 export interface MatchClock {
@@ -218,12 +235,16 @@ function messagesOf(db: Db, row: MatchRow): MatchMessage[] {
 /** The whole answer for one seat: the summary, their view, the feed, the talk. */
 function detailFor(db: Db, row: MatchRow, replayed: Replay, seat: PlayerIndex): MatchDetail {
   const clock = clockOf(row, Date.now());
+  const draw = row.status === "playing" && DRAWABLE.has(row.game)
+    ? { offeredBy: row.draw_offer === null ? null : (row.draw_offer as PlayerIndex), canOffer: canOfferDraw(row, seat) }
+    : undefined;
   return {
     ...summarize(db, row, replayed.state),
     state: viewOf(row, replayed.state, seat),
     feed: replayed.feed,
     messages: messagesOf(db, row),
-    ...(clock ? { clock } : {})
+    ...(clock ? { clock } : {}),
+    ...(draw ? { draw } : {})
   };
 }
 
@@ -421,6 +442,8 @@ export function playMove(db: Db, userId: string, id: string, move: unknown, expe
     const moves = [...(JSON.parse(row.moves) as unknown[]), move];
     const times = [...(JSON.parse(row.move_times) as number[]), Math.max(0, now - turnStartOf(row))];
     db.prepare("UPDATE matches SET move_times = ?, turn_started_at = ? WHERE id = ?").run(JSON.stringify(times), new Date(now).toISOString(), id);
+    // Playing on instead of answering declines the other side's draw offer.
+    if (row.draw_offer !== null && row.draw_offer !== seat) db.prepare("UPDATE matches SET draw_offer = NULL WHERE id = ?").run(id);
     if (state.status.kind === "finished") {
       db.prepare(`
         UPDATE matches SET moves = ?, move_count = ?, turn = NULL, status = 'finished', finish_reason = ?, winner = ?,
@@ -451,13 +474,58 @@ export function postMessage(db: Db, userId: string, id: string, text: string): M
   return detailFor(db, row, replay(db, row), seat);
 }
 
+export type DrawAction = "offer" | "accept" | "decline" | "withdraw";
+
+/**
+ * A draw offer in an online match (chess): offered by either side at any time
+ * while it is played, it stands until the other side accepts or declines it —
+ * or plays a move, which declines it — or the side that made it withdraws it.
+ * Accepting ends the match drawn by agreement. A side may offer again only
+ * DRAW_OFFER_GAP moves after its last offer, so an offer cannot be repeated
+ * into a nag.
+ */
+export function answerDraw(db: Db, userId: string, id: string, action: DrawAction): MatchDetail {
+  return db.transaction(() => {
+    const seat = seatOf(rowOf(db, id), userId);
+    const row = settle(db, rowOf(db, id));
+    if (row.status !== "playing") throw new MatchError(409, "This match is not being played");
+    if (!DRAWABLE.has(row.game)) throw new MatchError(400, "This game has no draw offers");
+    const offer = row.draw_offer;
+    if (action === "offer") {
+      if (offer === seat) throw new MatchError(409, "You have offered a draw already");
+      if (offer !== null) throw new MatchError(409, "The other player has offered a draw: answer it");
+      if (!canOfferDraw(row, seat)) throw new MatchError(409, "Play a few moves before offering a draw again");
+      const offers = JSON.parse(row.draw_offers) as (number | null)[];
+      offers[seat] = row.move_count;
+      db.prepare("UPDATE matches SET draw_offer = ?, draw_offers = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?")
+        .run(seat, JSON.stringify(offers), id);
+    } else if (action === "withdraw") {
+      if (offer !== seat) throw new MatchError(409, "You have no draw offer to withdraw");
+      db.prepare("UPDATE matches SET draw_offer = NULL WHERE id = ?").run(id);
+    } else {
+      if (offer === null || offer === seat) throw new MatchError(409, "There is no draw offer to answer");
+      if (action === "decline") {
+        db.prepare("UPDATE matches SET draw_offer = NULL WHERE id = ?").run(id);
+      } else {
+        db.prepare(`
+          UPDATE matches SET draw_offer = NULL, turn = NULL, status = 'finished', finish_reason = 'agreed', winner = NULL,
+            updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), finished_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+          WHERE id = ?
+        `).run(id);
+      }
+    }
+    const updated = rowOf(db, id);
+    return detailFor(db, updated, replay(db, updated), seat);
+  })();
+}
+
 export function resign(db: Db, userId: string, id: string): MatchDetail {
   return db.transaction(() => {
     const seat = seatOf(rowOf(db, id), userId);
     const row = settle(db, rowOf(db, id));
     if (row.status !== "playing") throw new MatchError(409, "This match is not being played");
     db.prepare(`
-      UPDATE matches SET turn = NULL, status = 'finished', finish_reason = 'resigned', winner = ?,
+      UPDATE matches SET draw_offer = NULL, turn = NULL, status = 'finished', finish_reason = 'resigned', winner = ?,
         updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), finished_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
       WHERE id = ?
     `).run(otherPlayer(seat), id);

@@ -13,7 +13,7 @@ import { localSan } from "../src/games/chess/comms";
 
 vi.mock("../src/api", async () => {
   const actual = await vi.importActual<typeof import("../src/api")>("../src/api");
-  return { ...actual, fetchMatches: vi.fn(), fetchMatch: vi.fn(), postMove: vi.fn(), createMatch: vi.fn(), fetchMembers: vi.fn() };
+  return { ...actual, fetchMatches: vi.fn(), fetchMatch: vi.fn(), postMove: vi.fn(), createMatch: vi.fn(), fetchMembers: vi.fn(), drawMatch: vi.fn(), fetchAdaptiveStrength: vi.fn() };
 });
 import * as api from "../src/api";
 
@@ -104,6 +104,61 @@ describe("ChessPage", () => {
     expect(square("d2")).not.toHaveClass("is-lifted");
     fireEvent.pointerUp(board, at(3, 4));
     expect(loadChessGame()?.state.moves).toHaveLength(1);
+  });
+
+  it("plays the computer at a strength picked on the 0-100 scale", async () => {
+    const user = userEvent.setup();
+    render(<ChessPage />);
+    await user.click(screen.getByRole("button", { name: "Against the computer" }));
+    await user.click(screen.getByRole("button", { name: "Custom" }));
+    fireEvent.change(screen.getByRole("slider", { name: "Strength" }), { target: { value: "80" } });
+    expect(screen.getByText("80 of 100 — plays like about 1520")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Start game" }));
+    expect(screen.getByText("Computer: strength 80 (about 1520)")).toBeInTheDocument();
+    expect(loadChessGame()?.setup).toMatchObject({ levelMode: "custom", strength: 80, level: "hard" });
+  });
+
+  it("plays the adaptive computer at the strength the server suggests", async () => {
+    vi.mocked(api.fetchAdaptiveStrength).mockResolvedValue({ strength: 43, elo: 1002, source: "games", target: 1000 });
+    const user = userEvent.setup();
+    render(<ChessPage />);
+    await user.click(screen.getByRole("button", { name: "Against the computer" }));
+    await user.click(screen.getByRole("button", { name: "Adaptive" }));
+    expect(await screen.findByText(/^Plays at your level: about 1002/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Start game" }));
+    expect(screen.getByText("Computer: adaptive, about 1002")).toBeInTheDocument();
+    expect(loadChessGame()?.setup).toMatchObject({ levelMode: "adaptive", strength: 43, level: "normal" });
+  });
+
+  it("puts a game aside with Save and leave, and takes it up again", async () => {
+    const user = userEvent.setup();
+    render(<ChessPage />);
+    await user.click(screen.getByRole("button", { name: "Two players, one screen" }));
+    await user.click(screen.getByRole("button", { name: "Start game" }));
+    await user.click(square("e2"));
+    await user.click(square("e4"));
+    await user.click(screen.getByRole("button", { name: "Save and leave" }));
+
+    // Back at the start, the game listed under the form; nothing on the board.
+    expect(loadChessGame()).toBeNull();
+    const saved = screen.getByRole("region", { name: "Saved games" });
+    expect(saved).toHaveTextContent("Two players, one screen");
+    expect(saved).toHaveTextContent("1 move · Black to move");
+
+    // A second game, put aside too: two on the shelf.
+    await user.click(screen.getByRole("button", { name: "Start game" }));
+    await user.click(square("d2"));
+    await user.click(square("d4"));
+    await user.click(screen.getByRole("button", { name: "Save and leave" }));
+    expect(within(screen.getByRole("region", { name: "Saved games" })).getAllByRole("button", { name: "Continue" })).toHaveLength(2);
+
+    // Delete asks first, then the first one (the newest, d4) goes.
+    await user.click(within(screen.getByRole("region", { name: "Saved games" })).getAllByRole("button", { name: "Delete saved game" })[0]);
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete game" }));
+    await user.click(within(screen.getByRole("region", { name: "Saved games" })).getByRole("button", { name: "Continue" }));
+    expect(square("e4")).toHaveAccessibleName("e4, White pawn");
+    expect(screen.getByRole("status")).toHaveTextContent("Black to move");
+    expect(loadChessGame()?.state.moves).toEqual([{ from: "e2", to: "e4" }]);
   });
 
   it("plays on the clock: one free move each, then White's time runs out", () => {
@@ -268,6 +323,33 @@ describe("online chess", () => {
     await user.click(square("e4"));
     expect(api.postMove).toHaveBeenCalledWith("m1", { from: "e2", to: "e4" }, 0);
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Dad to move"));
+  });
+
+  it("offers a draw, and answers the other side's offer", async () => {
+    const start = Chess.createGame();
+    vi.mocked(api.fetchMatch).mockResolvedValue({ ...summary(), state: start, feed: [], messages: [], draw: { offeredBy: 1, canOffer: false } });
+    vi.mocked(api.drawMatch).mockResolvedValue({ ...summary({ status: "finished", turn: null, winner: null, finishReason: "agreed" }), state: Chess.finish(start, "agreed"), feed: [], messages: [] });
+    const user = userEvent.setup();
+    withSession(<ChessMatchPage matchId="m1" />);
+
+    expect(await screen.findByText("Dad offers a draw")).toBeInTheDocument();
+    // An offer stands: no second one over it.
+    expect(screen.queryByRole("button", { name: "Offer a draw" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Accept the draw" }));
+    expect(api.drawMatch).toHaveBeenCalledWith("m1", "accept");
+    await waitFor(() => expect(screen.getAllByText("Drawn by agreement.").length).toBeGreaterThan(0));
+  });
+
+  it("lets the player offer a draw when none stands", async () => {
+    const start = Chess.createGame();
+    vi.mocked(api.fetchMatch).mockResolvedValue({ ...summary(), state: start, feed: [], messages: [], draw: { offeredBy: null, canOffer: true } });
+    vi.mocked(api.drawMatch).mockResolvedValue({ ...summary(), state: start, feed: [], messages: [], draw: { offeredBy: 0, canOffer: false } });
+    const user = userEvent.setup();
+    withSession(<ChessMatchPage matchId="m1" />);
+    await user.click(await screen.findByRole("button", { name: "Offer a draw" }));
+    expect(api.drawMatch).toHaveBeenCalledWith("m1", "offer");
+    expect(await screen.findByText("You offered a draw")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Take the offer back" })).toBeInTheDocument();
   });
 
   it("puts Black at the bottom for the player with Black", async () => {

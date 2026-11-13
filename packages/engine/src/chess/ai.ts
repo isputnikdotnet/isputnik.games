@@ -157,6 +157,50 @@ export const LEVELS: Record<AiLevel, LevelSpec> = {
   hard: { depth: 5, budget: 1200000, blur: 0, wild: 0 }
 };
 
+// ── Strength: the computer on a scale of 0 to 100 ───────────────────────────
+// Between and beyond the three levels, for a player who wants it a notch
+// harder, or for the adaptive computer that plays at the player's own rating.
+// Each step of strength is about 14 rating points: 0 plays like a beginner
+// (~400), 50 like Normal (~1100), 100 at the engine's full depth (~1800).
+// The named levels sit on the scale too: Easy ~15, Normal 50, Hard ~80.
+
+export const STRENGTH_MIN = 0;
+export const STRENGTH_MAX = 100;
+const ELO_AT_ZERO = 400;
+const ELO_PER_STEP = 14;
+
+/** The rating the computer plays at, at a strength. */
+export function strengthElo(strength: number): number {
+  return Math.round(ELO_AT_ZERO + clampStrength(strength) * ELO_PER_STEP);
+}
+
+/** The strength that plays at a rating. */
+export function strengthFor(elo: number): number {
+  return clampStrength(Math.round((elo - ELO_AT_ZERO) / ELO_PER_STEP));
+}
+
+export function clampStrength(strength: number): number {
+  return Math.max(STRENGTH_MIN, Math.min(STRENGTH_MAX, Math.round(strength)));
+}
+
+/** Which named level a strength is nearest, for results kept by level (the
+ *  leaderboard's vs Computer scores Easy 1, Normal 2, Hard 3). */
+export function levelOfStrength(strength: number): AiLevel {
+  const s = clampStrength(strength);
+  return s < 33 ? "easy" : s < 66 ? "normal" : "hard";
+}
+
+/** The search at a strength: deeper with strength, and less blurred — at the
+ *  bottom it also plays the odd move at random, as a beginner does. */
+export function strengthSpec(strength: number): LevelSpec {
+  const s = clampStrength(strength);
+  const depth = s < 20 ? 1 : s < 40 ? 2 : s < 65 ? 3 : s < 85 ? 4 : 5;
+  const budget = [20_000, 40_000, 80_000, 400_000, 1_200_000][depth - 1];
+  const blur = Math.round(160 * (1 - s / 100) ** 1.5);
+  const wild = s < 30 ? Math.round(150 * (1 - s / 30)) / 1000 : 0;
+  return { depth, budget, blur, wild };
+}
+
 class Search {
   nodes = 0;
   stopped = false;
@@ -255,11 +299,19 @@ class Search {
 }
 
 export function chooseMove(state: ChessState, level: AiLevel, random: () => number): ChessMove | null {
+  return chooseWith(state, LEVELS[level], random);
+}
+
+/** The computer's move at a strength from 0 to 100 (strengthSpec). */
+export function chooseMoveAt(state: ChessState, strength: number, random: () => number): ChessMove | null {
+  return chooseWith(state, strengthSpec(strength), random);
+}
+
+function chooseWith(state: ChessState, spec: LevelSpec, random: () => number): ChessMove | null {
   if (state.status.kind !== "playing") return null;
   const position = positionOf(state);
   const moves = position.legalMoves();
   if (moves.length === 0) return null;
-  const spec = LEVELS[level];
   if (moves.length === 1) return toChessMove(moves[0]);
   if (spec.wild > 0 && random() < spec.wild) return toChessMove(moves[Math.floor(random() * moves.length)]);
 
@@ -294,3 +346,45 @@ export function chooseMove(state: ChessState, level: AiLevel, random: () => numb
 }
 
 export const chessAi: GameAi<ChessState, ChessMove> = { chooseMove };
+
+// ── The coach (game review) ─────────────────────────────────────────────────
+// How good a move was: every legal move in the position before it is searched
+// with a full window, so the move played and the best one have true scores to
+// compare. Scores are centipawns for the side that moved; a mate counts as
+// COACH_CAP, so a missed mate reads as a big loss without dwarfing the rest.
+
+/** The coach's view of one move. */
+export interface MoveVerdict {
+  /** The move the search liked best (the played one when nothing beat it). */
+  best: ChessMove;
+  bestScore: number;
+  playedScore: number;
+  /** What the move played gave away against the best, in centipawns (0 or more). */
+  loss: number;
+}
+
+export const COACH_CAP = 1500;
+const capped = (score: number) => Math.max(-COACH_CAP, Math.min(COACH_CAP, score));
+
+export function analyseMove(state: ChessState, played: ChessMove, depth = 3, budget = 120_000): MoveVerdict | null {
+  if (state.status.kind !== "playing") return null;
+  const position = positionOf(state);
+  const moves = position.legalMoves();
+  if (moves.length === 0) return null;
+  const search = new Search(position, budget);
+  let scored: { move: Move; score: number }[] | null = null;
+  for (let d = 1; d <= depth; d++) {
+    const first = scored ? scored.reduce((a, b) => (b.score > a.score ? b : a)).move : null;
+    const result = search.root(moves, d, first, true, () => null);
+    if (!result) break;
+    scored = result;
+  }
+  if (!scored) return null;
+  const same = (move: ChessMove) => move.from === played.from && move.to === played.to && (move.promotion ?? "q") === (played.promotion ?? "q");
+  const mine = scored.find((entry) => same(toChessMove(entry.move)));
+  if (!mine) return null;
+  const top = scored.reduce((a, b) => (b.score > a.score ? b : a));
+  const bestScore = capped(top.score);
+  const playedScore = capped(mine.score);
+  return { best: toChessMove(top.move), bestScore, playedScore, loss: Math.max(0, bestScore - playedScore) };
+}

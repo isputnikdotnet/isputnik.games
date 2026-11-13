@@ -167,6 +167,13 @@
   color: var(--canvas);
 }
 
+/* Hovering the chosen chip keeps it chosen-looking: the plain hover
+   background under its light text made the label vanish. */
+.chip-button.is-selected:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+
 :focus-visible {
   outline: 3px solid color-mix(in srgb, var(--accent) 35%, transparent);
   outline-offset: 1px;
@@ -1130,6 +1137,23 @@
 .lobby-games-head p {
   margin: 2px 0 0;
   font-size: var(--text-sm);
+}
+
+.lobby-games-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.lobby-my-games {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* The game-over window's Review sits apart from Play again / Back. */
+.game-over-review {
+  margin-right: auto;
 }
 
 .lobby-grid {

@@ -31,7 +31,9 @@ CREATE TABLE IF NOT EXISTS matches (
   updated_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   finished_at   TEXT,
   move_times    TEXT NOT NULL DEFAULT '[]',    -- JSON array: ms each move took (a game on the clock)
-  turn_started_at TEXT                         -- when the move now awaited began
+  turn_started_at TEXT,                        -- when the move now awaited began
+  draw_offer    INTEGER,                       -- the seat offering a draw, while the offer stands
+  draw_offers   TEXT NOT NULL DEFAULT '[null,null]' -- JSON: the move count at each seat's last offer
 );
 
 CREATE INDEX IF NOT EXISTS matches_blue ON matches (blue_id, updated_at DESC);
@@ -90,6 +92,7 @@ CREATE TABLE IF NOT EXISTS computer_results (
   result      TEXT NOT NULL CHECK (result IN ('won', 'lost', 'drawn')),
   game_key    TEXT NOT NULL,
   finished_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  strength    INTEGER,                         -- chess at a strength of 0-100 (custom or adaptive); NULL for a named level
   UNIQUE (member_id, game_key)
 );
 

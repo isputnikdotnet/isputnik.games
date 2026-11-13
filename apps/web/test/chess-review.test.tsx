@@ -39,6 +39,21 @@ describe("routes", () => {
 });
 
 describe("game review", () => {
+  it("has the coach mark the moves, and show the better one", async () => {
+    const user = userEvent.setup();
+    render(<ChessReviewPage source="record" id="rec1" />);
+    // Fool's mate: g4 lets the queen mate at once.
+    await waitFor(() => expect(screen.getByText(/You: 1 blunder/)).toBeInTheDocument());
+    const list = screen.getByLabelText("Moves");
+    expect(within(list).getByRole("button", { name: "g4, a blunder" })).toHaveTextContent("g4??");
+    await user.click(within(list).getByRole("button", { name: /^g4/ }));
+    expect(screen.getByText(/^Blunder: You played g4 and gave away about/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show the better move" }));
+    // One position back, the better move's squares marked.
+    expect(screen.getByText("2 of 4")).toBeInTheDocument();
+    expect(document.querySelectorAll(".chess-square.is-hint")).toHaveLength(2);
+  });
+
   it("opens at the end and steps back and forth by button, move list and keys", async () => {
     const user = userEvent.setup();
     render(<ChessReviewPage source="record" id="rec1" />);
@@ -58,9 +73,9 @@ describe("game review", () => {
     expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
 
     const list = screen.getByLabelText("Moves");
-    await user.click(within(list).getByRole("button", { name: "g4" }));
+    await user.click(within(list).getByRole("button", { name: /^g4/ }));
     expect(screen.getByText("3 of 4")).toBeInTheDocument();
-    expect(within(list).getByRole("button", { name: "g4" })).toHaveAttribute("aria-current", "step");
+    expect(within(list).getByRole("button", { name: /^g4/ })).toHaveAttribute("aria-current", "step");
 
     await user.keyboard("{ArrowRight}");
     expect(screen.getByText("4 of 4")).toBeInTheDocument();
@@ -77,6 +92,8 @@ describe("playing a game back", () => {
     REPLAY_STEP.ms = 20;
     render(<ChessReviewPage source="record" id="rec1" />);
     await screen.findByText("4 of 4");
+    // The coach searches on this thread: let it finish so its work does not stretch the steps timed here.
+    await screen.findByText(/You: 1 blunder/);
     await user.click(screen.getByRole("button", { name: "Play" }));
     expect(screen.getByText("0 of 4")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Stop" })).toBeInTheDocument();
@@ -161,7 +178,9 @@ describe("a finished game on this device", () => {
       game: "chess", key: "local-key-01", mode: "local", moves: ["f2f3", "e7e5", "g2g4", "d8h4"].map(mv)
     }));
     expect(api.saveGameRecord).toHaveBeenCalledTimes(1);
-    expect(await screen.findByRole("button", { name: "Review game" })).toBeInTheDocument();
+    // Offered twice: in the game-over window and among the game's buttons.
+    expect(await within(await screen.findByRole("dialog", { name: "Game over" })).findByRole("button", { name: "Review game" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Review game" })).toHaveLength(2);
   });
 
   it("against the computer, shows the chess rating it left", async () => {

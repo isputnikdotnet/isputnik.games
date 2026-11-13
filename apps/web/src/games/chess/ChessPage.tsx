@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Flag, Handshake, History, List, LogOut, Repeat2, RotateCcw, Settings2, Undo2 } from "lucide-react";
+import { ArrowLeft, Flag, Handshake, History, List, LogOut, Repeat2, RotateCcw, Save, Settings2, Undo2 } from "lucide-react";
 import { Chess, chess, type AiLevel, type ChessMove, type PlayerIndex } from "@isputnik/games-engine";
 import { Comms } from "../../shared/Comms";
 import { useFeed } from "../../shared/useFeed";
@@ -12,6 +12,7 @@ import { Dialog } from "../../shared/Dialog";
 import { GameOverDialog } from "../../shared/GameOverDialog";
 import { GameStage } from "../../shared/GameStage";
 import { follow, href, navigate } from "../../router";
+import { fetchAdaptiveStrength } from "../../api";
 import { chessLines } from "./comms";
 import { chessReason } from "./ending";
 import { clockLabel } from "./clockText";
@@ -22,6 +23,7 @@ import { humanSeat, isComputerSeat, useChessGame } from "./useChessGame";
 import { useChessRecord } from "./useChessRecord";
 import { ChessRatingLine } from "./RatingLine";
 import { ReplayControls, ReplayNote, useReplay } from "./replay";
+import { ShelvedGames } from "./ShelvedGames";
 import type { ChessSetup } from "./storage";
 
 const LEVEL_LABEL = { easy: "chess.setup.levelEasy", normal: "chess.setup.levelNormal", hard: "chess.setup.levelHard" } as const;
@@ -51,7 +53,7 @@ export function ChessPage() {
   const replay = useReplay(moves.length);
   const earlier = useMemo(() => (replay.atEnd ? null : Chess.replay(moves.slice(0, replay.ply))), [moves, replay.atEnd, replay.ply]);
   const chessRating = useComputerResult(game && me !== null && game.state.status.kind === "finished"
-    ? { game: "chess", key: game.key, level: game.setup.level, human: me, winner: game.state.status.winner }
+    ? { game: "chess", key: game.key, level: game.setup.level, human: me, winner: game.state.status.winner, strength: game.setup.levelMode === "level" ? null : game.setup.strength }
     : null);
 
   const seatName = (setup: ChessSetup, seat: PlayerIndex) =>
@@ -62,6 +64,7 @@ export function ChessPage() {
       <section className="chess-page">
         <PageHead title={t("games.chess.name")} />
         <ChessNewGameForm onStart={controller.start} />
+        <ShelvedGames onResume={controller.resume} />
         <p className="chess-my-games">
           <a className="text-link" href={href("chess/games")} onClick={(event) => follow(event, href("chess/games"))}>
             <List size={16} aria-hidden="true" /> {t("chess.review.myGamesLink")}
@@ -102,8 +105,16 @@ export function ChessPage() {
     lines.push({ key: "turn", kind: "system", text: status.turn === me ? t("comms.yourMove") : t("comms.toMove", { name: names[status.turn] }) });
   }
 
-  const again = () => {
+  const again = async () => {
     setFlipped(false);
+    // Adaptive asks again where the player stands: the game just played has moved their rating.
+    if (setup.mode === "computer" && setup.levelMode === "adaptive") {
+      const fresh = await fetchAdaptiveStrength().catch(() => null);
+      if (fresh) {
+        controller.start({ ...setup, strength: fresh.strength, level: Chess.levelOfStrength(fresh.strength) });
+        return;
+      }
+    }
     controller.start(setup);
   };
 
@@ -126,7 +137,9 @@ export function ChessPage() {
             <ReplayNote replay={replay} />
             {finished && chessRating && <ChessRatingLine rating={chessRating} />}
             {setup.mode === "computer" && !finished && (
-              <p className="muted chess-reason">{t("chess.levelLine", { level: t(LEVEL_LABEL[setup.level]) })}</p>
+              <p className="muted chess-reason">{setup.levelMode === "level" || setup.strength === null
+                ? t("chess.levelLine", { level: t(LEVEL_LABEL[setup.level]) })
+                : t(setup.levelMode === "adaptive" ? "chess.strength.lineAdaptive" : "chess.strength.lineCustom", { strength: setup.strength, elo: Chess.strengthElo(setup.strength) })}</p>
             )}
             {setup.clock && !finished && <p className="muted chess-reason">{t("chess.clock.line", { clock: clockLabel(setup.clock, t) })}</p>}
           </div>
@@ -157,6 +170,11 @@ export function ChessPage() {
                 <Button variant="secondary" onClick={() => setPending("resign")} disabled={state.moves.length === 0}>
                   <Flag size={16} aria-hidden="true" /> {t("chess.resign")}
                 </Button>
+                {state.moves.length > 0 && (
+                  <Button variant="secondary" onClick={controller.shelve}>
+                    <Save size={16} aria-hidden="true" /> {t("chess.saved.saveAndLeave")}
+                  </Button>
+                )}
                 <Button variant="secondary" onClick={() => (state.moves.length === 0 ? controller.abandon() : setPending("new"))}>
                   <RotateCcw size={16} aria-hidden="true" /> {t("chess.newGame")}
                 </Button>
@@ -167,7 +185,7 @@ export function ChessPage() {
             )}
             {finished && (
               <>
-                <Button variant="primary" onClick={again}>{t("chess.end.again")}</Button>
+                <Button variant="primary" onClick={() => void again()}>{t("chess.end.again")}</Button>
                 <Button variant="secondary" onClick={controller.abandon}>{t("chess.end.change")}</Button>
                 {recordId && (
                   <Button variant="secondary" onClick={() => navigate(href(`chess/review/${recordId}`))}>
@@ -199,8 +217,9 @@ export function ChessPage() {
           headline={statusLine}
           scoreLine={t("chess.end.moves", { count: Math.ceil(state.moves.length / 2) })}
           reason={reason}
-          primary={{ label: t("chess.end.again"), onClick: again }}
+          primary={{ label: t("chess.end.again"), onClick: () => void again() }}
           secondary={{ label: t("chess.end.toLobby"), onClick: exit }}
+          review={recordId ? { label: t("chess.review.open"), onClick: () => navigate(href(`chess/review/${recordId}`)) } : undefined}
           onClose={() => setResultDismissed(endingKey)}
         />
       )}

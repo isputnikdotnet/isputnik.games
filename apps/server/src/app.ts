@@ -28,6 +28,7 @@ import {
   playMove,
   postMessage,
   rememberMember,
+  answerDraw,
   resign,
   summaryFor,
   type Member
@@ -35,7 +36,7 @@ import {
 import { crossmathMe, recordCrossmathResult } from "./crossmath.js";
 import { nextPuzzle, recordPuzzleResult, UnknownPuzzleError } from "./puzzles.js";
 import { getRecord, listReviews, saveRecord } from "./records.js";
-import { chessRatingOf } from "./chess-rating.js";
+import { adaptiveStrength, chessRatingOf } from "./chess-rating.js";
 import { familyStats, recordComputerResult } from "./stats.js";
 import { PLAY_BODY_LIMIT, PLAY_MAX_MOVES, play } from "./play.js";
 
@@ -99,7 +100,8 @@ const computerResultSchema = z.object({
   game: z.string().refine((game) => GAME_IDS.includes(game), "unknown game"),
   level: z.enum(AI_LEVELS as [AiLevel, ...AiLevel[]]),
   result: z.enum(["won", "lost", "drawn"]),
-  key: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/)
+  key: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),
+  strength: z.number().int().min(0).max(100).optional()
 });
 
 // A finished run of a game for one player. Only its shape is checked here:
@@ -152,6 +154,10 @@ const recordSchema = z.object({
 });
 
 const reviewQuerySchema = z.object({ game: z.literal("chess").default("chess") });
+
+const drawSchema = z.object({
+  action: z.enum(["offer", "accept", "decline", "withdraw"])
+});
 
 const messageSchema = z.object({
   text: z.string().min(1).max(MESSAGE_MAX)
@@ -410,6 +416,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   // The member's chess rating, for the panel once an online game is over.
   app.get(`${API}/chess/rating`, { preHandler: requireMember }, async (request) => chessRatingOf(db, request.identity!.id));
 
+  // The adaptive computer: the strength that plays at this member's level now.
+  app.get(`${API}/chess/adaptive`, { preHandler: requireMember }, async (request) => adaptiveStrength(db, request.identity!.id));
+
   // Finished games for review: the member's own, online and on one device.
   app.post(`${API}/records`, { preHandler: requireMember }, async (request, reply) => {
     const saved = saveRecord(db, request.identity!.id, recordSchema.parse(request.body ?? {}));
@@ -479,6 +488,17 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   app.post(`${API}/matches/:id/messages`, { preHandler: requirePlayer }, async (request, reply) => {
     const input = messageSchema.parse(request.body ?? {});
     return reply.code(201).send(postMessage(db, request.identity!.id, matchId(request), input.text));
+  });
+
+  // A draw offer in online chess: offer, accept, decline or withdraw.
+  app.post(`${API}/matches/:id/draw`, { preHandler: requirePlayer }, async (request) => {
+    const input = drawSchema.parse(request.body ?? {});
+    const match = answerDraw(db, request.identity!.id, matchId(request), input.action);
+    if (input.action === "accept") {
+      const from = opponentIn(match.players, request.identity!.id);
+      note(request, "info", "match.finished", { matchId: match.id, detail: `${match.game}: a draw agreed with ${who(from)} after ${match.moveCount} moves` });
+    }
+    return match;
   });
 
   app.post(`${API}/matches/:id/resign`, { preHandler: requirePlayer }, async (request) => {

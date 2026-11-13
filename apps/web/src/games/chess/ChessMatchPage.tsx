@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Flag, History, Repeat2, Settings2 } from "lucide-react";
+import { ArrowLeft, Flag, Handshake, History, Repeat2, Settings2 } from "lucide-react";
 import { Chess, type ChessMove, type ChessState, type PlayerIndex } from "@isputnik/games-engine";
-import { ApiError, answerMatch, postMessage, postMove, resignMatch } from "../../api";
+import { ApiError, answerMatch, drawMatch, postMessage, postMove, resignMatch, type DrawAction } from "../../api";
 import { Comms } from "../../shared/Comms";
 import { withTalk, type CommsLine } from "../../shared/commsLines";
 import { Button } from "../../shared/Button";
@@ -41,6 +41,7 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
   const [sayError, setSayError] = useState<string | null>(null);
   const [moveError, setMoveError] = useState<string | null>(null);
   const [confirmResign, setConfirmResign] = useState(false);
+  const [drawBusy, setDrawBusy] = useState(false);
   const [resultDismissed, setResultDismissed] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -109,6 +110,22 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
     }
   };
 
+  const draw = async (action: DrawAction) => {
+    setDrawBusy(true);
+    setMoveError(null);
+    try {
+      adopt(await drawMatch(match.id, action));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) await refresh();
+      setMoveError(err instanceof ApiError ? err.message : t("app.unavailableBody"));
+    } finally {
+      setDrawBusy(false);
+    }
+  };
+  const offer = match.status === "playing" ? match.draw ?? null : null;
+  const theyOffer = offer?.offeredBy === theirSeat;
+  const iOffer = offer?.offeredBy === mySeat;
+
   const withdraw = async () => {
     try {
       await answerMatch(match.id, "cancel");
@@ -138,6 +155,9 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
   if (finished) {
     lines.push({ key: "end", kind: "system", text: match.winner === null ? t("comms.draw") : t("comms.winner", { name: names[match.winner] }) });
   } else if (match.status === "playing") {
+    if (offer?.offeredBy !== null && offer?.offeredBy !== undefined) {
+      lines.push({ key: "draw", kind: "system", text: iOffer ? t("match.drawOffer.logMine") : t("match.drawOffer.logTheirs", { name: them.name }) });
+    }
     lines.push({ key: "turn", kind: "system", text: myMove ? t("comms.yourMove") : t("comms.toMove", { name: them.name }) });
   }
   const talkable = match.status === "playing" || finished;
@@ -170,6 +190,26 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
         notices={
           <>
             {moveError && <MessageBox tone="error" title={t("match.moveFailed")}>{moveError}</MessageBox>}
+            {/* The other side offers a draw: answer it here (a move declines it too). */}
+            {theyOffer && (
+              <MessageBox tone="info" title={t("match.drawOffer.theirsTitle", { name: them.name })}>
+                {t("match.drawOffer.theirsBody")}
+                <span className="draw-offer-actions">
+                  <Button variant="primary" onClick={() => void draw("accept")} disabled={drawBusy}>
+                    <Handshake size={16} aria-hidden="true" /> {t("match.drawOffer.accept")}
+                  </Button>
+                  <Button variant="secondary" onClick={() => void draw("decline")} disabled={drawBusy}>{t("match.drawOffer.decline")}</Button>
+                </span>
+              </MessageBox>
+            )}
+            {iOffer && (
+              <MessageBox tone="info" title={t("match.drawOffer.mineTitle")}>
+                {t("match.drawOffer.mineBody", { name: them.name })}
+                <span className="draw-offer-actions">
+                  <Button variant="secondary" onClick={() => void draw("withdraw")} disabled={drawBusy}>{t("match.drawOffer.withdraw")}</Button>
+                </span>
+              </MessageBox>
+            )}
             {them.guest && match.createdBy === myId && <GuestLinkPanel matchId={match.id} guestName={them.name} />}
           </>
         }
@@ -185,6 +225,11 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
                 <Button variant="secondary" onClick={() => setSettingsOpen(true)}>
                   <Settings2 size={16} aria-hidden="true" /> {t("chess.settings.open")}
                 </Button>
+                {offer?.canOffer && (
+                  <Button variant="secondary" onClick={() => void draw("offer")} disabled={drawBusy}>
+                    <Handshake size={16} aria-hidden="true" /> {t("match.drawOffer.offer")}
+                  </Button>
+                )}
                 <Button variant="secondary" onClick={() => setConfirmResign(true)}>
                   <Flag size={16} aria-hidden="true" /> {t("match.resign")}
                 </Button>
@@ -218,6 +263,7 @@ export function ChessMatchPage({ matchId }: { matchId: string }) {
           scoreLine={t("chess.end.moves", { count: Math.ceil(state.moves.length / 2) })}
           reason={reason}
           primary={{ label: t("app.allGames"), onClick: () => navigate(href()) }}
+          review={{ label: t("chess.review.open"), onClick: () => navigate(href(`chess/review/m/${match.id}`)) }}
           onClose={() => setResultDismissed(true)}
         />
       )}

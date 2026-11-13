@@ -28,6 +28,12 @@ export function upgradeDatabase(db: Database.Database): void {
   const columns = new Set((db.prepare("PRAGMA table_info(matches)").all() as { name: string }[]).map((c) => c.name));
   if (!columns.has("move_times")) db.exec("ALTER TABLE matches ADD COLUMN move_times TEXT NOT NULL DEFAULT '[]'");
   if (!columns.has("turn_started_at")) db.exec("ALTER TABLE matches ADD COLUMN turn_started_at TEXT");
+  // 0.28.0: chess against the computer at a strength of 0-100.
+  const results = new Set((db.prepare("PRAGMA table_info(computer_results)").all() as { name: string }[]).map((c) => c.name));
+  if (!results.has("strength")) db.exec("ALTER TABLE computer_results ADD COLUMN strength INTEGER");
+  // 0.28.0: draw offers in online chess.
+  if (!columns.has("draw_offer")) db.exec("ALTER TABLE matches ADD COLUMN draw_offer INTEGER");
+  if (!columns.has("draw_offers")) db.exec("ALTER TABLE matches ADD COLUMN draw_offers TEXT NOT NULL DEFAULT '[null,null]'");
 }
 
 export type Db = Database.Database;

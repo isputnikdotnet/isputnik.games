@@ -49,7 +49,8 @@
       "lead": "Against the computer, two at one screen, or online — and puzzles.",
       "modes": "Ways to play",
       "invite": "Invite",
-      "inviteHere": "Invite from here"
+      "inviteHere": "Invite from here",
+      "myGames": "My chess games"
     },
     "modes": {
       "computer": "Computer",
@@ -203,7 +204,19 @@
     },
     "loadFailed": "Unable to load the match",
     "moveFailed": "Unable to make that move",
-    "draw": "A draw"
+    "draw": "A draw",
+    "drawOffer": {
+      "offer": "Offer a draw",
+      "theirsTitle": "{{name}} offers a draw",
+      "theirsBody": "Accept, and the game ends in a draw. Playing a move declines it.",
+      "accept": "Accept the draw",
+      "decline": "Decline",
+      "mineTitle": "You offered a draw",
+      "mineBody": "Waiting for {{name}} to answer. Playing on is fine; the offer stands until they move.",
+      "withdraw": "Take the offer back",
+      "logMine": "You offered a draw.",
+      "logTheirs": "{{name}} offers a draw."
+    }
   },
   "games": {
     "dots": {
@@ -631,6 +644,62 @@
       "minutes_other": "{{count}} min",
       "line": "Clock: {{clock}}",
       "aria": "Clock of {{player}}: {{time}}"
+    },
+    "coach": {
+      "working": "The coach is looking at the moves… {{done}} of {{total}}",
+      "clean": "no mistakes",
+      "count": {
+        "blunder_one": "{{count}} blunder",
+        "blunder_other": "{{count}} blunders",
+        "mistake_one": "{{count}} mistake",
+        "mistake_other": "{{count}} mistakes",
+        "inaccuracy_one": "{{count}} inaccuracy",
+        "inaccuracy_other": "{{count}} inaccuracies"
+      },
+      "marks": {
+        "blunder": "a blunder",
+        "mistake": "a mistake",
+        "inaccuracy": "an inaccuracy"
+      },
+      "say": {
+        "blunder": "Blunder: {{name}} played {{move}} and gave away about {{pawns}} pawns. Better was {{better}}.",
+        "mistake": "Mistake: {{name}} played {{move}} and gave away about {{pawns}} pawns. Better was {{better}}.",
+        "inaccuracy": "Inaccuracy: {{name}} played {{move}}; {{better}} was a little stronger (about {{pawns}} pawns)."
+      },
+      "showBetter": "Show the better move",
+      "best": "{{move}} — the move the coach would have played.",
+      "fine": "{{move}} — a good move."
+    },
+    "saved": {
+      "saveAndLeave": "Save and leave",
+      "title": "Saved games",
+      "vsComputer": "Against the computer ({{level}})",
+      "twoPlayers": "Two players, one screen",
+      "moves_one": "{{count}} move",
+      "moves_other": "{{count}} moves",
+      "whiteToMove": "White to move",
+      "blackToMove": "Black to move",
+      "left": "saved {{when}}",
+      "continue": "Continue",
+      "delete": "Delete saved game",
+      "confirmTitle": "Delete the saved game “{{game}}”?",
+      "confirmBody": "It is gone for good from this device. Your other saved games and finished games are not affected.",
+      "confirmDelete": "Delete game",
+      "keep": "Keep it"
+    },
+    "strength": {
+      "custom": "Custom",
+      "adaptive": "Adaptive",
+      "label": "Strength",
+      "valueText": "{{strength}} of 100 — plays like about {{elo}}",
+      "from": {
+        "games": "Plays at your level: about {{elo}}, from your chess rating ({{target}}). Win and it gets harder; lose and it eases off.",
+        "puzzles": "Plays at about {{elo}}, from your puzzle rating, until you have a few rated games.",
+        "start": "Plays at about {{elo}} to begin with, then follows your rating as you play."
+      },
+      "offline": "Offline: plays at about {{elo}}, where it was last time.",
+      "lineCustom": "Computer: strength {{strength}} (about {{elo}})",
+      "lineAdaptive": "Computer: adaptive, about {{elo}}"
     }
   },
   "dominoes": {

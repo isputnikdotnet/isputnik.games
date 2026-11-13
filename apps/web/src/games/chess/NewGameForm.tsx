@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Chess, TIME_CONTROLS, timeControlKey, type AiLevel, type PlayerIndex } from "@isputnik/games-engine";
+import { fetchAdaptiveStrength, type AdaptiveStrength } from "../../api";
 import { clockLabel } from "./clockText";
 import { Button } from "../../shared/Button";
 import { Choice } from "../../shared/Choice";
@@ -14,6 +15,7 @@ import {
   savePuzzleChoice,
   type ChessMode,
   type ChessSetup,
+  type LevelMode,
   type PuzzleChoice
 } from "./storage";
 
@@ -27,14 +29,40 @@ export function ChessNewGameForm({ onStart }: { onStart: (setup: ChessSetup) => 
   const [what, setWhat] = useState<ChessMode | "puzzles">(() => (loadPlaysPuzzles() ? "puzzles" : setup.mode));
   const patch = (changes: Partial<ChessSetup>) => setSetup((s) => ({ ...s, ...changes }));
 
+  // The adaptive computer asks the server where the player stands, each time it is chosen.
+  const [adaptive, setAdaptive] = useState<AdaptiveStrength | null>(null);
+  const [adaptiveFailed, setAdaptiveFailed] = useState(false);
+  const wantsAdaptive = what === "computer" && setup.levelMode === "adaptive";
+  useEffect(() => {
+    if (!wantsAdaptive) return;
+    let live = true;
+    fetchAdaptiveStrength().then((answer) => live && setAdaptive(answer), () => live && setAdaptiveFailed(true));
+    return () => {
+      live = false;
+    };
+  }, [wantsAdaptive]);
+
   const start = () => {
     savePlaysPuzzles(what === "puzzles");
     if (what === "puzzles") {
       savePuzzleChoice(puzzles);
       navigate(href("chess/puzzles"));
-    } else {
-      onStart({ ...setup, mode: what });
+      return;
     }
+    let chosen: ChessSetup = { ...setup, mode: what };
+    if (what === "computer" && setup.levelMode !== "level") {
+      // Adaptive with no answer (offline): the strength it last played at, or the middle.
+      const strength = setup.levelMode === "adaptive" ? adaptive?.strength ?? setup.strength ?? 50 : setup.strength ?? 50;
+      chosen = { ...chosen, strength, level: Chess.levelOfStrength(strength) };
+    }
+    onStart(chosen);
+  };
+
+  const levelValue: AiLevel | LevelMode = setup.levelMode === "level" ? setup.level : setup.levelMode;
+  const chooseLevel = (value: AiLevel | LevelMode) => {
+    if (value === "custom") patch({ levelMode: "custom", strength: setup.strength ?? 50, level: Chess.levelOfStrength(setup.strength ?? 50) });
+    else if (value === "adaptive") patch({ levelMode: "adaptive" });
+    else patch({ levelMode: "level", level: value as AiLevel, strength: null });
   };
 
   return (
@@ -62,16 +90,30 @@ export function ChessNewGameForm({ onStart }: { onStart: (setup: ChessSetup) => 
             ]}
             onChange={(you) => patch({ computerPlays: you === 0 ? 1 : 0 })}
           />
-          <Choice<AiLevel>
+          <Choice<AiLevel | LevelMode>
             label={t("chess.setup.level")}
-            value={setup.level}
+            value={levelValue}
             options={[
               { value: "easy", label: t("chess.setup.levelEasy") },
               { value: "normal", label: t("chess.setup.levelNormal") },
-              { value: "hard", label: t("chess.setup.levelHard") }
+              { value: "hard", label: t("chess.setup.levelHard") },
+              { value: "custom", label: t("chess.strength.custom") },
+              { value: "adaptive", label: t("chess.strength.adaptive") }
             ]}
-            onChange={(level) => patch({ level })}
+            onChange={chooseLevel}
           />
+          {setup.levelMode === "custom" && (
+            <StrengthSlider value={setup.strength ?? 50} onChange={(strength) => patch({ strength, level: Chess.levelOfStrength(strength) })} />
+          )}
+          {setup.levelMode === "adaptive" && (
+            <p className="muted strength-note">
+              {adaptive
+                ? t(`chess.strength.from.${adaptive.source}`, { elo: adaptive.elo, target: adaptive.target })
+                : adaptiveFailed
+                  ? t("chess.strength.offline", { elo: Chess.strengthElo(setup.strength ?? 50) })
+                  : t("app.loading")}
+            </p>
+          )}
         </>
       )}
       {what !== "puzzles" && <ClockChoice setup={setup} onChange={(clock) => patch({ clock })} />}
@@ -101,6 +143,32 @@ export function ChessNewGameForm({ onStart }: { onStart: (setup: ChessSetup) => 
 }
 
 type Translate = TFunction;
+
+/** The computer's strength on the 0-100 scale, with the rating it plays like. */
+function StrengthSlider({ value, onChange }: { value: number; onChange: (strength: number) => void }) {
+  const { t } = useTranslation();
+  const id = useId();
+  return (
+    <div className="setup-row strength-row">
+      <label className="setup-label" htmlFor={id}>{t("chess.strength.label")}</label>
+      <div className="strength-slider">
+        <span className="muted" aria-hidden="true">0</span>
+        <input
+          id={id}
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={value}
+          aria-valuetext={t("chess.strength.valueText", { strength: value, elo: Chess.strengthElo(value) })}
+          onChange={(event) => onChange(Number(event.target.value))}
+        />
+        <span className="muted" aria-hidden="true">100</span>
+        <output htmlFor={id} className="strength-value">{t("chess.strength.valueText", { strength: value, elo: Chess.strengthElo(value) })}</output>
+      </div>
+    </div>
+  );
+}
 
 /** The clock: none, or one of the engine's time controls (blitz). */
 export function ClockChoice({ setup, onChange }: { setup: Pick<ChessSetup, "clock">; onChange: (clock: ChessSetup["clock"]) => void }) {

@@ -39,6 +39,21 @@ export const chess: GameDefinition<ChessOptions, ChessState, ChessMove> = {
 };
 
 export * from "./rules.js";
-export { chooseMove as chooseChessMove, evaluate, LEVELS as CHESS_LEVELS } from "./ai.js";
+export {
+  analyseMove,
+  chooseMove as chooseChessMove,
+  chooseMoveAt as chooseChessMoveAt,
+  clampStrength,
+  COACH_CAP,
+  evaluate,
+  LEVELS as CHESS_LEVELS,
+  levelOfStrength,
+  STRENGTH_MAX,
+  STRENGTH_MIN,
+  strengthElo,
+  strengthFor,
+  strengthSpec,
+  type MoveVerdict
+} from "./ai.js";
 export { Position, START_FEN, perft } from "./board.js";
 export * from "./puzzles.js";

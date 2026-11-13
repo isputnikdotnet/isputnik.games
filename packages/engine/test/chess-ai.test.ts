@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { seededRandom } from "../src/random.js";
-import { chooseMove, evaluate } from "../src/chess/ai.js";
+import { analyseMove, chooseMove, chooseMoveAt, evaluate, levelOfStrength, strengthElo, strengthFor, strengthSpec } from "../src/chess/ai.js";
 import { Position, START_FEN } from "../src/chess/board.js";
 import { applyMove, createGame, fromFen } from "../src/chess/rules.js";
 
@@ -53,5 +53,53 @@ describe("the computer at chess", () => {
     const started = Date.now();
     expect(chooseMove(state, "hard", seededRandom(9))).not.toBeNull();
     expect(Date.now() - started).toBeLessThan(5000);
+  });
+});
+
+describe("the coach", () => {
+  it("calls a move that hangs the queen a big loss, and names the better move", () => {
+    // Black to move can take a queen left on d5 with the pawn on e6.
+    const state = fromFen("rnbqkbnr/pppp1ppp/4p3/3Q4/8/8/PPPPPPPP/RNB1KBNR b KQkq - 0 1");
+    const missed = analyseMove(state, { from: "a7", to: "a6" })!;
+    expect(missed.best).toEqual({ from: "e6", to: "d5" });
+    expect(missed.loss).toBeGreaterThan(700);
+    const taken = analyseMove(state, { from: "e6", to: "d5" })!;
+    expect(taken.loss).toBe(0);
+  });
+
+  it("has nothing to say once the game is over", () => {
+    const mated = fromFen("rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3");
+    expect(analyseMove(mated, { from: "e2", to: "e3" })).toBeNull();
+  });
+});
+
+describe("strength from 0 to 100", () => {
+  it("maps strength to rating and back, and to the nearest named level", () => {
+    expect(strengthElo(0)).toBe(400);
+    expect(strengthElo(50)).toBe(1100);
+    expect(strengthElo(100)).toBe(1800);
+    expect(strengthElo(150)).toBe(1800);
+    expect(strengthFor(1100)).toBe(50);
+    expect(strengthFor(100)).toBe(0);
+    expect(levelOfStrength(10)).toBe("easy");
+    expect(levelOfStrength(50)).toBe("normal");
+    expect(levelOfStrength(90)).toBe("hard");
+  });
+
+  it("searches deeper and plays less loosely as strength rises", () => {
+    const low = strengthSpec(0);
+    const high = strengthSpec(100);
+    expect(low.depth).toBe(1);
+    expect(low.wild).toBeGreaterThan(0);
+    expect(high.depth).toBe(5);
+    expect(high.blur).toBe(0);
+    expect(high.wild).toBe(0);
+    for (let s = 0; s < 100; s += 10) expect(strengthSpec(s + 10).depth).toBeGreaterThanOrEqual(strengthSpec(s).depth);
+  });
+
+  it("at full strength takes a hanging queen", () => {
+    const state = fromFen("rnbqkbnr/pppp1ppp/4p3/3Q4/8/8/PPPPPPPP/RNB1KBNR b KQkq - 0 1");
+    expect(chooseMoveAt(state, 100, seededRandom(1))).toEqual({ from: "e6", to: "d5" });
+    expect(chooseMoveAt(state, 0, seededRandom(1))).not.toBeNull();
   });
 });

@@ -9,6 +9,10 @@ const SETUP_KEY = "isputnik-games.chess.setup";
 const PLAY_KEY = "isputnik-games.chess.play";
 const PUZZLE_LEVEL_KEY = "isputnik-games.chess.puzzleLevel";
 const PUZZLE_TYPE_KEY = "isputnik-games.chess.puzzleType";
+const SAVED_KEY = "isputnik-games.chess.saved";
+
+/** How many put-aside games a device keeps; the oldest goes past this. */
+export const SAVED_MAX = 20;
 
 export type ChessMode = "computer" | "local";
 
@@ -19,7 +23,15 @@ export interface ChessSetup {
   level: AiLevel;
   /** A clock (blitz), or null for a game at leisure. */
   clock: TimeControl | null;
+  /** How the computer's strength was chosen: a named level, a strength picked
+   *  on the 0-100 scale, or adaptive (the player's own rating, asked when the
+   *  game starts). `level` stays the nearest named level, for results. */
+  levelMode: LevelMode;
+  /** The strength, 0-100, for custom and adaptive; null for a named level. */
+  strength: number | null;
 }
+
+export type LevelMode = "level" | "custom" | "adaptive";
 
 /** How a game the rules did not end was ended: a draw agreed, a resignation,
  *  or a clock run out — `resigning` is then the side that lost it. */
@@ -50,7 +62,7 @@ export interface LoadedChessGame {
   turnStartedAt: number;
 }
 
-export const DEFAULT_SETUP: ChessSetup = { mode: "computer", computerPlays: 1, level: "normal", clock: null };
+export const DEFAULT_SETUP: ChessSetup = { mode: "computer", computerPlays: 1, level: "normal", clock: null, levelMode: "level", strength: null };
 
 /** A stored setup, checked; one from before the clock gets none. */
 function setupOf(value: unknown): ChessSetup | null {
@@ -66,7 +78,16 @@ function setupOf(value: unknown): ChessSetup | null {
   } catch {
     clock = null;
   }
-  return { mode: s.mode as ChessSetup["mode"], computerPlays: s.computerPlays as PlayerIndex, level: s.level as AiLevel, clock };
+  const strength = typeof s.strength === "number" && Number.isFinite(s.strength) ? Chess.clampStrength(s.strength) : null;
+  const levelMode: LevelMode = (s.levelMode === "custom" || s.levelMode === "adaptive") && strength !== null ? s.levelMode : "level";
+  return {
+    mode: s.mode as ChessSetup["mode"],
+    computerPlays: s.computerPlays as PlayerIndex,
+    level: levelMode === "level" ? (s.level as AiLevel) : Chess.levelOfStrength(strength!),
+    clock,
+    levelMode,
+    strength: levelMode === "level" ? null : strength
+  };
 }
 
 /** A save's key, or a new one for a save from before games had keys. */
@@ -78,7 +99,15 @@ export function loadChessGame(): LoadedChessGame | null {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
-    const saved = JSON.parse(raw) as Partial<SavedChessGame>;
+    return gameOf(JSON.parse(raw) as Partial<SavedChessGame>);
+  } catch {
+    return null;
+  }
+}
+
+/** A stored game, replayed through the rules; null when it is not a game. */
+function gameOf(saved: Partial<SavedChessGame>): LoadedChessGame | null {
+  try {
     const setup = setupOf(saved.setup);
     if (!setup || !Array.isArray(saved.moves)) return null;
     let state = Chess.replay(saved.moves.map((move) => Chess.parseMove(move)));
@@ -105,14 +134,75 @@ export function finishOf(state: ChessState): SavedChessGame["finished"] {
     : null;
 }
 
-export function saveChessGame(game: LoadedChessGame): void {
+function storedOf(game: LoadedChessGame): SavedChessGame {
   const finished = finishOf(game.state);
-  const saved: SavedChessGame = { setup: game.setup, key: game.key, moves: game.state.moves, finished, ...(game.setup.clock ? { spent: game.spent } : {}) };
+  return { setup: game.setup, key: game.key, moves: game.state.moves, finished, ...(game.setup.clock ? { spent: game.spent } : {}) };
+}
+
+export function saveChessGame(game: LoadedChessGame): void {
+  const saved = storedOf(game);
   try {
     localStorage.setItem(KEY, JSON.stringify(saved));
   } catch {
     /* private mode or full */
   }
+}
+
+// ── Games put aside ─────────────────────────────────────────────────────────
+// "Save and leave" puts the game in progress on a shelf on this device, so
+// another can be started; any of them is taken up again where it was left,
+// its clock (if it has one) stopped meanwhile.
+
+export interface ShelvedGame {
+  id: string;
+  savedAt: string;
+  game: LoadedChessGame;
+}
+
+function readShelf(): { id: string; savedAt: string; game: SavedChessGame }[] {
+  try {
+    const raw = localStorage.getItem(SAVED_KEY);
+    const list = raw ? (JSON.parse(raw) as unknown) : [];
+    return Array.isArray(list) ? list.filter((entry) => entry && typeof entry.id === "string" && entry.game) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeShelf(list: { id: string; savedAt: string; game: SavedChessGame }[]): void {
+  try {
+    localStorage.setItem(SAVED_KEY, JSON.stringify(list.slice(0, SAVED_MAX)));
+  } catch {
+    /* private mode or full */
+  }
+}
+
+/** The games put aside here, newest first; one that no longer replays is left out. */
+export function listShelvedGames(): ShelvedGame[] {
+  return readShelf().flatMap((entry) => {
+    const game = gameOf(entry.game);
+    return game && game.state.status.kind === "playing" ? [{ id: entry.id, savedAt: entry.savedAt, game }] : [];
+  });
+}
+
+/** Puts a game in progress aside; answers its id on the shelf. */
+export function shelveChessGame(game: LoadedChessGame, now = new Date()): string {
+  const id = game.key;
+  writeShelf([{ id, savedAt: now.toISOString(), game: storedOf(game) }, ...readShelf().filter((entry) => entry.id !== id)]);
+  return id;
+}
+
+/** Takes a game off the shelf, to be played again; null if it is gone. */
+export function takeShelvedGame(id: string): LoadedChessGame | null {
+  const list = readShelf();
+  const entry = list.find((item) => item.id === id);
+  if (!entry) return null;
+  writeShelf(list.filter((item) => item.id !== id));
+  return gameOf(entry.game);
+}
+
+export function deleteShelvedGame(id: string): void {
+  writeShelf(readShelf().filter((entry) => entry.id !== id));
 }
 
 export function clearChessGame(): void {

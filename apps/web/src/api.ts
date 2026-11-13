@@ -67,6 +67,9 @@ export interface MatchDetail<S extends { status: GameStatus } = { status: GameSt
   /** A game on the clock: each side's time left when the server answered, in
    *  ms, and whose is running. */
   clock?: { control: TimeControl; left: [number, number]; running: PlayerIndex | null };
+  /** Draw offers (online chess, while it is played): who offered one that
+   *  stands, and whether you may offer one now. */
+  draw?: { offeredBy: PlayerIndex | null; canOffer: boolean };
 }
 
 export class ApiError extends Error {
@@ -213,6 +216,20 @@ export interface ComputerResult {
   result: "won" | "lost" | "drawn";
   /** The local game's own id: the server keeps one result per key. */
   key: string;
+  /** Chess at a strength of 0-100 (custom or adaptive); `level` is then its nearest named level. */
+  strength?: number;
+}
+
+/** The adaptive computer's strength for the signed-in member, and what it came from. */
+export interface AdaptiveStrength {
+  strength: number;
+  elo: number;
+  source: "games" | "puzzles" | "start";
+  target: number;
+}
+
+export function fetchAdaptiveStrength(): Promise<AdaptiveStrength> {
+  return apiFetch<AdaptiveStrength>("/chess/adaptive");
 }
 
 /** A game against the computer has ended on this device. */
@@ -402,6 +419,13 @@ export function postMove(id: string, move: unknown, moveCount: number): Promise<
 
 export function postMessage(id: string, text: string): Promise<MatchDetail> {
   return post<MatchDetail>(`/matches/${encodeURIComponent(id)}/messages`, { text });
+}
+
+export type DrawAction = "offer" | "accept" | "decline" | "withdraw";
+
+/** Offers a draw, answers the other side's offer, or takes yours back. */
+export function drawMatch(id: string, action: DrawAction): Promise<MatchDetail> {
+  return post<MatchDetail>(`/matches/${encodeURIComponent(id)}/draw`, { action });
 }
 
 export function resignMatch(id: string): Promise<MatchDetail> {

@@ -14,6 +14,8 @@ export interface ComputerGameEnd {
   level: AiLevel;
   /** The person's seat. */
   human: PlayerIndex;
+  /** Chess at a strength of 0-100, when it was custom or adaptive. */
+  strength?: number | null;
   /** Null for a draw. */
   winner: PlayerIndex | null;
 }
@@ -35,7 +37,7 @@ export function useComputerResult(end: ComputerGameEnd | null): ChessRating | nu
     }
     reported.set(end.key, null);
     const result = end.winner === null ? "drawn" : end.winner === end.human ? "won" : "lost";
-    reportComputerResult({ game: end.game, level: end.level, result, key: end.key }).then((answer) => {
+    reportComputerResult({ game: end.game, level: end.level, result, key: end.key, ...(typeof end.strength === "number" ? { strength: end.strength } : {}) }).then((answer) => {
       reported.set(end.key, answer?.chessRating ?? null);
       setRating(answer?.chessRating ?? null);
     }, () => reported.delete(end.key));

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { newGameKey } from "../../shared/gameKey";
 import { Chess, clockRunning, flagged, timeLeft, type AiLevel, type ChessMove, type PlayerIndex, type TimeControl } from "@isputnik/games-engine";
-import { clearChessGame, loadChessGame, loadChessSetup, saveChessGame, saveChessSetup, type ChessSetup, type LoadedChessGame } from "./storage";
+import { clearChessGame, loadChessGame, loadChessSetup, saveChessGame, saveChessSetup, shelveChessGame, takeShelvedGame, type ChessSetup, type LoadedChessGame } from "./storage";
 
 // One local game of chess: the position, the setup it was started with, and
 // the moves on it. Every change goes through the engine and is saved at once;
@@ -33,6 +33,10 @@ export interface ChessGameController {
    *  new game starts at this level too. */
   setLevel(level: AiLevel): void;
   abandon(): void;
+  /** Puts the game in progress aside on this device (Save and leave). */
+  shelve(): void;
+  /** Takes a game put aside back onto the board. */
+  resume(id: string): void;
   /** The seat a person at this screen may move now, or null. */
   humanToMove: PlayerIndex | null;
   /** The clock, in a game that has one. */
@@ -120,13 +124,30 @@ export function useChessGame(): ChessGameController {
   }, [change]);
 
   const setLevel = useCallback((level: AiLevel) => {
-    saveChessSetup({ ...loadChessSetup(), level });
-    change((current) => (current.setup.level === level ? null : { ...current, setup: { ...current.setup, level } }));
+    saveChessSetup({ ...loadChessSetup(), level, levelMode: "level", strength: null });
+    change((current) => (current.setup.level === level && current.setup.levelMode === "level"
+      ? null
+      : { ...current, setup: { ...current.setup, level, levelMode: "level", strength: null } }));
   }, [change]);
 
   const abandon = useCallback(() => {
     clearChessGame();
     setGame(null);
+  }, []);
+
+  const shelve = useCallback(() => {
+    if (game && game.state.status.kind === "playing") shelveChessGame(game);
+    clearChessGame();
+    setGame(null);
+  }, [game]);
+
+  const resume = useCallback((id: string) => {
+    const taken = takeShelvedGame(id);
+    if (!taken) return;
+    // Its clock picks up from now: the time it spent on the shelf is not counted.
+    const next = { ...taken, turnStartedAt: Date.now() };
+    saveChessGame(next);
+    setGame(next);
   }, []);
 
   const status = game?.state.status;
@@ -157,9 +178,10 @@ export function useChessGame(): ChessGameController {
     }
     setThinking(true);
     const { level } = game.setup;
+    const strength = game.setup.levelMode === "level" ? null : game.setup.strength;
     const state = game.state;
     const timer = window.setTimeout(() => {
-      const answer = Chess.chooseChessMove(state, level, Math.random);
+      const answer = strength === null ? Chess.chooseChessMove(state, level, Math.random) : Chess.chooseChessMoveAt(state, strength, Math.random);
       setThinking(false);
       if (answer) move(answer);
     }, COMPUTER_DELAY.ms);
@@ -176,6 +198,8 @@ export function useChessGame(): ChessGameController {
     resign,
     setLevel,
     abandon,
+    shelve,
+    resume,
     humanToMove: game && status?.kind === "playing" && !computerTurn ? status.turn : null,
     clock: game && control ? {
       control,

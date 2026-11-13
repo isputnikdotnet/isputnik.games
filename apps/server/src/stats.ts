@@ -159,14 +159,16 @@ export interface ComputerResult {
   level: AiLevel;
   result: "won" | "lost" | "drawn";
   key: string;
+  /** Chess at a strength of 0-100 (custom or adaptive); `level` is then its nearest named level. */
+  strength?: number;
 }
 
 /** Keeps a finished game against the computer; false when this member already
  *  reported the game with this key. */
 export function recordComputerResult(db: Db, memberId: string, input: ComputerResult): boolean {
   const info = db.prepare(`
-    INSERT INTO computer_results (member_id, game, level, result, game_key) VALUES (?, ?, ?, ?, ?)
+    INSERT INTO computer_results (member_id, game, level, result, game_key, strength) VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT (member_id, game_key) DO NOTHING
-  `).run(memberId, input.game, input.level, input.result, input.key);
+  `).run(memberId, input.game, input.level, input.result, input.key, input.game === "chess" ? input.strength ?? null : null);
   return info.changes > 0;
 }

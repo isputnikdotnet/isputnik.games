@@ -821,3 +821,118 @@
     margin-right: -6px;
   }
 }
+
+/* A draw offer's answers, under its message on the online match page. */
+.draw-offer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* The coach on the review page: a line of progress or totals, the word on the
+   move shown, and the marks in the move list (?! inaccuracy, ? mistake, ?? blunder). */
+.coach-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+}
+
+.coach-verdict {
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid #e0a12b;
+  border-radius: 8px;
+  background: color-mix(in srgb, #e0a12b 10%, transparent);
+}
+
+.coach-verdict p {
+  margin: 0 0 4px;
+  font-size: var(--text-sm);
+}
+
+.coach-verdict.is-mistake {
+  border-left-color: #e2702b;
+  background: color-mix(in srgb, #e2702b 10%, transparent);
+}
+
+.coach-verdict.is-blunder {
+  border-left-color: #d6261c;
+  background: color-mix(in srgb, #d6261c 10%, transparent);
+}
+
+.review-mark {
+  margin-left: 2px;
+  font-weight: var(--weight-bold);
+}
+
+.review-move.is-inaccuracy .review-mark { color: #c58a14; }
+.review-move.is-mistake .review-mark { color: #e2702b; }
+.review-move.is-blunder .review-mark { color: #d6261c; }
+
+/* Games put aside (Save and leave), under the new-game form. */
+.shelved-games {
+  margin-top: var(--space-4);
+}
+
+.shelved-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shelved-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.shelved-row + .shelved-row {
+  border-top: 1px solid var(--line);
+}
+
+.shelved-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shelved-main .muted {
+  font-size: var(--text-sm);
+}
+
+.shelved-actions {
+  flex: none;
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* The computer's strength: a 0-100 slider (Custom), or where Adaptive stands. */
+.strength-slider {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.strength-slider input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.strength-value {
+  grid-column: 1 / -1;
+  font-weight: var(--weight-semibold);
+}
+
+.strength-note {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  font-size: var(--text-sm);
+}
